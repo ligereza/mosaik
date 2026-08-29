@@ -37,6 +37,9 @@ def build_parser() -> argparse.ArgumentParser:
     instar.add_argument("--target-resolution", type=_resolution, help="Resolución objetivo, por ejemplo 1920x1080.")
     instar.add_argument("--target-codec", help="Codec objetivo opcional, por ejemplo dxv.")
     instar.add_argument("--deep", action="store_true", help="Además del preflight, ejecuta el diagnóstico visual/luminancia.")
+    instar.add_argument("--gpu", action="store_true", help="Analiza frames con NVDEC/CUDA; no hace fallback silencioso a CPU.")
+    instar.add_argument("--gpu-max-frames", type=int, default=900, help="Máximo de frames para el análisis GPU por archivo.")
+    instar.add_argument("--gpu-batch-size", type=int, default=16, help="Cantidad de frames por lote en el decoder GPU.")
     instar.add_argument("--max-samples", type=int, default=300, help="Máximo de muestras de luminancia en modo --deep.")
     instar.add_argument("--sidecars-dir", help="Carpeta opcional para escribir un .mosaik.json por visual.")
     instar.add_argument("--ffmpeg", default="ffmpeg", help="Ruta o nombre de FFmpeg.")
@@ -96,6 +99,9 @@ def main(argv: list[str] | None = None) -> int:
                 target_codec=args.target_codec,
                 deep=args.deep,
                 sidecars_dir=args.sidecars_dir,
+                gpu=args.gpu,
+                gpu_max_frames=args.gpu_max_frames,
+                gpu_batch_size=args.gpu_batch_size,
             )
             print(instar_text_report(report))
             if args.report:

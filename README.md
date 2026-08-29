@@ -29,9 +29,16 @@ Instala las dependencias Python con:
 python -m pip install -r requirements.txt
 ```
 
+Para habilitar el análisis visual GPU en una máquina NVIDIA:
+
+```powershell
+python -m pip install -r requirements-gpu.txt
+```
+
 El runtime de MOSAIK usa la biblioteca estándar de Python. El preflight técnico
 de INSTAR usa sólo FFprobe y no decodifica todo el video; `--deep` activa el
-diagnóstico adicional de luminancia. Para analizar media
+diagnóstico adicional de luminancia. `--gpu` usa NVDEC/CUDA y no hace fallback
+silencioso a CPU. Para analizar media
 se necesitan `ffmpeg` y `ffprobe` disponibles en `PATH`; para la integración
 directa con Resolume se necesita Arena/Avenue 7.26 o posterior y su MCP local.
 

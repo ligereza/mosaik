@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any
 
 from .diagnose import diagnose_file
+from .gpu import GpuUnavailable, analyze_visual_gpu
 from .media import MosaikError
 from .preflight import preflight_file, write_sidecar
 
@@ -51,11 +52,15 @@ def run_instar(
     target_codec: str | None = None,
     deep: bool = False,
     sidecars_dir: str | Path | None = None,
+    gpu: bool = False,
+    gpu_max_frames: int = 900,
+    gpu_batch_size: int = 16,
 ) -> dict[str, Any]:
     """Ejecuta el preflight de INSTAR sobre todos los medios de una carpeta.
 
     El modo normal inspecciona sólo metadata técnica. ``deep=True`` conserva
     el diagnóstico anterior, que además decodifica una muestra de luminancia.
+    ``gpu=True`` usa NVDEC/CUDA y no hace fallback silencioso a CPU.
     """
 
     media_root = Path(root).expanduser().resolve()
@@ -66,7 +71,61 @@ def run_instar(
     items: list[dict[str, Any]] = []
     for media_path in files:
         try:
-            if deep:
+            if gpu:
+                report = preflight_file(
+                    media_path,
+                    ffprobe=ffprobe,
+                    target_fps=target_fps,
+                    target_width=target_width,
+                    target_height=target_height,
+                    target_codec=target_codec,
+                )
+                try:
+                    visual_analysis = analyze_visual_gpu(
+                        media_path,
+                        max_frames=gpu_max_frames,
+                        batch_size=gpu_batch_size,
+                    )
+                    report["analysis"] = visual_analysis
+                    candidate_count = visual_analysis["flash_screening"]["candidate_count"]
+                    if candidate_count:
+                        report["checks"].append(
+                            {
+                                "name": "Flash visual",
+                                "status": "WARN",
+                                "detail": f"Se detectaron {candidate_count} cambios globales de luminancia que requieren revisión.",
+                            }
+                        )
+                        report["overall_status"] = "WARN"
+                        report["recommendations"].append(
+                            "Revisar los candidatos de flash; movimiento y cortes también pueden producir esta señal."
+                        )
+                    else:
+                        report["checks"].append(
+                            {
+                                "name": "Análisis GPU",
+                                "status": "PASS",
+                                "detail": "NVDEC/CUDA procesó la muestra visual sin candidatos de flash global.",
+                            }
+                        )
+                except GpuUnavailable as exc:
+                    report["analysis"] = {
+                        "status": "GPU_UNAVAILABLE",
+                        "backend": "cuda_nvdec_cupy",
+                        "error": str(exc),
+                    }
+                    report["checks"].append(
+                        {
+                            "name": "Análisis GPU",
+                            "status": "WARN",
+                            "detail": str(exc),
+                        }
+                    )
+                    report["recommendations"].append(
+                        "No se aplicó fallback CPU; usar un codec compatible con NVDEC o analizarlo manualmente."
+                    )
+                    report["overall_status"] = "WARN"
+            elif deep:
                 report = diagnose_file(
                     media_path,
                     ffmpeg=ffmpeg,
@@ -125,7 +184,7 @@ def run_instar(
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "media_root": str(media_root),
         "files_found": len(files),
-        "mode": "deep" if deep else "technical",
+        "mode": "gpu" if gpu else ("deep" if deep else "technical"),
         "overall_status": overall_status,
         "items": items,
     }
@@ -154,9 +213,12 @@ def text_report(report: dict[str, Any]) -> str:
         codec = video.get("codec") or "desconocido"
         resolution = f"{video.get('width')} × {video.get('height')}"
         alpha = item["report"].get("alpha", {}).get("status", "n/a")
+        analysis = item["report"].get("analysis", {})
+        analysis_status = analysis.get("status")
+        analysis_label = f", GPU {analysis_status}" if report.get("mode") == "gpu" else ""
         lines.append(
             f"  [{item['status']}] {path.name}: {codec}, {resolution}, "
-            f"FPS {video.get('average_fps') or 'desconocido'}, alpha {alpha}"
+            f"FPS {video.get('average_fps') or 'desconocido'}, alpha {alpha}{analysis_label}"
         )
     return "\n".join(lines)
 

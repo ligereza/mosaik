@@ -1,0 +1,258 @@
+"""Backend CUDA/NVDEC para análisis visual de INSTAR.
+
+El módulo importa PyNvVideoCodec y CuPy de forma diferida para que el núcleo
+normal de MOSAIK siga funcionando en equipos sin NVIDIA/CUDA.
+"""
+
+from __future__ import annotations
+
+import math
+import os
+from pathlib import Path
+from typing import Any
+
+from .media import MosaikError, ensure_file, parse_fraction
+
+
+class GpuUnavailable(MosaikError):
+    """La ruta CUDA no está disponible para el archivo o el equipo."""
+
+
+_DLL_HANDLES: list[Any] = []
+
+
+def _find_cuda_path() -> Path | None:
+    configured = os.environ.get("CUDA_PATH")
+    if configured and Path(configured).is_dir():
+        return Path(configured)
+
+    toolkit_root = Path(os.environ.get("ProgramFiles", "C:/Program Files")) / "NVIDIA GPU Computing Toolkit" / "CUDA"
+    candidates = sorted(
+        (path for path in toolkit_root.glob("v*") if path.is_dir()),
+        key=lambda path: path.name,
+        reverse=True,
+    )
+    return candidates[0] if candidates else None
+
+
+def _load_gpu_modules() -> tuple[Any, Any]:
+    cuda_path = _find_cuda_path()
+    if cuda_path:
+        os.environ.setdefault("CUDA_PATH", str(cuda_path))
+        bin_path = cuda_path / "bin"
+        if hasattr(os, "add_dll_directory") and bin_path.is_dir():
+            _DLL_HANDLES.append(os.add_dll_directory(str(bin_path)))
+
+    try:
+        import cupy as cp
+        import PyNvVideoCodec as nvc
+    except Exception as exc:  # pragma: no cover - depende del host y sus DLL
+        raise GpuUnavailable(
+            "No se pudo cargar la ruta CUDA/NVDEC. "
+            "Verifica el driver NVIDIA, CUDA_PATH y las dependencias GPU. "
+            f"Detalle: {exc}"
+        ) from exc
+    return cp, nvc
+
+
+def _device_summary(cp: Any, device_id: int) -> dict[str, Any]:
+    device = cp.cuda.Device(device_id)
+    properties = cp.cuda.runtime.getDeviceProperties(device_id)
+    name = properties.get("name", "GPU desconocida")
+    if isinstance(name, bytes):
+        name = name.decode(errors="replace")
+    free_memory, total_memory = device.mem_info
+    return {
+        "id": device_id,
+        "name": str(name),
+        "free_memory_bytes": int(free_memory),
+        "total_memory_bytes": int(total_memory),
+    }
+
+
+def _metadata_number(metadata: Any, name: str) -> float | None:
+    value = getattr(metadata, name, None)
+    if value is None:
+        return None
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return parse_fraction(value)
+
+
+def analyze_visual_gpu(
+    path: str | Path,
+    *,
+    max_frames: int = 900,
+    batch_size: int = 16,
+    analysis_width: int = 320,
+    gpu_id: int = 0,
+) -> dict[str, Any]:
+    """Analiza movimiento y luminancia con frames decodificados en NVDEC.
+
+    No realiza fallback a CPU. Si el codec no puede ser decodificado por la
+    ruta disponible, lanza ``GpuUnavailable`` para que el informe lo explicite.
+    """
+
+    if max_frames <= 0:
+        raise MosaikError("max_frames debe ser mayor que cero.")
+    if batch_size <= 0:
+        raise MosaikError("batch_size debe ser mayor que cero.")
+    if analysis_width <= 0:
+        raise MosaikError("analysis_width debe ser mayor que cero.")
+
+    media_path = ensure_file(path)
+    cp, nvc = _load_gpu_modules()
+    decoder = None
+    device_info = _device_summary(cp, gpu_id)
+    selected_frames: list[dict[str, Any]] = []
+    previous_luma = None
+    frame_index = 0
+    decoded_frames = 0
+    analysis_shape: tuple[int, int] | None = None
+
+    try:
+        decoder = nvc.ThreadedDecoder(
+            str(media_path),
+            max(8, batch_size),
+            gpu_id=gpu_id,
+            use_device_memory=True,
+            output_color_type=nvc.OutputColorType.RGBP,
+        )
+        metadata = decoder.get_stream_metadata()
+        total_frames = _metadata_number(metadata, "num_frames")
+        average_fps = _metadata_number(metadata, "average_fps")
+        if total_frames is None or total_frames <= 0:
+            total_frames = None
+        if average_fps is None or average_fps <= 0:
+            average_fps = None
+
+        frame_stride = max(1, math.ceil(total_frames / max_frames)) if total_frames else 1
+        while len(selected_frames) < max_frames:
+            frames = decoder.get_batch_frames(batch_size)
+            if not frames:
+                break
+            for decoded in frames:
+                decoded_frames += 1
+                if frame_index % frame_stride != 0:
+                    frame_index += 1
+                    continue
+
+                frame = cp.from_dlpack(decoded)
+                if getattr(frame, "ndim", 0) != 3 or frame.shape[0] < 3:
+                    raise GpuUnavailable(
+                        f"El decoder GPU devolvió un formato inesperado: {getattr(frame, 'shape', None)}"
+                    )
+
+                stride = max(1, math.ceil(frame.shape[2] / max(1, analysis_width)))
+                sampled = frame[:, ::stride, ::stride]
+                analysis_shape = (int(sampled.shape[2]), int(sampled.shape[1]))
+                sampled_float = sampled[:3].astype(cp.float32)
+                luma = (
+                    sampled_float[0] * 0.2126
+                    + sampled_float[1] * 0.7152
+                    + sampled_float[2] * 0.0722
+                )
+                mean_luma = float(cp.mean(luma).get())
+                min_luma = float(cp.min(luma).get())
+                max_luma = float(cp.max(luma).get())
+                black_ratio = float(cp.mean(luma <= 8.0).get())
+                white_ratio = float(cp.mean(luma >= 247.0).get())
+
+                delta = None
+                if previous_luma is not None and previous_luma.shape == luma.shape:
+                    delta = float(cp.mean(cp.abs(luma - previous_luma)).get())
+                previous_luma = luma.copy()
+                selected_frames.append(
+                    {
+                        "frame": frame_index,
+                        "time_s": round(frame_index / average_fps, 6) if average_fps else None,
+                        "mean_luma": round(mean_luma, 4),
+                        "min_luma": round(min_luma, 4),
+                        "max_luma": round(max_luma, 4),
+                        "black_ratio": round(black_ratio, 6),
+                        "white_ratio": round(white_ratio, 6),
+                        "delta": round(delta, 4) if delta is not None else None,
+                    }
+                )
+                frame_index += 1
+                if len(selected_frames) >= max_frames:
+                    break
+
+        if len(selected_frames) < 2:
+            raise GpuUnavailable("NVDEC no devolvió suficientes frames para analizar.")
+
+        deltas = [item["delta"] for item in selected_frames if item["delta"] is not None]
+        mean_luma = sum(item["mean_luma"] for item in selected_frames) / len(selected_frames)
+        mean_black_ratio = sum(item["black_ratio"] for item in selected_frames) / len(selected_frames)
+        motion_mean = (sum(deltas) / len(deltas) / 255.0) if deltas else 0.0
+        motion_peak = (max(deltas) / 255.0) if deltas else 0.0
+        flash_threshold = 32.0
+        flash_candidates = [
+            {
+                "frame": item["frame"],
+                "time_s": item["time_s"],
+                "delta": item["delta"],
+            }
+            for item in selected_frames
+            if item["delta"] is not None and item["delta"] >= flash_threshold
+        ]
+        peaks = sorted(
+            (item for item in selected_frames if item["delta"] is not None),
+            key=lambda item: item["delta"],
+            reverse=True,
+        )[:10]
+
+        return {
+            "status": "PASS",
+            "backend": "cuda_nvdec_cupy",
+            "decoder": "NVDEC",
+            "device": device_info,
+            "decoded_frames": decoded_frames,
+            "sampled_frames": len(selected_frames),
+            "sample_stride": frame_stride,
+            "analysis_resolution": list(analysis_shape or (0, 0)),
+            "luminance": {
+                "mean": round(mean_luma / 255.0, 6),
+                "black_ratio": round(mean_black_ratio, 6),
+            },
+            "motion": {
+                "mean": round(motion_mean, 6),
+                "peak": round(motion_peak, 6),
+            },
+            "flash_screening": {
+                "threshold_luma_delta": flash_threshold,
+                "candidate_count": len(flash_candidates),
+                "candidates": flash_candidates[:50],
+                "risk": "medium" if flash_candidates else "low",
+            },
+            "visual_peaks": [
+                {
+                    "frame": item["frame"],
+                    "time_s": item["time_s"],
+                    "score": round(item["delta"] / 255.0, 6),
+                }
+                for item in peaks
+            ],
+            "samples": selected_frames,
+            "limitations": [
+                "Los cambios globales de luminancia pueden ser movimiento, cortes o flashes intencionales.",
+                "Este análisis no confirma flickering de PWM, refresco, cableado ni procesador LED.",
+                "El riesgo de flash es un cribado del archivo y requiere validación visual.",
+            ],
+        }
+    except GpuUnavailable:
+        raise
+    except Exception as exc:  # pragma: no cover - depende del codec y del driver
+        raise GpuUnavailable(
+            f"El archivo no pudo procesarse con NVDEC/CUDA: {exc}"
+        ) from exc
+    finally:
+        if decoder is not None:
+            del decoder
+        try:
+            cp.cuda.Stream.null.synchronize()
+            cp.get_default_memory_pool().free_all_blocks()
+            cp.get_default_pinned_memory_pool().free_all_blocks()
+        except Exception:
+            pass

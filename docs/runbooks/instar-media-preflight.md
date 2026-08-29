@@ -49,6 +49,24 @@ python .\tools\mosaik_cli.py instar "D:\VJ\Media" `
 confirman un problema de proyector, LED, PWM, cableado o procesador; sólo
 indican que el archivo merece una prueba más específica.
 
+## Análisis GPU
+
+En una máquina NVIDIA con el backend instalado:
+
+```powershell
+python .\tools\mosaik_cli.py instar "D:\VJ\Media" `
+  --gpu `
+  --gpu-max-frames 900 `
+  --gpu-batch-size 16 `
+  --report ".\artifacts\instar-gpu.json"
+```
+
+Esta ruta utiliza NVDEC para decodificar y CuPy para calcular luminancia,
+movimiento y cambios globales en GPU. Los frames no se copian a la CPU para
+calcular las métricas; sólo regresan números pequeños para el JSON. Si el
+codec no es compatible, el archivo queda como `GPU_UNAVAILABLE` y no se
+procesa silenciosamente con CPU.
+
 ## Sidecars
 
 Cada visual puede producir un archivo `<nombre>.<extensión>.mosaik.json`. El
