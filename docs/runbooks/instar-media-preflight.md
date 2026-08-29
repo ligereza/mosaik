@@ -62,10 +62,14 @@ python .\tools\mosaik_cli.py instar "D:\VJ\Media" `
 ```
 
 Esta ruta utiliza NVDEC para decodificar y CuPy para calcular luminancia,
-movimiento y cambios globales en GPU. Los frames no se copian a la CPU para
-calcular las métricas; sólo regresan números pequeños para el JSON. Si el
-codec no es compatible, el archivo queda como `GPU_UNAVAILABLE` y no se
-procesa silenciosamente con CPU.
+movimiento, color, saturación y periodicidad candidata en GPU. Los frames no
+se copian a la CPU para calcular las métricas; sólo regresan números pequeños
+para el JSON. Si el codec no es compatible, el archivo queda como
+`GPU_UNAVAILABLE` y no se procesa silenciosamente con CPU.
+
+La periodicidad no se presenta como BPM musical: es una candidata de repetición
+basada en autocorrelación de luminancia y debe confirmarse antes de usarla como
+cue de IMAGO.
 
 ## Sidecars
 

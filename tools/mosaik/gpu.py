@@ -80,6 +80,55 @@ def _metadata_number(metadata: Any, name: str) -> float | None:
         return parse_fraction(value)
 
 
+def _estimate_period(cp: Any, values: list[float], sample_rate: float | None) -> dict[str, Any]:
+    """Estima periodicidad de luminancia mediante autocorrelación en CUDA."""
+
+    if sample_rate is None or sample_rate <= 0 or len(values) < 8:
+        return {
+            "status": "unknown",
+            "period_s": None,
+            "confidence": 0.0,
+            "reason": "No hubo suficientes muestras temporales para estimar periodicidad.",
+        }
+
+    signal = cp.asarray(values, dtype=cp.float32)
+    centered = signal - cp.mean(signal)
+    variance = float(cp.mean(centered * centered).get())
+    if variance <= 1e-6:
+        return {
+            "status": "unknown",
+            "period_s": None,
+            "confidence": 0.0,
+            "reason": "La luminancia analizada es demasiado estable.",
+        }
+
+    sample_count = int(signal.size)
+    padded_size = 2 * sample_count
+    spectrum = cp.fft.rfft(centered, n=padded_size)
+    autocorrelation = cp.fft.irfft(cp.abs(spectrum) ** 2, n=padded_size)[:sample_count]
+    normalized = autocorrelation / cp.maximum(autocorrelation[0], 1e-6)
+
+    min_lag = max(2, int(round(sample_rate * 0.25)))
+    max_lag = min(sample_count - 1, int(round(sample_rate * 10.0)))
+    if max_lag <= min_lag:
+        return {
+            "status": "unknown",
+            "period_s": None,
+            "confidence": 0.0,
+            "reason": "La ventana analizada es demasiado corta para buscar un loop.",
+        }
+
+    best_lag = min_lag + int(cp.argmax(normalized[min_lag : max_lag + 1]).get())
+    confidence = float(normalized[best_lag].get())
+    period = best_lag / sample_rate
+    return {
+        "status": "candidate" if confidence >= 0.35 else "weak",
+        "period_s": round(period, 6),
+        "confidence": round(max(0.0, min(1.0, confidence)), 6),
+        "basis": "global_luminance_autocorrelation",
+    }
+
+
 def analyze_visual_gpu(
     path: str | Path,
     *,
@@ -110,6 +159,8 @@ def analyze_visual_gpu(
     frame_index = 0
     decoded_frames = 0
     analysis_shape: tuple[int, int] | None = None
+    effective_sample_rate = None
+    mean_luma_values: list[float] = []
 
     try:
         decoder = nvc.ThreadedDecoder(
@@ -128,6 +179,7 @@ def analyze_visual_gpu(
             average_fps = None
 
         frame_stride = max(1, math.ceil(total_frames / max_frames)) if total_frames else 1
+        effective_sample_rate = average_fps / frame_stride if average_fps else None
         while len(selected_frames) < max_frames:
             frames = decoder.get_batch_frames(batch_size)
             if not frames:
@@ -158,11 +210,18 @@ def analyze_visual_gpu(
                 max_luma = float(cp.max(luma).get())
                 black_ratio = float(cp.mean(luma <= 8.0).get())
                 white_ratio = float(cp.mean(luma >= 247.0).get())
+                mean_rgb = [float(value) for value in cp.mean(sampled_float, axis=(1, 2)).get()]
+                channel_max = cp.max(sampled_float, axis=0)
+                channel_min = cp.min(sampled_float, axis=0)
+                saturation = float(
+                    cp.mean((channel_max - channel_min) / cp.maximum(channel_max, 1.0)).get()
+                )
 
                 delta = None
                 if previous_luma is not None and previous_luma.shape == luma.shape:
                     delta = float(cp.mean(cp.abs(luma - previous_luma)).get())
                 previous_luma = luma.copy()
+                mean_luma_values.append(mean_luma / 255.0)
                 selected_frames.append(
                     {
                         "frame": frame_index,
@@ -172,6 +231,8 @@ def analyze_visual_gpu(
                         "max_luma": round(max_luma, 4),
                         "black_ratio": round(black_ratio, 6),
                         "white_ratio": round(white_ratio, 6),
+                        "mean_rgb": [round(value, 4) for value in mean_rgb],
+                        "saturation": round(saturation, 6),
                         "delta": round(delta, 4) if delta is not None else None,
                     }
                 )
@@ -185,6 +246,11 @@ def analyze_visual_gpu(
         deltas = [item["delta"] for item in selected_frames if item["delta"] is not None]
         mean_luma = sum(item["mean_luma"] for item in selected_frames) / len(selected_frames)
         mean_black_ratio = sum(item["black_ratio"] for item in selected_frames) / len(selected_frames)
+        mean_rgb = [
+            sum(item["mean_rgb"][channel] for item in selected_frames) / len(selected_frames)
+            for channel in range(3)
+        ]
+        mean_saturation = sum(item["saturation"] for item in selected_frames) / len(selected_frames)
         motion_mean = (sum(deltas) / len(deltas) / 255.0) if deltas else 0.0
         motion_peak = (max(deltas) / 255.0) if deltas else 0.0
         flash_threshold = 32.0
@@ -202,6 +268,9 @@ def analyze_visual_gpu(
             key=lambda item: item["delta"],
             reverse=True,
         )[:10]
+        periodicity = _estimate_period(cp, mean_luma_values, effective_sample_rate)
+        energy = "low" if motion_mean < 0.02 else "medium" if motion_mean < 0.06 else "high"
+        modulation = "strong" if energy == "low" else "moderate" if energy == "medium" else "subtle"
 
         return {
             "status": "PASS",
@@ -216,10 +285,20 @@ def analyze_visual_gpu(
                 "mean": round(mean_luma / 255.0, 6),
                 "black_ratio": round(mean_black_ratio, 6),
             },
+            "color": {
+                "mean_rgb": [round(value / 255.0, 6) for value in mean_rgb],
+                "mean_saturation": round(mean_saturation, 6),
+            },
             "motion": {
                 "mean": round(motion_mean, 6),
                 "peak": round(motion_peak, 6),
             },
+            "visual_energy": energy,
+            "reactive_recommendation": {
+                "modulation": modulation,
+                "reason": "La modulación debe compensar el movimiento ya presente en el clip.",
+            },
+            "periodicity": periodicity,
             "flash_screening": {
                 "threshold_luma_delta": flash_threshold,
                 "candidate_count": len(flash_candidates),
