@@ -1,5 +1,7 @@
 # Salidas locales de diagnóstico; pueden contener nombres de equipo o procesos.
 artifacts/
+__pycache__/
+*.py[cod]
 *.snapshot.json
 *.log
 
@@ -18,4 +20,3 @@ exports/
 *.mp4
 *.mxf
 *.avi
-

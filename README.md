@@ -14,6 +14,9 @@ Desde PowerShell, en la raíz del repositorio:
 Set-ExecutionPolicy -Scope Process Bypass
 .\tools\Test-VJPreflight.ps1 -MediaRoot "D:\VJ\Media" -ProjectRoot "D:\VJ\Shows\show-01"
 .\tools\Get-VJSystemSnapshot.ps1 -OutputPath ".\artifacts\snapshot.json"
+
+python .\tools\mosaik_cli.py diagnose "D:\VJ\Media\clip.mp4" --report ".\artifacts\clip-report.json"
+python .\tools\mosaik_cli.py dxv "D:\VJ\Media\clip.mp4" --fps 60
 ```
 
 Los scripts solo leen el estado del equipo y muestran advertencias; no cambian el plan de
@@ -27,7 +30,7 @@ docs/
   runbooks/        Procedimientos operativos paso a paso.
   checklists/      Listas breves para usar antes o durante un show.
   templates/       Plantillas para registrar nuevos casos.
-tools/             Scripts locales de diagnóstico y verificación.
+tools/             Scripts locales y núcleo de herramientas MOSAIK.
 artifacts/         Salidas locales; ignoradas por Git.
 ```
 
@@ -41,6 +44,8 @@ artifacts/         Salidas locales; ignoradas por Git.
 
 ## Próximos incrementos
 
-1. Añadir un inventario de clips que detecte resolución, FPS, códec y presencia de alpha.
-2. Incorporar una plantilla de incidente para flicker, tearing, frames dropped y pérdida de rutas.
-3. Registrar resultados de pruebas reales en `docs/cases/` sin copiar medios al repositorio.
+1. Validar `MOSAIK Diagnose` con clips sintéticos y casos reales.
+2. Mejorar `MOSAIK DXV Assistant` con procesamiento por lotes y más perfiles.
+3. Empaquetar las herramientas como aplicación portable para colegas.
+4. Incorporar una plantilla de incidente para flicker, tearing, frames dropped y pérdida de rutas.
+5. Registrar resultados de pruebas reales en `docs/cases/` sin copiar medios al repositorio.
