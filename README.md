@@ -139,6 +139,8 @@ python .\tools\mosaik_cli.py instar-adapt `
 El detalle operativo está en `docs/runbooks/instar-adaptacion.md`.
 El flujo completo, desde catálogo hasta soundcheck, está en
 `docs/runbooks/instar-preshow.md`.
+La decisión de herramientas adoptadas y pendientes está en
+`docs/research/adopcion-herramientas.md`.
 
 ## Principios
 
