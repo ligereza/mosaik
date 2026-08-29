@@ -1,4 +1,4 @@
-# VJ Toolkit
+# MOSAIK
 
 Repositorio personal de herramientas, procedimientos y conocimiento práctico para trabajo VJ.
 
@@ -44,4 +44,3 @@ artifacts/         Salidas locales; ignoradas por Git.
 1. Añadir un inventario de clips que detecte resolución, FPS, códec y presencia de alpha.
 2. Incorporar una plantilla de incidente para flicker, tearing, frames dropped y pérdida de rutas.
 3. Registrar resultados de pruebas reales en `docs/cases/` sin copiar medios al repositorio.
-
