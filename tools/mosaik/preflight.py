@@ -110,6 +110,8 @@ def preflight_file(
             "duration_seconds": parse_fraction(audio_stream.get("duration")),
         }
     alpha = _alpha_summary(video_stream, video)
+    codec = str(video.get("codec") or "").lower()
+    is_static_image = codec in {"png", "mjpeg", "webp", "bmp", "jpeg", "tiff"}
 
     checks: list[dict[str, str]] = [
         _check("Archivo legible", "PASS", "FFprobe encontró una pista de video."),
@@ -147,7 +149,9 @@ def preflight_file(
 
     average_fps = parse_fraction(video_stream.get("avg_frame_rate"))
     nominal_fps = parse_fraction(video_stream.get("r_frame_rate"))
-    if average_fps is None:
+    if is_static_image:
+        checks.append(_check("Tipo de asset", "PASS", "Imagen estática; no requiere FPS ni timeline."))
+    elif average_fps is None:
         checks.append(_check("FPS", "WARN", "No se pudo leer un FPS promedio confiable."))
         recommendations.append("Revisar el timeline antes de usar el clip como loop.")
     else:
@@ -169,7 +173,6 @@ def preflight_file(
         checks.append(_check("Escaneo", "WARN", f"Se detectó orden de campos: {field_order}."))
         recommendations.append("Preferir una versión progresiva para reproducción VJ.")
 
-    codec = str(video.get("codec") or "").lower()
     if target_codec and codec != target_codec.lower():
         checks.append(_check("Codec objetivo", "WARN", f"Codec actual: {codec or 'desconocido'}; objetivo: {target_codec}."))
         recommendations.append(f"Preparar una versión {target_codec} sólo si ese es el perfil de reproducción elegido.")

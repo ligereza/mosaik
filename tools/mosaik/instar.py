@@ -19,14 +19,22 @@ from .rules import apply_show_rules
 MEDIA_EXTENSIONS = frozenset(
     {
         ".avi",
+        ".bmp",
         ".dxv",
+        ".gif",
+        ".jpeg",
+        ".jpg",
         ".mkv",
         ".mov",
         ".mp4",
         ".mxf",
+        ".png",
         ".webm",
+        ".webp",
     }
 )
+
+STATIC_IMAGE_EXTENSIONS = frozenset({".bmp", ".jpeg", ".jpg", ".png", ".webp"})
 
 
 def discover_media_files(root: str | Path) -> list[Path]:
@@ -58,6 +66,29 @@ def _analyze_file(
     gpu_max_frames: int,
     gpu_batch_size: int,
 ) -> dict[str, Any]:
+    if media_path.suffix.lower() in STATIC_IMAGE_EXTENSIONS:
+        report = preflight_file(
+            media_path,
+            ffprobe=ffprobe,
+            target_fps=target_fps,
+            target_width=target_width,
+            target_height=target_height,
+            target_codec=target_codec,
+        )
+        report["analysis"] = {
+            "status": "STATIC_IMAGE",
+            "backend": "ffprobe",
+            "reason": "Asset estático; no se aplica análisis de frames, loop ni NVDEC.",
+        }
+        report["checks"].append(
+            {
+                "name": "Asset estático",
+                "status": "PASS",
+                "detail": "La imagen se incorporó al catálogo sin forzarla a un flujo de video.",
+            }
+        )
+        return report
+
     if gpu:
         report = preflight_file(
             media_path,
