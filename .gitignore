@@ -1,0 +1,21 @@
+# Salidas locales de diagnóstico; pueden contener nombres de equipo o procesos.
+artifacts/
+*.snapshot.json
+*.log
+
+# Cachés y archivos temporales de aplicaciones.
+.cache/
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Proyectos y medios pesados: se documentan las rutas, no se versionan por defecto.
+media/
+renders/
+exports/
+*.dxv
+*.mov
+*.mp4
+*.mxf
+*.avi
+
