@@ -200,7 +200,64 @@ La misma imagen puede verse distinta en cada etapa. Por eso MOSAIK debe diferenc
 - **Keystone**: corrección trapezoidal, normalmente menos flexible que un warp de malla.
 - **Edge blending**: mezcla de bordes entre proyectores superpuestos.
 
-### 2.6 LED, proyectores y procesadores
+### 2.6 Handoff de festival, video control y routing
+
+En un festival grande, la “consola de pantallas” puede ser un **video switcher/vision mixer**, un **presentation system**, un **video router**, un **media server central** o una combinación de ellos. Ejemplos de familias profesionales son Barco Event Master, Analog Way LivePremier/Aquilon, Ross Carbonite/Ultrix y sistemas basados en servidores de medios. El nombre exacto importa menos que dibujar el camino real de la señal.
+
+```text
+VJ A ─┐
+VJ B ─┼→ captura o entrada del sistema de house
+VJ C ─┘                 ↓
+                 video control / switcher
+                 ↓       ↓        ↓
+              Main LED  Side LED  IMAG/stream
+                 ↓       ↓        ↓
+             procesadores y pantallas físicas
+```
+
+Conceptos específicos:
+
+- **House video**: infraestructura de video común del festival.
+- **Video control**: área, sistema y equipo que recibe, monitorea y distribuye fuentes.
+- **FIJO**: operador o media server que mantiene el contenido del evento entre presentaciones.
+- **CONSOLA**: operador que conmuta, enruta o compone señales hacia los destinos.
+- **VJ handoff**: entrega temporal de una fuente externa al sistema de house.
+- **Capture input**: entrada de una capturadora que convierte la salida HDMI/SDI del VJ en una fuente interna.
+- **Direct input**: señal del VJ que entra directamente al switcher o processor sin pasar por una captura intermedia.
+- **Source/input**: nombre lógico asignado a una señal entrante.
+- **Program/PVW**: salida al aire y salida de previsualización en un switcher.
+- **M/E**: banco de mezcla que puede generar una salida diferente de la principal.
+- **Aux bus**: salida auxiliar que puede recibir una fuente o composición distinta.
+- **Destination/Screen**: destino lógico que representa una pantalla, un grupo o una composición física.
+- **Output group**: conjunto de salidas que se alimentan con la misma fuente o layout.
+- **Multiview**: salida de monitoreo donde el operador observa fuentes, programa, preview y estados.
+- **Preset/scene**: memoria de routing, capas, escala y composición lista para activar.
+- **Source lock**: condición de señal estable que permite al sistema aceptar una entrada.
+- **EDID emulation**: el sistema presenta a la GPU del VJ una resolución y frecuencia elegidas por el festival.
+- **Input format**: resolución, Hz, color y profundidad que el sistema acepta de la señal del VJ.
+- **Output format**: resolución, Hz y formato que entrega hacia cada destino.
+- **Key/fill**: pareja de señales para imagen y máscara/transparencia, si el sistema lo soporta.
+- **Clean feed**: salida sin determinados overlays o elementos de composición.
+- **Frame sync**: adaptación temporal para que una fuente sea utilizable dentro del sistema.
+- **Scaler**: procesador que cambia resolución o encuadre; puede existir en la captura, switcher, processor y pantalla.
+- **Double scaling**: escalado repetido que produce blur, ringing, aliasing o encuadre inesperado.
+- **Destination mapping**: asignación de regiones del canvas a las salidas físicas.
+- **Screen take**: acción de llevar una fuente a un destino visible.
+- **Tally/status**: indicación de qué fuente está al aire o activa.
+- **Fallback source**: fuente que queda visible si el VJ se desconecta o la entrada pierde lock.
+
+El caso “no me pasan todas las pantallas” puede significar varias cosas distintas:
+
+1. El VJ sólo fue asignado a una entrada o a un destino, no a todo el grupo de pantallas.
+2. El sistema recibió una señal 16:9, pero el evento trabaja con un canvas panorámico o varias superficies independientes.
+3. La señal sí llega a todas las salidas, pero cada destino aplica un crop, escala o preset diferente.
+4. El sistema de house captura a una resolución y entrega otra, generando doble escalado.
+5. La entrada está en `Preview` o `Aux`, mientras el `Program` sigue mostrando las visuales del FIJO.
+6. Una pantalla o procesador tiene otra frecuencia, resolución, ruta o condición de lock.
+
+Por eso no se debe diagnosticar automáticamente como “problema de escala”. Primero hay que separar **captura**, **routing**, **canvas**, **formato de entrada**, **formato de salida** y **procesamiento final**.
+
+### 2.7 LED, proyectores y procesadores
 
 - **Native output**: resolución y frecuencia propias del destino.
 - **Processor canvas**: área lógica que el procesador espera recibir.
@@ -226,7 +283,7 @@ La misma imagen puede verse distinta en cada etapa. Por eso MOSAIK debe diferenc
 - **EDID passthrough/emulation**: forma en que el procesador presenta capacidades a la GPU.
 - **Black floor**: mínimo físico o electrónico de luz que la pantalla puede producir.
 
-### 2.7 Red, control, audio y automatización
+### 2.8 Red, control, audio y automatización
 
 - **OSC routing**: envío y recepción de mensajes entre aplicaciones.
 - **MIDI mapping**: asociación de controles físicos o virtuales a parámetros.
@@ -244,7 +301,7 @@ La misma imagen puede verse distinta en cada etapa. Por eso MOSAIK debe diferenc
 - **Envelope/RMS/peak**: medidas de amplitud para modular parámetros.
 - **Trigger quantization**: alineación de disparos con la rejilla musical.
 
-### 2.8 Rendimiento, estabilidad y recuperación
+### 2.9 Rendimiento, estabilidad y recuperación
 
 - **CPU load**: trabajo de decodificación, lógica y preparación de frames.
 - **GPU load**: trabajo de composición, efectos, escalado y salida.
@@ -264,7 +321,7 @@ La misma imagen puede verse distinta en cada etapa. Por eso MOSAIK debe diferenc
 - **Frame-time capture**: registro de tiempos por frame para distinguir carga promedio de irregularidad.
 - **Stress test**: prueba controlada antes del show.
 
-### 2.9 Operación, documentación y seguridad
+### 2.10 Operación, documentación y seguridad
 
 - **Preflight**: revisión previa de contenido, equipo, señal y rutas.
 - **Show file**: archivo de composición y configuración.
@@ -298,6 +355,9 @@ La misma imagen puede verse distinta en cada etapa. Por eso MOSAIK debe diferenc
 | Halo en transparencia | Alpha premultiplicado/straight, blend mode | Diagnosticar alpha y ofrecer conversión | Un plugin no puede reconstruir alpha inexistente |
 | Bordes borrosos o dentados | Scaling, filtros, resolución, aliasing | Recomendar resolución nativa y filtro apropiado | El procesador puede volver a escalar después |
 | Imagen negra o sin señal | EDID, HDCP, handshake, cable, input mode | Capturar estado de salida y probar patrón seguro | El software no sustituye comprobar cableado y hardware |
+| Sólo aparece en algunas pantallas | Routing, destination, Aux/M/E, output group | Confirmar entrada, programa, destino y preset activo antes de tocar escala | El FFGL no puede activar salidas que el house no le haya asignado |
+| Se ve en todas, pero encuadrado distinto | Canvas, crop, scaler, double scaling | Comparar resolución de captura, canvas del VJ y formato de cada destino | La corrección depende del mapa físico configurado por producción |
+| Cambio al entrar/salir un VJ | Handoff, source lock, frame sync, fallback | Registrar qué fuente queda en Program y qué preset se activa | No debe asumirse que el VJ controla la conmutación final |
 | Un panel no coincide con otro | Calibración, gamma, módulos, receiving cards | Registrar diferencias por zona y perfil | Requiere medición o acceso técnico al panel |
 | Resolume se ralentiza | Decode, VRAM, GPU, disco, efectos, thermal | Medir tiempos y clasificar cuello de botella | El diagnóstico no aumenta recursos físicos |
 
@@ -455,4 +515,3 @@ El perfil debe conservar tres fuentes distintas:
 - [ArgyllCMS](https://www.argyllcms.com/doc/ArgyllDoc.html)
 - [PresentMon](https://github.com/GameTechDev/PresentMon)
 - [Open Lighting Architecture](https://docs.openlighting.org/ola/doc/latest/index.html)
-
