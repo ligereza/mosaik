@@ -10,9 +10,12 @@ from pathlib import Path
 
 from mosaik.diagnose import diagnose_file, text_report
 from mosaik.dxv import convert_to_dxv
+from mosaik.html_report import write_html_report
 from mosaik.instar import run_instar, text_report as instar_text_report, write_report
+from mosaik.manifest import write_manifest
 from mosaik.media import MosaikError
 from mosaik.resolume import run_resolume_audit, text_report as resolume_text_report, write_report as write_resolume_report
+from mosaik.show_profile import load_show_profile, target_values
 
 
 def _resolution(value: str) -> tuple[int, int]:
@@ -42,6 +45,10 @@ def build_parser() -> argparse.ArgumentParser:
     instar.add_argument("--gpu-batch-size", type=int, default=16, help="Cantidad de frames por lote en el decoder GPU.")
     instar.add_argument("--max-samples", type=int, default=300, help="Máximo de muestras de luminancia en modo --deep.")
     instar.add_argument("--sidecars-dir", help="Carpeta opcional para escribir un .mosaik.json por visual.")
+    instar.add_argument("--show-profile", help="Perfil JSON de destino para comparar compatibilidad.")
+    instar.add_argument("--cache-db", help="Base SQLite local para reutilizar análisis sin repetirlos.")
+    instar.add_argument("--html-report", help="Ruta opcional para generar un reporte HTML navegable.")
+    instar.add_argument("--manifest", help="Ruta opcional para generar un manifiesto portable de assets.")
     instar.add_argument("--ffmpeg", default="ffmpeg", help="Ruta o nombre de FFmpeg.")
     instar.add_argument("--ffprobe", default="ffprobe", help="Ruta o nombre de FFprobe.")
 
@@ -85,28 +92,50 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     try:
         if args.command == "instar":
+            show_profile = load_show_profile(args.show_profile) if args.show_profile else None
+            profile_target = target_values(show_profile) if show_profile else {}
             width = height = None
             if args.target_resolution:
                 width, height = args.target_resolution
+            else:
+                width = profile_target.get("width")
+                height = profile_target.get("height")
+            target_fps = args.target_fps if args.target_fps is not None else profile_target.get("fps")
+            target_codec = args.target_codec if args.target_codec is not None else profile_target.get("codec")
             report = run_instar(
                 args.media_root,
                 ffmpeg=args.ffmpeg,
                 ffprobe=args.ffprobe,
-                target_fps=args.target_fps,
+                target_fps=target_fps,
                 target_width=width,
                 target_height=height,
                 max_samples=args.max_samples,
-                target_codec=args.target_codec,
+                target_codec=target_codec,
                 deep=args.deep,
                 sidecars_dir=args.sidecars_dir,
                 gpu=args.gpu,
                 gpu_max_frames=args.gpu_max_frames,
                 gpu_batch_size=args.gpu_batch_size,
+                show_profile=show_profile,
+                cache_db=args.cache_db,
             )
+            if show_profile:
+                report["show_profile"] = {
+                    "profile_id": show_profile.get("profile_id"),
+                    "name": show_profile.get("name"),
+                    "path": show_profile.get("path"),
+                    "target": show_profile.get("target") or show_profile.get("output") or show_profile,
+                }
             print(instar_text_report(report))
             if args.report:
                 report_path = write_report(report, args.report)
                 print(f"\nInforme JSON: {report_path}")
+            if args.html_report:
+                html_path = write_html_report(report, args.html_report)
+                print(f"Reporte HTML: {html_path}")
+            if args.manifest:
+                manifest_path = write_manifest(report, args.manifest)
+                print(f"Manifiesto: {manifest_path}")
             return 1 if report["overall_status"] == "FAIL" else 0
 
         if args.command == "diagnose":

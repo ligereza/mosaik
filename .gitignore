@@ -4,6 +4,7 @@ __pycache__/
 *.py[cod]
 *.snapshot.json
 *.log
+*.sqlite3
 
 # Cachés y archivos temporales de aplicaciones.
 .cache/

@@ -258,6 +258,8 @@ def sidecar_from_report(report: dict[str, Any]) -> dict[str, Any]:
         "checks": report.get("checks", []),
         "recommendations": report.get("recommendations", []),
         "analysis": report.get("analysis", {}),
+        "clip_profile": report.get("clip_profile"),
+        "show_profile": report.get("show_profile"),
     }
 
 

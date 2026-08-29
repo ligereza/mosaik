@@ -42,6 +42,11 @@ silencioso a CPU. Para analizar media
 se necesitan `ffmpeg` y `ffprobe` disponibles en `PATH`; para la integración
 directa con Resolume se necesita Arena/Avenue 7.26 o posterior y su MCP local.
 
+INSTAR también puede construir perfiles reutilizables, comparar la media con un
+perfil de show y guardar una caché SQLite. Las dependencias Python de catálogo
+(`PyAV`, `NumPy`, `Pillow`, `PySceneDetect`, OpenCV y `jsonschema`) están fijadas
+en `requirements.txt`; el backend NVIDIA sigue separado en `requirements-gpu.txt`.
+
 Los scripts solo leen el estado del equipo y muestran advertencias; no cambian el plan de
 energía, BIOS, controladores, archivos ni configuraciones de Resolume.
 
@@ -59,6 +64,25 @@ schemas/           Contratos compartidos para INSTAR, NAYADE e IMAGO.
 tools/             Scripts locales y núcleo de herramientas MOSAIK.
 artifacts/         Salidas locales; ignoradas por Git.
 ```
+
+## Catálogo INSTAR
+
+Para preparar material contra un objetivo conocido:
+
+```powershell
+python .\tools\mosaik_cli.py instar "D:\VJ\Media" `
+  --show-profile ".\docs\templates\show-profile.json" `
+  --cache-db ".\artifacts\instar.sqlite3" `
+  --report ".\artifacts\instar.json" `
+  --html-report ".\artifacts\instar.html" `
+  --manifest ".\artifacts\instar-manifest.json"
+```
+
+El resultado incluye un `ClipProfile` por visual con metadata, compatibilidad,
+energía visual, periodicidad, loopabilidad y eventos detectados. La caché evita
+repetir el trabajo mientras el archivo y los parámetros de análisis no cambien.
+El manifiesto permite consumir el catálogo desde otras herramientas sin volver a
+leer el reporte completo. El detalle operativo está en `docs/runbooks/instar-catalogo.md`.
 
 ## Principios
 
