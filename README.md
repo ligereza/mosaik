@@ -32,6 +32,7 @@ docs/
   runbooks/        Procedimientos operativos paso a paso.
   checklists/      Listas breves para usar antes o durante un show.
   templates/       Plantillas para registrar nuevos casos.
+schemas/           Contratos compartidos para INSTAR, NAYADE e IMAGO.
 tools/             Scripts locales y núcleo de herramientas MOSAIK.
 artifacts/         Salidas locales; ignoradas por Git.
 ```
