@@ -31,9 +31,9 @@ Las etapas de uso quedan como una taxonomía independiente:
 
 | Etapa | Uso principal |
 |---|---|
-| `Naiad` | Pre-show: preparación de media y del sistema |
-| `Ecdysis` | Soundcheck: prueba estable, handoff y routing con el house |
-| `Imago` | Show: operación real en vivo dentro de Resolume |
+| `INSTAR` | PRE SHOW: preparación de media y del sistema |
+| `NAYADE` | SOUNDCHEK: prueba estable, handoff y routing con el house |
+| `IMAGO` | SHOW: operación real en vivo dentro de Resolume |
 
 Estas etiquetas no obligan a que cada etapa sea un plugin. Algunas serán
 herramientas externas, otras perfiles y otras entradas FFGL. Los reportes y
@@ -68,7 +68,7 @@ Primera familia prevista:
 - `Output Safe`: limitación o protección de flashes y valores extremos cuando
   sea técnicamente viable.
 
-El primer FFGL será `MOSAIK Imago — Signal Guard`. Tendrá identidad por defecto
+El primer FFGL será `MOSAIK IMAGO — Signal Guard`. Tendrá identidad por defecto
 y bypass inmediato. Las correcciones se limitarán a un perfil conocido o a
 parámetros manuales explícitos.
 
@@ -104,13 +104,13 @@ Incluye:
 ## Flujo de un show
 
 ```text
-Naiad
+INSTAR
   media + sistema + composición
         ↓
-Ecdysis
-  soundcheck + FIJO ↔ VJ ↔ CONSOLA ↔ destinos
+NAYADE
+  SOUNDCHEK + FIJO ↔ VJ ↔ CONSOLA ↔ destinos
         ↓
-Imago
+IMAGO
   Resolume + FFGL + perfil congelado
 ```
 
@@ -209,12 +209,12 @@ mantiene el modo seguro.
 La marca visible debe ser humana y técnica al mismo tiempo:
 
 ```text
-MOSAIK Imago — Signal Guard
+MOSAIK IMAGO — Signal Guard
 Corrige niveles, negros y gamma durante el show.
 Host: Resolume / FFGL
 Modo: seguro, reversible, sin conexión al procesador
 
-MOSAIK Ecdysis — Handoff Check
+MOSAIK NAYADE — Handoff Check
 Verifica captura, routing, escala y destinos antes de salir.
 Host: Windows / XIO / house video
 Modo: sólo lectura
@@ -233,12 +233,12 @@ La web puede ordenar por etapa, pero cada ficha debe mostrar también:
 - versión de contrato;
 - licencia.
 
-Así una persona no necesita entender `Imago` para encontrar “corregir negros
+Así una persona no necesita entender `IMAGO` para encontrar “corregir negros
 lavados durante el show”.
 
 ## Primera implementación
 
-### Paso 1: `MOSAIK Naiad — Preflight`
+### Paso 1: `MOSAIK INSTAR — Preflight`
 
 Herramienta externa de pre-show:
 
@@ -248,7 +248,7 @@ Herramienta externa de pre-show:
 - genera el perfil inicial de señal;
 - prepara los fixtures y el reporte de soundcheck.
 
-### Paso 2: `MOSAIK Ecdysis — Handoff Check`
+### Paso 2: `MOSAIK NAYADE — Handoff Check`
 
 Herramienta externa de soundcheck, sólo lectura:
 
@@ -259,7 +259,7 @@ Herramienta externa de soundcheck, sólo lectura:
 - genera `Signal Profile` y reporte;
 - verifica si el problema es routing, canvas, escala, formato o color.
 
-### Paso 3: `MOSAIK Imago — Signal Guard`
+### Paso 3: `MOSAIK IMAGO — Signal Guard`
 
 Plugin FFGL de Resolume:
 
@@ -271,7 +271,7 @@ Plugin FFGL de Resolume:
 - comienza con rango/negros/gamma, dejando debanding y deflicker para módulos
   posteriores del mismo núcleo.
 
-Los resultados estadísticos quedan como salida de `Naiad`, `Ecdysis` e `Imago`:
+Los resultados estadísticos quedan como salida de `INSTAR`, `NAYADE` e `IMAGO`:
 
 - comparan soundcheck y show;
 - encuentran cambios de FPS, lock, rutas y frame time;
