@@ -20,6 +20,18 @@ python .\tools\mosaik_cli.py diagnose "D:\VJ\Media\clip.mp4" --report ".\artifac
 python .\tools\mosaik_cli.py dxv "D:\VJ\Media\clip.mp4" --fps 60
 ```
 
+## Dependencias
+
+Instala las dependencias Python con:
+
+```powershell
+python -m pip install -r requirements.txt
+```
+
+El runtime de MOSAIK usa la biblioteca estándar de Python. Para analizar media
+se necesitan `ffmpeg` y `ffprobe` disponibles en `PATH`; para la integración
+directa con Resolume se necesita Arena/Avenue 7.26 o posterior y su MCP local.
+
 Los scripts solo leen el estado del equipo y muestran advertencias; no cambian el plan de
 energía, BIOS, controladores, archivos ni configuraciones de Resolume.
 

@@ -1,0 +1,10 @@
+# MOSAIK INSTAR
+#
+# El runtime actual usa exclusivamente la biblioteca estándar de Python.
+# Esta dependencia se utiliza para ejecutar la suite de pruebas.
+pytest==9.1.1
+
+# Dependencias externas, no instalables con pip:
+# - FFmpeg y FFprobe accesibles desde PATH.
+# - Resolume Arena/Avenue 7.26+ para la integración MCP.
+# - El MCP de Resolume viene con la instalación de Resolume.
