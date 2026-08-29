@@ -272,6 +272,38 @@ def create_session(
     return session
 
 
+def get_next_step(session_path: str | Path) -> dict[str, Any] | None:
+    """Devuelve el primer paso aún no resuelto de una sesión NAYADE."""
+
+    _, session = _load_json(session_path)
+    if session.get("session_type") != SESSION_TYPE:
+        raise MosaikError("El archivo no es una sesión NAYADE válida.")
+    return next(
+        (step for step in session.get("planned_steps") or [] if step.get("result") == "planned"),
+        None,
+    )
+
+
+def _step_matches(
+    step: dict[str, Any],
+    *,
+    operation: str,
+    scope: str,
+    targets: list[str],
+    parameters: dict[str, Any],
+) -> bool:
+    if step.get("operation") != operation or step.get("scope") != scope:
+        return False
+    step_targets = set(step.get("targets") or [])
+    if targets and not set(targets).issubset(step_targets):
+        return False
+    step_parameters = step.get("parameters") or {}
+    task_id = parameters.get("task_id")
+    if task_id is not None and step_parameters.get("task_id") != task_id:
+        return False
+    return True
+
+
 def record_event(
     session_path: str | Path,
     *,
@@ -281,6 +313,7 @@ def record_event(
     targets: list[str] | None = None,
     parameters: dict[str, Any] | None = None,
     notes: str = "",
+    step_id: str | None = None,
 ) -> dict[str, Any]:
     """Agrega una observación al archivo de sesión elegido por el VJ."""
 
@@ -299,6 +332,33 @@ def record_event(
         "result": result,
         "notes": notes,
     }
+    chosen_step = None
+    if step_id:
+        chosen_step = next(
+            (step for step in session.get("planned_steps") or [] if step.get("step_id") == step_id),
+            None,
+        )
+        if chosen_step is None:
+            raise MosaikError(f"No existe el paso planificado: {step_id}")
+    else:
+        chosen_step = next(
+            (
+                step
+                for step in session.get("planned_steps") or []
+                if step.get("result") == "planned"
+                and _step_matches(
+                    step,
+                    operation=operation,
+                    scope=scope,
+                    targets=targets or [],
+                    parameters=parameters or {},
+                )
+            ),
+            None,
+        )
+    if chosen_step is not None:
+        chosen_step["result"] = result
+        event["planned_step_id"] = chosen_step.get("step_id")
     session.setdefault("events", []).append(event)
     session["updated_at"] = _now()
     path.write_text(json.dumps(session, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -323,6 +383,7 @@ def text_report(session: dict[str, Any], *, event: dict[str, Any] | None = None)
         f"Catálogo: {(session.get('catalog') or {}).get('assets', 0) if session.get('catalog') else 'no cargado'}",
         f"Input groups: {len(targets.get('input_groups') or [])}",
         f"Pasos planificados: {len(session.get('planned_steps') or [])}",
+        f"Pasos pendientes: {sum(step.get('result') == 'planned' for step in session.get('planned_steps') or [])}",
         f"Eventos registrados: {len(session.get('events') or [])}",
     ]
     if event:
@@ -331,4 +392,6 @@ def text_report(session: dict[str, Any], *, event: dict[str, Any] | None = None)
             f"Evento: {event['event_id']} — {event['operation']} — {event['result']}",
             f"Objetivos: {', '.join(event['targets']) or 'todos'}",
         ])
+        if event.get("planned_step_id"):
+            lines.append(f"Paso actualizado: {event['planned_step_id']}")
     return "\n".join(lines)

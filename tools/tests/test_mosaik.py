@@ -7,7 +7,7 @@ from unittest.mock import patch
 from tools.mosaik.adapt import build_adaptation_plan, build_filter_graph, render_task
 from tools.mosaik.instar import discover_media_files, run_instar
 from tools.mosaik.media import format_fps, has_alpha, parse_fraction
-from tools.mosaik.nayade import build_experiment_matrix, create_session, record_event
+from tools.mosaik.nayade import build_experiment_matrix, create_session, get_next_step, record_event
 from tools.mosaik.preflight import preflight_file, sidecar_from_report
 from tools.mosaik.contracts import build_clip_profile, derive_behavior_profile, suggest_semantic_cues
 from tools.mosaik.resolume import (
@@ -139,6 +139,34 @@ class AdaptationTests(unittest.TestCase):
         step = next(item for item in steps if item["operation"] == "instar_adaptation")
         self.assertEqual(step["targets"], ["group-1"])
         self.assertEqual(step["parameters"]["dxv"], "preview_DXV.mov")
+
+    def test_nayade_next_and_record_advance_the_planned_step(self):
+        with TemporaryDirectory() as directory:
+            session_path = Path(directory) / "session.json"
+            session = {
+                "session_type": "NayadeSoundcheckSession",
+                "planned_steps": [{
+                    "step_id": "step-001",
+                    "operation": "baseline",
+                    "scope": "input_group",
+                    "targets": ["group-1"],
+                    "parameters": {},
+                    "expected_checks": ["geometry"],
+                    "result": "planned",
+                }],
+                "events": [],
+                "targets": {"input_groups": ["group-1"]},
+            }
+            session_path.write_text(json.dumps(session), encoding="utf-8")
+            self.assertEqual(get_next_step(session_path)["step_id"], "step-001")
+            event = record_event(
+                session_path,
+                operation="baseline",
+                result="approved",
+                targets=["group-1"],
+            )
+            self.assertEqual(event["planned_step_id"], "step-001")
+            self.assertIsNone(get_next_step(session_path))
 
 
 class MediaHelpersTests(unittest.TestCase):

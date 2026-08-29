@@ -50,6 +50,25 @@ python .\tools\mosaik_cli.py nayade-session record `
 Los resultados válidos son `approved`, `rejected`, `review`, `running` y
 `planned`. Se pueden registrar varios objetivos repitiendo `--target`.
 
+NAYADE vincula automáticamente el registro con el primer paso pendiente que
+coincide. Para evitar cualquier ambigüedad se puede indicar el ID exacto:
+
+```powershell
+python .\tools\mosaik_cli.py nayade-session record `
+  "Z:\MOSAIK\runs\plox-nayade-soundcheck.json" `
+  --step-id step-009 `
+  --operation instar_adaptation `
+  --result approved `
+  --notes "El marquee se lee sin costura."
+```
+
+Para continuar sin buscar manualmente en el JSON:
+
+```powershell
+python .\tools\mosaik_cli.py nayade-session next `
+  "Z:\MOSAIK\runs\plox-nayade-soundcheck.json"
+```
+
 La sesión todavía registra decisiones, pero no envía órdenes a Resolume. Esto
 deja abierta una integración posterior con OSC, MIDI o Chataigne sin mezclar
 la capa de control con la evidencia del soundcheck.

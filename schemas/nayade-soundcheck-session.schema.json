@@ -74,7 +74,8 @@
         "targets": { "type": "array", "items": { "type": "string" } },
         "parameters": { "type": "object" },
         "result": { "enum": ["planned", "running", "approved", "rejected", "review"] },
-        "notes": { "type": "string" }
+        "notes": { "type": "string" },
+        "planned_step_id": { "type": ["string", "null"] }
       },
       "additionalProperties": false
     }
