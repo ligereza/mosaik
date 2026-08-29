@@ -248,6 +248,56 @@ Herramienta externa de pre-show:
 - genera el perfil inicial de señal;
 - prepara los fixtures y el reporte de soundcheck.
 
+Funciones nuevas de conocimiento y preparación:
+
+- **VENUE**: identifica la sede física, separándola de la marca o cadena;
+  consulta montajes anteriores y muestra sus niveles de confianza;
+- **BASE DE DATOS PUBLICA**: incorpora reportes colaborativos de VJ,
+  iluminación y sonido, conservando evidencia, fechas, autores, conflictos y
+  versiones históricas;
+- ingiere paquetes con Advanced Output XML, composiciones `.avc`, showfiles,
+  exports de patch, capturas, fotos y configuraciones técnicas autorizadas;
+- extrae un perfil sanitizado con canvas, slices, coordenadas, warping,
+  resoluciones, versiones y dispositivos, sin publicar automáticamente rutas
+  privadas ni archivos originales;
+- compara la huella técnica y visual de un aporte con venues y montajes
+  existentes, generando candidatos en vez de fusionar datos sin revisión;
+- entrega a `NAYADE` una hipótesis de montaje para que el equipo la confirme
+  durante el SOUNDCHEK.
+
+La base no debe modelar sólo “qué tiene un venue”. Debe relacionar:
+
+```text
+marca → sede física → evento → montaje observado → evidencias → artefactos
+```
+
+La fecha del evento, la fecha de observación y la fecha del archivo se guardan
+por separado. Los nombres de archivos y los identificadores internos de
+Resolume son pistas de asociación, no pruebas suficientes de ubicación.
+
+#### Primera función técnica a atacar
+
+El primer módulo de `INSTAR` será un **Venue Profile Importer** local. Recibirá
+una carpeta o un ZIP de trabajo y producirá un perfil técnico reutilizable:
+
+```text
+aporte.zip
+      ↓
+lectura de XML / AVC / evidencias
+      ↓
+sanitización de rutas e identificadores privados
+      ↓
+venue-profile.json
+      ↓
+revisión y asociación con la base pública
+```
+
+El MVP debe leer primero los Advanced Output XML porque ya contienen la
+información más accionable para VJ: resolución de composición, pantallas,
+slices, rectángulos de entrada y salida, warping, gamma y dispositivo de
+salida. La lectura de `.avc`, showfiles de luces y archivos de sonido se
+incorporará como extractores adicionales sobre el mismo contrato de artefactos.
+
 ### Paso 2: `NAYADE`
 
 Herramienta externa de soundcheck, sólo lectura:

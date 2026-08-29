@@ -54,3 +54,4 @@ artifacts/         Salidas locales; ignoradas por Git.
 4. Incorporar una plantilla de incidente para flicker, tearing, frames dropped y pérdida de rutas.
 5. Registrar resultados de pruebas reales en `docs/cases/` sin copiar medios al repositorio.
 6. Diseñar el perfil de señal de MOSAIK para diagnóstico seguro de GPU, HDMI y procesadores LED.
+7. Crear en `INSTAR` el importador de `VENUE` y `BASE DE DATOS PUBLICA`, comenzando por Advanced Output XML.
