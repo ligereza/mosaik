@@ -37,7 +37,33 @@ convierten ni corrigen archivos.
 
 Para un análisis visual con NVIDIA se puede añadir `--gpu`. La salida incluye un
 `ClipProfile` con movimiento, luminancia, energía, periodicidad, candidatos de
-flash, picos visuales y una estimación de continuidad del loop.
+flash, picos visuales y una estimación de continuidad del loop. El análisis GPU
+también calcula similitud de bordes horizontal y vertical para priorizar
+visuales que puedan repetirse como `pattern` o desplazarse como `marquee`.
+
+Cuando existe una serie temporal suficiente, el perfil también incluye
+`events.cue_suggestions`. Son candidatos semánticos para operar el clip en
+vivo:
+
+- `change` + `clean`: momento de baja actividad para cambiar de visual con
+  menos riesgo de corte brusco.
+- `change` + `impact`: cambio de alta actividad o contraste, útil para entrar en
+  un drop o acento visual.
+- `strobe_window`: rango donde se concentran candidatos de flash; siempre
+  requiere revisión humana y nunca dispara un estrobo automáticamente.
+- `loop`: rango `in_position_s` / `out_position_s` con similitud temporal; es
+  una sugerencia de prueba, no una garantía de loop perfecto.
+
+Las posiciones se expresan en segundos y milisegundos para facilitar una
+futura asociación con los seis slots de CUE de Resolume. INSTAR no escribe
+estos puntos en el `.avc`, no cambia el transporte y no activa efectos.
+
+El perfil `visual.behavior` es el contrato que consume NAYADE. Separa señales
+espaciales medidas en GPU de inferencias débiles basadas en nombre, movimiento
+y continuidad. Incluye `pattern.horizontal`, `pattern.vertical`,
+`marquee.horizontal`, `marquee.vertical` y la seguridad sugerida para flip o
+rotación. Un score `inferred` ordena el soundcheck, pero siempre exige preview;
+no es una autorización automática.
 
 ```powershell
 python .\tools\mosaik_cli.py instar "D:\VJ\Media" `

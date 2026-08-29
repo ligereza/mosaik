@@ -8,14 +8,29 @@ import shlex
 import sys
 from pathlib import Path
 
+from mosaik.adapt import run_adaptation, text_report as adapt_text_report, write_adaptation_plan
 from mosaik.diagnose import diagnose_file, text_report
 from mosaik.dxv import convert_to_dxv
 from mosaik.html_report import write_html_report
 from mosaik.instar import run_instar, text_report as instar_text_report, write_report
 from mosaik.manifest import write_manifest
 from mosaik.media import MosaikError
-from mosaik.resolume import run_resolume_audit, text_report as resolume_text_report, write_report as write_resolume_report
+from mosaik.nayade import create_session, record_event, text_report as nayade_text_report
+from mosaik.resolume import (
+    advanced_output_text_report,
+    build_mapping_plan,
+    cue_text_report,
+    extract_advanced_output_map,
+    extract_cue_map,
+    load_catalog_assets,
+    run_resolume_audit,
+    text_report as resolume_text_report,
+    write_advanced_output_report,
+    write_cue_map,
+    write_report as write_resolume_report,
+)
 from mosaik.show_profile import load_show_profile, target_values
+from mosaik.testcard import render_testcard, text_report as testcard_text_report, write_testcard_report
 
 
 def _resolution(value: str) -> tuple[int, int]:
@@ -84,6 +99,85 @@ def build_parser() -> argparse.ArgumentParser:
     resolume.add_argument("--skip-media", action="store_true", help="Lee la composición sin ejecutar FFprobe sobre los medios.")
     resolume.add_argument("--ffmpeg", default="ffmpeg", help="Ruta o nombre de FFmpeg.")
     resolume.add_argument("--ffprobe", default="ffprobe", help="Ruta o nombre de FFprobe.")
+
+    cues = commands.add_parser(
+        "resolume-cues",
+        help="Extrae los CUES y el transporte de una composición .avc en modo lectura.",
+    )
+    cues.add_argument("composition", help="Archivo .avc de Resolume.")
+    cues.add_argument("--report", help="Ruta opcional para guardar el mapa JSON de cues.")
+
+    mapping = commands.add_parser(
+        "instar-map",
+        aliases=["resolume-output"],
+        help="Lee Advanced Output y cruza sus slices con un catálogo INSTAR, sin modificar Resolume.",
+    )
+    mapping.add_argument("advanced_output", help="Preset .xml de Resolume Advanced Output.")
+    mapping.add_argument("--catalog", help="Informe INSTAR o AssetManifest JSON con los perfiles de visuales.")
+    mapping.add_argument("--report", help="Ruta opcional para guardar el mapa o plan JSON.")
+    mapping.add_argument("--max-candidates", type=int, default=6, help="Máximo de candidatos por visual y slice.")
+
+    adapt = commands.add_parser(
+        "instar-adapt",
+        help="Genera previews target-specific desde un plan INSTAR sin modificar las fuentes.",
+    )
+    adapt.add_argument("mapping_plan", help="Plan JSON generado por instar-map.")
+    adapt.add_argument("-o", "--output-dir", required=True, help="Carpeta donde guardar los previews.")
+    adapt.add_argument(
+        "--strategy",
+        choices=["auto", "crop", "fit_background", "pattern", "marquee"],
+        default="auto",
+        help="Estrategia a renderizar (default: auto).",
+    )
+    adapt.add_argument("--max-variants", type=int, default=1, help="Candidatos por estrategia y grupo.")
+    adapt.add_argument("--duration", type=float, default=6.0, help="Duración de cada preview en segundos.")
+    adapt.add_argument("--speed-pixels", type=float, default=120.0, help="Velocidad marquee en píxeles/segundo.")
+    adapt.add_argument("--encoder", choices=["auto", "h264_nvenc", "libx264"], default="auto")
+    adapt.add_argument(
+        "--dxv-output-dir",
+        help="Exporta cada preview a un DXV candidato en esta carpeta, sin sobrescribir archivos existentes.",
+    )
+    adapt.add_argument("--no-mirror-alternate", action="store_true", help="No espejar copias alternas en pattern/marquee.")
+    adapt.add_argument("--report", help="Ruta opcional para guardar el plan de adaptación JSON.")
+    adapt.add_argument("--ffmpeg", default="ffmpeg", help="Ruta o nombre de FFmpeg.")
+    adapt.add_argument("--ffprobe", default="ffprobe", help="Ruta o nombre de FFprobe.")
+
+    testcard = commands.add_parser(
+        "instar-testcard",
+        aliases=["nayade-testcard"],
+        help="Genera una tarjeta de prueba geométrica desde Advanced Output, sin modificar Resolume.",
+    )
+    testcard.add_argument("advanced_output", help="Preset .xml de Resolume Advanced Output.")
+    testcard.add_argument("-o", "--output", required=True, help="Salida .png, .mp4, .mov o .mkv.")
+    testcard.add_argument("--duration", type=float, default=12.0, help="Duración del video en segundos (default: 12).")
+    testcard.add_argument("--fps", type=float, default=30.0, help="FPS del video (default: 30).")
+    testcard.add_argument("--report", help="Ruta opcional para guardar la especificación JSON.")
+    testcard.add_argument("--ffmpeg", default="ffmpeg", help="Ruta o nombre de FFmpeg para salidas de video.")
+
+    session = commands.add_parser(
+        "nayade-session",
+        help="Crea y registra una sesión reproducible de pruebas de soundcheck.",
+    )
+    session_commands = session.add_subparsers(dest="session_command", required=True)
+    session_init = session_commands.add_parser("init", help="Inicia la matriz de experimentación desde un informe INSTAR/NAYADE.")
+    session_init.add_argument("source", help="Informe JSON de mapping o tarjeta de prueba.")
+    session_init.add_argument("-o", "--output", required=True, help="Archivo JSON de sesión a crear.")
+    session_init.add_argument("--name", help="Nombre legible de la sesión.")
+    session_init.add_argument("--seed", type=int, help="Semilla reproducible para variaciones futuras.")
+    session_init.add_argument("--catalog", help="Informe INSTAR o AssetManifest para ordenar candidatos de pattern/marquee.")
+    session_init.add_argument(
+        "--adaptation-plan",
+        help="Plan INSTAR de previews/DXV target-specific que se incorporará a la matriz de soundcheck.",
+    )
+
+    session_record = session_commands.add_parser("record", help="Registra el resultado de una prueba del soundcheck.")
+    session_record.add_argument("session", help="Archivo JSON de sesión NAYADE.")
+    session_record.add_argument("--operation", required=True, help="Operación probada, por ejemplo flip_horizontal o marquee.")
+    session_record.add_argument("--result", required=True, choices=["planned", "running", "approved", "rejected", "review"])
+    session_record.add_argument("--scope", default="input_group", help="Alcance: global, composition, input_group, slice o clip.")
+    session_record.add_argument("--target", action="append", default=[], help="Objetivo; repetir la opción para varios input groups.")
+    session_record.add_argument("--parameters", help="Objeto JSON con parámetros de la variación.")
+    session_record.add_argument("--notes", default="", help="Observación del VJ o del operador.")
     return parser
 
 
@@ -207,6 +301,102 @@ def main(argv: list[str] | None = None) -> int:
                 report_path = write_resolume_report(report, args.report)
                 print(f"\nInforme JSON: {report_path}")
             return 1 if report["overall_status"] == "FAIL" else 0
+
+        if args.command == "resolume-cues":
+            cue_map = extract_cue_map(args.composition)
+            print(cue_text_report(cue_map))
+            if args.report:
+                report_path = write_cue_map(cue_map, args.report)
+                print(f"\nMapa JSON: {report_path}")
+            return 0
+
+        if args.command in {"instar-map", "resolume-output"}:
+            output_map = extract_advanced_output_map(args.advanced_output)
+            report = output_map
+            if args.catalog:
+                assets = load_catalog_assets(args.catalog)
+                report = build_mapping_plan(
+                    output_map,
+                    assets,
+                    max_candidates=max(1, args.max_candidates),
+                )
+            print(advanced_output_text_report(report))
+            if args.report:
+                report_path = write_advanced_output_report(report, args.report)
+                print(f"\nInforme JSON: {report_path}")
+            status = report.get("status") or (report.get("validation") or {}).get("status")
+            return 1 if status == "FAIL" else 0
+
+        if args.command == "instar-adapt":
+            plan = run_adaptation(
+                args.mapping_plan,
+                args.output_dir,
+                strategy=args.strategy,
+                max_variants=args.max_variants,
+                duration_seconds=args.duration,
+                speed_pixels=args.speed_pixels,
+                ffmpeg=args.ffmpeg,
+                ffprobe=args.ffprobe,
+                encoder=args.encoder,
+                mirror_alternate=not args.no_mirror_alternate,
+                dxv_output_dir=args.dxv_output_dir,
+            )
+            print(adapt_text_report(plan))
+            report_path = args.report or str(Path(args.output_dir).expanduser().resolve() / "instar-adaptation-plan.json")
+            saved = write_adaptation_plan(plan, report_path)
+            print(f"\nPlan de adaptación: {saved}")
+            return 0
+
+        if args.command in {"instar-testcard", "nayade-testcard"}:
+            output_map = extract_advanced_output_map(args.advanced_output)
+            report = render_testcard(
+                output_map,
+                args.output,
+                duration_seconds=args.duration,
+                fps=args.fps,
+                ffmpeg=args.ffmpeg,
+            )
+            print(testcard_text_report(report))
+            if args.report:
+                report_path = write_testcard_report(report, args.report)
+                print(f"\nInforme JSON: {report_path}")
+            return 0
+
+        if args.command == "nayade-session":
+            if args.session_command == "init":
+                session_document = create_session(
+                    args.source,
+                    args.output,
+                    name=args.name,
+                    seed=args.seed,
+                    catalog_path=args.catalog,
+                    adaptation_plan_path=args.adaptation_plan,
+                )
+                print(nayade_text_report(session_document))
+                print(f"\nSesión JSON: {Path(args.output).expanduser().resolve()}")
+                return 0
+            if args.session_command == "record":
+                parameters = {}
+                if args.parameters:
+                    try:
+                        parameters = json.loads(args.parameters)
+                    except json.JSONDecodeError as exc:
+                        raise MosaikError("--parameters debe ser un objeto JSON válido.") from exc
+                    if not isinstance(parameters, dict):
+                        raise MosaikError("--parameters debe contener un objeto JSON.")
+                event = record_event(
+                    args.session,
+                    operation=args.operation,
+                    result=args.result,
+                    scope=args.scope,
+                    targets=args.target,
+                    parameters=parameters,
+                    notes=args.notes,
+                )
+                session_path = Path(args.session).expanduser().resolve()
+                session_document = json.loads(session_path.read_text(encoding="utf-8"))
+                print(nayade_text_report(session_document, event=event))
+                return 0
     except MosaikError as exc:
         print(f"MOSAIK ERROR: {exc}", file=sys.stderr)
         return 2

@@ -26,12 +26,24 @@ def render_html(report: dict[str, Any]) -> str:
         if item.get("status") == "FAIL":
             rows.append(
                 f'<tr><td><span class="badge fail">FAIL</span></td><td>{html.escape(Path(item.get("path", "")).name)}</td>'
-                f'<td colspan="5">{html.escape(str(item.get("error", "Error desconocido")))}</td></tr>'
+                f'<td colspan="6">{html.escape(str(item.get("error", "Error desconocido")))}</td></tr>'
             )
             continue
         detail = item.get("report") or {}
         video = detail.get("video") or {}
         visual = (detail.get("clip_profile") or {}).get("visual") or {}
+        events = (detail.get("clip_profile") or {}).get("events") or {}
+        cue_suggestions = events.get("cue_suggestions") or {}
+        cue_counts: dict[str, int] = {}
+        for cue in cue_suggestions.get("cues") or []:
+            role = cue.get("role")
+            if role:
+                cue_counts[role] = cue_counts.get(role, 0) + 1
+        cue_label = " · ".join(
+            f"{label} {cue_counts[role]}"
+            for role, label in (("change", "cambio"), ("loop", "loop"), ("strobe_window", "strobo"))
+            if cue_counts.get(role)
+        ) or "—"
         loop = visual.get("loop") or {}
         resolution = f"{video.get('width')} × {video.get('height')}"
         rows.append(
@@ -43,6 +55,7 @@ def render_html(report: dict[str, Any]) -> str:
             f'<td>{html.escape(_text(video.get("average_fps")))}</td>'
             f'<td>{html.escape(_text(visual.get("visual_energy")))}</td>'
             f'<td>{html.escape(_text(loop.get("status")))}</td>'
+            f'<td>{html.escape(cue_label)}</td>'
             "</tr>"
         )
     target = report.get("show_profile") or {}
@@ -70,7 +83,7 @@ code {{ color:#b9d6ff; }}
 <div class="card">Modo<strong>{html.escape(_text(report.get("mode")))}</strong></div>
 <div class="card">Perfil<strong>{html.escape(_text(target.get("name") or "sin perfil"))}</strong></div>
 </div>
-<table><thead><tr><th>Estado</th><th>Archivo</th><th>Codec</th><th>Resolución</th><th>FPS</th><th>Energía</th><th>Loop</th></tr></thead>
+<table><thead><tr><th>Estado</th><th>Archivo</th><th>Codec</th><th>Resolución</th><th>FPS</th><th>Energía</th><th>Loop</th><th>Cues sugeridos</th></tr></thead>
 <tbody>{''.join(rows)}</tbody></table>
 </main></body></html>"""
 

@@ -19,6 +19,10 @@ python .\tools\mosaik_cli.py instar "D:\VJ\Media" --target-fps 60 --report ".\ar
 python .\tools\mosaik_cli.py instar "D:\VJ\Media" --deep --report ".\artifacts\instar-deep.json"
 python .\tools\mosaik_cli.py diagnose "D:\VJ\Media\clip.mp4" --report ".\artifacts\clip-report.json"
 python .\tools\mosaik_cli.py dxv "D:\VJ\Media\clip.mp4" --fps 60
+python .\tools\mosaik_cli.py instar-map "D:\VJ\Shows\venue-advanced-output.xml" --catalog ".\artifacts\instar-manifest.json" --report ".\artifacts\mapping-plan.json"
+python .\tools\mosaik_cli.py instar-testcard "D:\VJ\Shows\venue-advanced-output.xml" --output ".\artifacts\venue-geometry-testcard.mp4" --report ".\artifacts\venue-geometry-testcard.json"
+python .\tools\mosaik_cli.py nayade-session init ".\artifacts\venue-geometry-testcard.json" --output ".\artifacts\venue-soundcheck.json" --seed 4821
+python .\tools\mosaik_cli.py resolume-cues "D:\VJ\Shows\show.avc" --report ".\artifacts\cues.json"
 ```
 
 ## Dependencias
@@ -79,10 +83,62 @@ python .\tools\mosaik_cli.py instar "D:\VJ\Media" `
 ```
 
 El resultado incluye un `ClipProfile` por visual con metadata, compatibilidad,
-energía visual, periodicidad, loopabilidad y eventos detectados. La caché evita
-repetir el trabajo mientras el archivo y los parámetros de análisis no cambien.
+energía visual, periodicidad, loopabilidad, eventos detectados y, cuando hay
+muestras suficientes, sugerencias de CUE para cambio limpio, impacto, ventana
+de strobo y loop. La caché evita repetir el trabajo pesado mientras el archivo
+y los parámetros de análisis no cambien; los perfiles derivados se reconstruyen
+para incorporar nuevos detectores.
 El manifiesto permite consumir el catálogo desde otras herramientas sin volver a
 leer el reporte completo. El detalle operativo está en `docs/runbooks/instar-catalogo.md`.
+
+### Mapa de CUES de Resolume
+
+Para inspeccionar los puntos CUE existentes en una composición sin modificarla:
+
+```powershell
+python .\tools\mosaik_cli.py resolume-cues "D:\VJ\Shows\show.avc" `
+  --report ".\artifacts\resolume-cues.json"
+```
+
+El mapa conserva la posición de cada CUE en milisegundos y segundos, su posición
+normalizada respecto de la duración del clip, los slots vacíos, el BPM guardado
+y la transición configurada en su capa. Todavía no asigna nombres semánticos ni
+escribe nuevos CUES en la composición.
+
+### Advanced Output y autoasignación
+
+INSTAR puede leer un preset de Advanced Output y compararlo con el catálogo de
+visuals. Conserva Input Selection y Output Transformation como espacios
+separados, agrupa slices que comparten InputRect y genera sugerencias
+revisables; no modifica showfiles, Resolume ni el procesador. El flujo está en
+docs/runbooks/instar-advanced-output.md.
+
+La tarjeta de prueba geométrica de NAYADE genera una sola composición desde el
+Advanced Output, con colores por input group, etiquetas, bordes, cuadrícula,
+movimiento, círculos y cuadrados. Sirve para detectar deformación, inversión,
+deslizamiento y solapamiento durante el soundcheck sin modificar el showfile.
+La sesión de NAYADE conserva la matriz de pruebas y permite registrar qué
+rotación, flip, pattern o marquee fue aprobada en cada input group. El detalle
+está en `docs/runbooks/nayade-soundcheck.md`.
+
+La estrategia para adaptar visuales a banners, tótems y superficies extremas
+está documentada en `docs/research/instar-adaptacion-superficies-extremas.md`.
+INSTAR prioriza derivados target-specific con crop protegido, fondo, pattern o
+marquee antes de permitir deformaciones.
+
+Para generar previews de esas adaptaciones desde un plan de mapping:
+
+```powershell
+python .\tools\mosaik_cli.py instar-adapt `
+  ".\artifacts\mapping-plan.json" `
+  --output-dir ".\artifacts\adapt-previews" `
+  --dxv-output-dir ".\artifacts\adapt-dxv" `
+  --encoder auto
+```
+
+El detalle operativo está en `docs/runbooks/instar-adaptacion.md`.
+El flujo completo, desde catálogo hasta soundcheck, está en
+`docs/runbooks/instar-preshow.md`.
 
 ## Principios
 
@@ -102,6 +158,8 @@ leer el reporte completo. El detalle operativo está en `docs/runbooks/instar-ca
 6. Diseñar el perfil de señal de MOSAIK para diagnóstico seguro de GPU, HDMI y procesadores LED.
 7. Crear en `INSTAR` el importador de `VENUE` y `BASE DE DATOS PUBLICA`, comenzando por Advanced Output XML.
 8. Integrar el auditor de composición Resolume con el MCP local, manteniendo el modo de lectura como comportamiento por defecto.
+9. Permitir que IMAGO consuma un plan de mapping aprobado, sin aplicar cambios
+   automáticamente durante el primer ciclo.
 
 La arquitectura de esta integración está documentada en
 `docs/architecture/integracion-mosaik-resolume-mcp.md`.

@@ -252,7 +252,14 @@ def run_instar(
                             report.get("generated_at", ""),
                         )
                 else:
-                    report.setdefault("clip_profile", build_clip_profile(report, fingerprint, source_path=media_path))
+                    # El análisis pesado puede venir del cache, pero el perfil
+                    # derivado debe reconstruirse para incorporar nuevos
+                    # detectores (por ejemplo, las sugerencias de cues).
+                    report["clip_profile"] = build_clip_profile(
+                        report,
+                        fingerprint,
+                        source_path=media_path,
+                    )
                     report["cache"] = {"hit": True, "path": str(cache.path)}
             except MosaikError as exc:
                 items.append(
@@ -338,10 +345,18 @@ def text_report(report: dict[str, Any]) -> str:
         analysis_label = f", GPU {analysis_status}" if report.get("mode") == "gpu" else ""
         loop_status = ((item["report"].get("clip_profile") or {}).get("visual") or {}).get("loop", {}).get("status")
         loop_label = f", loop {loop_status}" if loop_status else ""
+        cue_data = ((item["report"].get("clip_profile") or {}).get("events") or {}).get("cue_suggestions") or {}
+        cue_counts: dict[str, int] = {}
+        for cue in cue_data.get("cues") or []:
+            role = cue.get("role")
+            if role:
+                cue_counts[role] = cue_counts.get(role, 0) + 1
+        cue_total = sum(cue_counts.values())
+        cue_label = f", cues {cue_total}" if cue_total else ""
         cache_label = ", cache" if item.get("cached") else ""
         lines.append(
             f"  [{item['status']}] {path.name}: {codec}, {resolution}, "
-            f"FPS {video.get('average_fps') or 'desconocido'}, alpha {alpha}{analysis_label}{loop_label}{cache_label}"
+            f"FPS {video.get('average_fps') or 'desconocido'}, alpha {alpha}{analysis_label}{loop_label}{cue_label}{cache_label}"
         )
     return "\n".join(lines)
 

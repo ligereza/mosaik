@@ -161,6 +161,10 @@ def analyze_visual_gpu(
     analysis_shape: tuple[int, int] | None = None
     effective_sample_rate = None
     mean_luma_values: list[float] = []
+    horizontal_edge_similarities: list[float] = []
+    vertical_edge_similarities: list[float] = []
+    horizontal_edge_energies: list[float] = []
+    vertical_edge_energies: list[float] = []
 
     try:
         decoder = nvc.ThreadedDecoder(
@@ -205,6 +209,24 @@ def analyze_visual_gpu(
                     + sampled_float[1] * 0.7152
                     + sampled_float[2] * 0.0722
                 )
+                edge_width = max(1, min(16, int(luma.shape[1]) // 10))
+                edge_height = max(1, min(16, int(luma.shape[0]) // 10))
+                horizontal_edge_distance = float(
+                    cp.mean(cp.abs(luma[:, :edge_width] - luma[:, -edge_width:])).get()
+                ) / 255.0
+                vertical_edge_distance = float(
+                    cp.mean(cp.abs(luma[:edge_height, :] - luma[-edge_height:, :])).get()
+                ) / 255.0
+                horizontal_edge_energy = float(
+                    cp.mean(cp.concatenate((luma[:, :edge_width], luma[:, -edge_width:]), axis=1)).get()
+                ) / 255.0
+                vertical_edge_energy = float(
+                    cp.mean(cp.concatenate((luma[:edge_height, :], luma[-edge_height:, :]), axis=0)).get()
+                ) / 255.0
+                horizontal_edge_similarities.append(max(0.0, min(1.0, 1.0 - horizontal_edge_distance)))
+                vertical_edge_similarities.append(max(0.0, min(1.0, 1.0 - vertical_edge_distance)))
+                horizontal_edge_energies.append(max(0.0, min(1.0, horizontal_edge_energy)))
+                vertical_edge_energies.append(max(0.0, min(1.0, vertical_edge_energy)))
                 mean_luma = float(cp.mean(luma).get())
                 min_luma = float(cp.min(luma).get())
                 max_luma = float(cp.max(luma).get())
@@ -271,6 +293,23 @@ def analyze_visual_gpu(
         periodicity = _estimate_period(cp, mean_luma_values, effective_sample_rate)
         energy = "low" if motion_mean < 0.02 else "medium" if motion_mean < 0.06 else "high"
         modulation = "strong" if energy == "low" else "moderate" if energy == "medium" else "subtle"
+        spatial = {
+            "edge_similarity_horizontal": round(
+                sum(horizontal_edge_similarities) / len(horizontal_edge_similarities), 6
+            ) if horizontal_edge_similarities else None,
+            "edge_similarity_vertical": round(
+                sum(vertical_edge_similarities) / len(vertical_edge_similarities), 6
+            ) if vertical_edge_similarities else None,
+            "edge_energy_horizontal": round(
+                sum(horizontal_edge_energies) / len(horizontal_edge_energies), 6
+            ) if horizontal_edge_energies else None,
+            "edge_energy_vertical": round(
+                sum(vertical_edge_energies) / len(vertical_edge_energies), 6
+            ) if vertical_edge_energies else None,
+            "edge_sample_count": len(horizontal_edge_similarities),
+            "basis": "gpu_sampled_frame_edge_similarity",
+            "interpretation": "Una similitud alta sugiere que el borde puede repetirse, pero necesita preview para confirmar que la unión no se percibe.",
+        }
 
         return {
             "status": "PASS",
@@ -293,6 +332,7 @@ def analyze_visual_gpu(
                 "mean": round(motion_mean, 6),
                 "peak": round(motion_peak, 6),
             },
+            "spatial": spatial,
             "visual_energy": energy,
             "reactive_recommendation": {
                 "modulation": modulation,
