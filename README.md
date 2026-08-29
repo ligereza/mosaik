@@ -15,6 +15,7 @@ Set-ExecutionPolicy -Scope Process Bypass
 .\tools\Test-VJPreflight.ps1 -MediaRoot "D:\VJ\Media" -ProjectRoot "D:\VJ\Shows\show-01"
 .\tools\Get-VJSystemSnapshot.ps1 -OutputPath ".\artifacts\snapshot.json"
 
+python .\tools\mosaik_cli.py instar "D:\VJ\Media" --target-fps 60 --report ".\artifacts\instar.json"
 python .\tools\mosaik_cli.py diagnose "D:\VJ\Media\clip.mp4" --report ".\artifacts\clip-report.json"
 python .\tools\mosaik_cli.py dxv "D:\VJ\Media\clip.mp4" --fps 60
 ```

@@ -10,6 +10,7 @@ from pathlib import Path
 
 from mosaik.diagnose import diagnose_file, text_report
 from mosaik.dxv import convert_to_dxv
+from mosaik.instar import run_instar, text_report as instar_text_report, write_report
 from mosaik.media import MosaikError
 
 
@@ -27,6 +28,15 @@ def _resolution(value: str) -> tuple[int, int]:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="mosaik", description="Herramientas MOSAIK para flujo VJ.")
     commands = parser.add_subparsers(dest="command", required=True)
+
+    instar = commands.add_parser("instar", help="Ejecuta el preflight de media de una carpeta.")
+    instar.add_argument("media_root", help="Carpeta raíz con los videos del show.")
+    instar.add_argument("--report", help="Ruta opcional para guardar el informe JSON.")
+    instar.add_argument("--target-fps", type=float, help="FPS de la composición o salida objetivo.")
+    instar.add_argument("--target-resolution", type=_resolution, help="Resolución objetivo, por ejemplo 1920x1080.")
+    instar.add_argument("--max-samples", type=int, default=300, help="Máximo de muestras de luminancia por archivo.")
+    instar.add_argument("--ffmpeg", default="ffmpeg", help="Ruta o nombre de FFmpeg.")
+    instar.add_argument("--ffprobe", default="ffprobe", help="Ruta o nombre de FFprobe.")
 
     diagnose = commands.add_parser("diagnose", help="Analiza un archivo de video y genera recomendaciones.")
     diagnose.add_argument("input", help="Archivo de video a analizar.")
@@ -54,6 +64,25 @@ def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
     try:
+        if args.command == "instar":
+            width = height = None
+            if args.target_resolution:
+                width, height = args.target_resolution
+            report = run_instar(
+                args.media_root,
+                ffmpeg=args.ffmpeg,
+                ffprobe=args.ffprobe,
+                target_fps=args.target_fps,
+                target_width=width,
+                target_height=height,
+                max_samples=args.max_samples,
+            )
+            print(instar_text_report(report))
+            if args.report:
+                report_path = write_report(report, args.report)
+                print(f"\nInforme JSON: {report_path}")
+            return 1 if report["overall_status"] == "FAIL" else 0
+
         if args.command == "diagnose":
             width = height = None
             if args.target_resolution:
