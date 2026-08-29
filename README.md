@@ -26,6 +26,7 @@ energía, BIOS, controladores, archivos ni configuraciones de Resolume.
 
 ```text
 docs/
+  architecture/     Arquitectura de componentes y etapas de MOSAIK.
   decisions/       Decisiones de diseño del repositorio.
   research/        Mapa de conceptos VJ y herramientas open source.
   runbooks/        Procedimientos operativos paso a paso.
