@@ -27,6 +27,7 @@ energía, BIOS, controladores, archivos ni configuraciones de Resolume.
 ```text
 docs/
   decisions/       Decisiones de diseño del repositorio.
+  research/        Mapa de conceptos VJ y herramientas open source.
   runbooks/        Procedimientos operativos paso a paso.
   checklists/      Listas breves para usar antes o durante un show.
   templates/       Plantillas para registrar nuevos casos.
@@ -49,3 +50,4 @@ artifacts/         Salidas locales; ignoradas por Git.
 3. Empaquetar las herramientas como aplicación portable para colegas.
 4. Incorporar una plantilla de incidente para flicker, tearing, frames dropped y pérdida de rutas.
 5. Registrar resultados de pruebas reales en `docs/cases/` sin copiar medios al repositorio.
+6. Diseñar el perfil de señal de MOSAIK para diagnóstico seguro de GPU, HDMI y procesadores LED.
