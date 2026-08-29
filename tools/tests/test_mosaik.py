@@ -5,6 +5,7 @@ from unittest.mock import patch
 
 from tools.mosaik.instar import discover_media_files, run_instar
 from tools.mosaik.media import format_fps, has_alpha, parse_fraction
+from tools.mosaik.resolume import run_resolume_audit
 
 
 class MediaHelpersTests(unittest.TestCase):
@@ -61,6 +62,69 @@ class InstarTests(unittest.TestCase):
             self.assertEqual(report["overall_status"], "WARN")
             self.assertEqual(report["files_found"], 2)
             self.assertEqual([item["status"] for item in report["items"]], ["PASS", "WARN"])
+
+
+class ResolumeAuditTests(unittest.TestCase):
+    def test_audit_extracts_composition_and_deduplicates_media(self):
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            media = root / "loop.mp4"
+            media.touch()
+            composition = root / "show.avc"
+            composition.write_text(
+                f'''<?xml version="1.0" encoding="utf-8"?>
+<Composition name="Composition" numDecks="1" numLayers="2" numColumns="3">
+  <versionInfo name="Resolume Arena" majorVersion="7" minorVersion="26" microVersion="0" revision="1"/>
+  <CompositionInfo name="Test Show" width="1920" height="1080"/>
+  <Deck name="Deck">
+    <Clip name="Clip" layerIndex="0" columnIndex="0">
+      <VideoTrack><VideoSource width="1920" height="1080" type="VideoFormatReaderSource">
+        <VideoFormatReaderSource fileName="{media}"/>
+      </VideoSource></VideoTrack>
+    </Clip>
+    <Clip name="Clip" layerIndex="1" columnIndex="0">
+      <VideoTrack><VideoSource width="1920" height="1080" type="VideoFormatReaderSource">
+        <VideoFormatReaderSource fileName="{media}"/>
+      </VideoSource></VideoTrack>
+    </Clip>
+  </Deck>
+</Composition>''',
+                encoding="utf-8",
+            )
+
+            report = run_resolume_audit(composition, skip_media=True)
+
+            self.assertEqual(report["overall_status"], "WARN")
+            self.assertEqual(report["composition"]["name"], "Test Show")
+            self.assertEqual(report["composition"]["width"], 1920)
+            self.assertEqual(report["statistics"]["clips"], 2)
+            self.assertEqual(report["statistics"]["media_files"], 1)
+            self.assertEqual(report["media"][0]["occurrences"], 2)
+            self.assertEqual(report["media"][0]["status"], "NOT_ANALYZED")
+
+    def test_audit_creates_safe_plan_for_non_dxv_media(self):
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            media = root / "loop.mp4"
+            media.touch()
+            composition = root / "show.avc"
+            composition.write_text(
+                f'<Composition><CompositionInfo name="Show" width="1920" height="1080"/>'
+                f'<Clip layerIndex="0" columnIndex="0"><VideoFile value="{media}"/></Clip></Composition>',
+                encoding="utf-8",
+            )
+
+            with patch("tools.mosaik.resolume.diagnose_file", return_value={
+                "overall_status": "WARN",
+                "video": {"codec": "h264", "width": 1920, "height": 1080},
+            }):
+                report = run_resolume_audit(composition)
+
+            risks = [action["risk"] for action in report["action_plan"]]
+            operations = [action["operation"] for action in report["action_plan"]]
+            self.assertEqual(report["overall_status"], "WARN")
+            self.assertIn("SAFE", risks)
+            self.assertIn("create_derived_media", operations)
 
 
 if __name__ == "__main__":

@@ -55,3 +55,7 @@ artifacts/         Salidas locales; ignoradas por Git.
 5. Registrar resultados de pruebas reales en `docs/cases/` sin copiar medios al repositorio.
 6. Diseñar el perfil de señal de MOSAIK para diagnóstico seguro de GPU, HDMI y procesadores LED.
 7. Crear en `INSTAR` el importador de `VENUE` y `BASE DE DATOS PUBLICA`, comenzando por Advanced Output XML.
+8. Integrar el auditor de composición Resolume con el MCP local, manteniendo el modo de lectura como comportamiento por defecto.
+
+La arquitectura de esta integración está documentada en
+`docs/architecture/integracion-mosaik-resolume-mcp.md`.

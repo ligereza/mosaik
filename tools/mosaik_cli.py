@@ -12,6 +12,7 @@ from mosaik.diagnose import diagnose_file, text_report
 from mosaik.dxv import convert_to_dxv
 from mosaik.instar import run_instar, text_report as instar_text_report, write_report
 from mosaik.media import MosaikError
+from mosaik.resolume import run_resolume_audit, text_report as resolume_text_report, write_report as write_resolume_report
 
 
 def _resolution(value: str) -> tuple[int, int]:
@@ -57,6 +58,19 @@ def build_parser() -> argparse.ArgumentParser:
     dxv.add_argument("--dry-run", action="store_true", help="Muestra la operación sin convertir.")
     dxv.add_argument("--ffmpeg", default="ffmpeg", help="Ruta o nombre de FFmpeg.")
     dxv.add_argument("--ffprobe", default="ffprobe", help="Ruta o nombre de FFprobe.")
+
+    resolume = commands.add_parser(
+        "resolume-audit",
+        help="Audita una composición .avc en modo lectura y genera un plan de optimización.",
+    )
+    resolume.add_argument("composition", help="Archivo .avc de Resolume.")
+    resolume.add_argument("--report", help="Ruta opcional para guardar el informe JSON.")
+    resolume.add_argument("--target-fps", type=float, help="FPS de la composición o salida objetivo.")
+    resolume.add_argument("--target-resolution", type=_resolution, help="Resolución objetivo, por ejemplo 1920x1080.")
+    resolume.add_argument("--max-samples", type=int, default=300, help="Máximo de muestras de luminancia por archivo.")
+    resolume.add_argument("--skip-media", action="store_true", help="Lee la composición sin ejecutar FFprobe sobre los medios.")
+    resolume.add_argument("--ffmpeg", default="ffmpeg", help="Ruta o nombre de FFmpeg.")
+    resolume.add_argument("--ffprobe", default="ffprobe", help="Ruta o nombre de FFprobe.")
     return parser
 
 
@@ -132,6 +146,26 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"Resolución: {result['video'].get('width')} × {result['video'].get('height')}")
                 print(f"FPS: {result['video'].get('average_fps')}")
             return 0
+
+        if args.command == "resolume-audit":
+            width = height = None
+            if args.target_resolution:
+                width, height = args.target_resolution
+            report = run_resolume_audit(
+                args.composition,
+                ffmpeg=args.ffmpeg,
+                ffprobe=args.ffprobe,
+                target_fps=args.target_fps,
+                target_width=width,
+                target_height=height,
+                max_samples=args.max_samples,
+                skip_media=args.skip_media,
+            )
+            print(resolume_text_report(report))
+            if args.report:
+                report_path = write_resolume_report(report, args.report)
+                print(f"\nInforme JSON: {report_path}")
+            return 1 if report["overall_status"] == "FAIL" else 0
     except MosaikError as exc:
         print(f"MOSAIK ERROR: {exc}", file=sys.stderr)
         return 2
