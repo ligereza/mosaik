@@ -35,7 +35,10 @@ def build_parser() -> argparse.ArgumentParser:
     instar.add_argument("--report", help="Ruta opcional para guardar el informe JSON.")
     instar.add_argument("--target-fps", type=float, help="FPS de la composición o salida objetivo.")
     instar.add_argument("--target-resolution", type=_resolution, help="Resolución objetivo, por ejemplo 1920x1080.")
-    instar.add_argument("--max-samples", type=int, default=300, help="Máximo de muestras de luminancia por archivo.")
+    instar.add_argument("--target-codec", help="Codec objetivo opcional, por ejemplo dxv.")
+    instar.add_argument("--deep", action="store_true", help="Además del preflight, ejecuta el diagnóstico visual/luminancia.")
+    instar.add_argument("--max-samples", type=int, default=300, help="Máximo de muestras de luminancia en modo --deep.")
+    instar.add_argument("--sidecars-dir", help="Carpeta opcional para escribir un .mosaik.json por visual.")
     instar.add_argument("--ffmpeg", default="ffmpeg", help="Ruta o nombre de FFmpeg.")
     instar.add_argument("--ffprobe", default="ffprobe", help="Ruta o nombre de FFprobe.")
 
@@ -90,6 +93,9 @@ def main(argv: list[str] | None = None) -> int:
                 target_width=width,
                 target_height=height,
                 max_samples=args.max_samples,
+                target_codec=args.target_codec,
+                deep=args.deep,
+                sidecars_dir=args.sidecars_dir,
             )
             print(instar_text_report(report))
             if args.report:

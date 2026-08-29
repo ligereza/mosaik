@@ -287,16 +287,46 @@ def has_alpha(video_stream: dict[str, Any]) -> bool | None:
 def summarize_video(probe: dict[str, Any]) -> dict[str, Any]:
     video = probe["video"]
     format_data = probe.get("format") or {}
+    duration = parse_fraction(video.get("duration"))
+    if duration is None:
+        duration = parse_fraction(format_data.get("duration"))
+    frame_count = video.get("nb_frames")
+    try:
+        frame_count = int(frame_count) if frame_count is not None else None
+    except (TypeError, ValueError):
+        frame_count = None
+    bitrate = video.get("bit_rate") or format_data.get("bit_rate")
+    try:
+        bitrate = int(bitrate) if bitrate is not None else None
+    except (TypeError, ValueError):
+        bitrate = None
+    bit_depth = video.get("bits_per_raw_sample") or video.get("bits_per_coded_sample")
+    try:
+        bit_depth = int(bit_depth) if bit_depth is not None else None
+    except (TypeError, ValueError):
+        bit_depth = None
     return {
         "codec": video.get("codec_name"),
         "codec_long_name": video.get("codec_long_name"),
+        "profile": video.get("profile"),
         "width": video.get("width"),
         "height": video.get("height"),
         "pixel_format": video.get("pix_fmt"),
         "average_fps": format_fps(video.get("avg_frame_rate")),
+        "average_fps_value": parse_fraction(video.get("avg_frame_rate")),
         "nominal_fps": format_fps(video.get("r_frame_rate")),
-        "duration_seconds": parse_fraction(format_data.get("duration")),
+        "nominal_fps_value": parse_fraction(video.get("r_frame_rate")),
+        "duration_seconds": duration,
+        "frame_count": frame_count,
+        "bitrate_bps": bitrate,
+        "bit_depth": bit_depth,
+        "sample_aspect_ratio": video.get("sample_aspect_ratio"),
+        "display_aspect_ratio": video.get("display_aspect_ratio"),
         "field_order": video.get("field_order"),
         "has_alpha": has_alpha(video),
+        "color_range": video.get("color_range"),
+        "color_space": video.get("color_space"),
+        "color_transfer": video.get("color_transfer"),
+        "color_primaries": video.get("color_primaries"),
         "audio_codec": (probe.get("audio") or {}).get("codec_name"),
     }

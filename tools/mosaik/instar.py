@@ -9,6 +9,7 @@ from typing import Any
 
 from .diagnose import diagnose_file
 from .media import MosaikError
+from .preflight import preflight_file, write_sidecar
 
 
 MEDIA_EXTENSIONS = frozenset(
@@ -47,8 +48,15 @@ def run_instar(
     target_width: int | None = None,
     target_height: int | None = None,
     max_samples: int = 300,
+    target_codec: str | None = None,
+    deep: bool = False,
+    sidecars_dir: str | Path | None = None,
 ) -> dict[str, Any]:
-    """Ejecuta el diagnóstico compartido sobre todos los medios de una carpeta."""
+    """Ejecuta el preflight de INSTAR sobre todos los medios de una carpeta.
+
+    El modo normal inspecciona sólo metadata técnica. ``deep=True`` conserva
+    el diagnóstico anterior, que además decodifica una muestra de luminancia.
+    """
 
     media_root = Path(root).expanduser().resolve()
     files = discover_media_files(media_root)
@@ -58,15 +66,25 @@ def run_instar(
     items: list[dict[str, Any]] = []
     for media_path in files:
         try:
-            report = diagnose_file(
-                media_path,
-                ffmpeg=ffmpeg,
-                ffprobe=ffprobe,
-                target_fps=target_fps,
-                target_width=target_width,
-                target_height=target_height,
-                max_samples=max_samples,
-            )
+            if deep:
+                report = diagnose_file(
+                    media_path,
+                    ffmpeg=ffmpeg,
+                    ffprobe=ffprobe,
+                    target_fps=target_fps,
+                    target_width=target_width,
+                    target_height=target_height,
+                    max_samples=max_samples,
+                )
+            else:
+                report = preflight_file(
+                    media_path,
+                    ffprobe=ffprobe,
+                    target_fps=target_fps,
+                    target_width=target_width,
+                    target_height=target_height,
+                    target_codec=target_codec,
+                )
         except MosaikError as exc:
             items.append(
                 {
@@ -77,12 +95,20 @@ def run_instar(
             )
             continue
 
+        sidecar_path = None
+        if sidecars_dir is not None:
+            relative_parent = media_path.parent.relative_to(media_root)
+            sidecar_path = write_sidecar(report, Path(sidecars_dir) / relative_parent)
+
+        item = {
+            "path": str(media_path),
+            "status": report.get("overall_status", "WARN"),
+            "report": report,
+        }
+        if sidecar_path is not None:
+            item["sidecar"] = str(sidecar_path)
         items.append(
-            {
-                "path": str(media_path),
-                "status": report.get("overall_status", "WARN"),
-                "report": report,
-            }
+            item
         )
 
     statuses = {item["status"] for item in items}
@@ -99,6 +125,7 @@ def run_instar(
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "media_root": str(media_root),
         "files_found": len(files),
+        "mode": "deep" if deep else "technical",
         "overall_status": overall_status,
         "items": items,
     }
@@ -111,6 +138,7 @@ def text_report(report: dict[str, Any]) -> str:
         "INSTAR",
         "======",
         f"Carpeta: {report['media_root']}",
+        f"Modo: {report.get('mode', 'technical')}",
         f"Estado: {report['overall_status']}",
         f"Archivos: {report['files_found']}",
         "",
@@ -125,9 +153,10 @@ def text_report(report: dict[str, Any]) -> str:
         video = item["report"].get("video", {})
         codec = video.get("codec") or "desconocido"
         resolution = f"{video.get('width')} × {video.get('height')}"
+        alpha = item["report"].get("alpha", {}).get("status", "n/a")
         lines.append(
             f"  [{item['status']}] {path.name}: {codec}, {resolution}, "
-            f"FPS {video.get('average_fps') or 'desconocido'}"
+            f"FPS {video.get('average_fps') or 'desconocido'}, alpha {alpha}"
         )
     return "\n".join(lines)
 

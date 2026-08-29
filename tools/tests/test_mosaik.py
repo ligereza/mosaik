@@ -5,6 +5,7 @@ from unittest.mock import patch
 
 from tools.mosaik.instar import discover_media_files, run_instar
 from tools.mosaik.media import format_fps, has_alpha, parse_fraction
+from tools.mosaik.preflight import preflight_file, sidecar_from_report
 from tools.mosaik.resolume import run_resolume_audit
 
 
@@ -27,6 +28,41 @@ class MediaHelpersTests(unittest.TestCase):
 
 
 class InstarTests(unittest.TestCase):
+    def test_preflight_separates_mp4_container_from_alpha(self):
+        with TemporaryDirectory() as directory:
+            media = Path(directory) / "clip.mp4"
+            media.write_bytes(b"placeholder")
+            probe = {
+                "format": {
+                    "format_name": "mov,mp4,m4a,3gp,3g2,mj2",
+                    "format_long_name": "ISO Media, MP4 Base Media v1",
+                    "duration": "4.0",
+                    "size": "11",
+                },
+                "video": {
+                    "codec_name": "h264",
+                    "codec_long_name": "H.264",
+                    "width": 1920,
+                    "height": 1080,
+                    "pix_fmt": "yuv420p",
+                    "avg_frame_rate": "30/1",
+                    "r_frame_rate": "30/1",
+                    "field_order": "progressive",
+                },
+                "audio": None,
+            }
+            with patch("tools.mosaik.preflight.probe_media", return_value=probe):
+                report = preflight_file(media)
+
+            self.assertEqual(report["container"]["name"], "MP4/ISO BMFF")
+            self.assertEqual(report["video"]["codec"], "h264")
+            self.assertEqual(report["alpha"]["status"], "absent")
+            self.assertEqual(report["overall_status"], "PASS")
+
+            sidecar = sidecar_from_report(report)
+            self.assertEqual(sidecar["technical"]["alpha"]["encoded"], False)
+            self.assertEqual(sidecar["media"]["filename"], "clip.mp4")
+
     def test_discover_media_files_is_recursive_and_filters_extensions(self):
         with TemporaryDirectory() as directory:
             root = Path(directory)
@@ -56,11 +92,12 @@ class InstarTests(unittest.TestCase):
                     "video": {"codec": "dxv", "width": 1920, "height": 1080, "average_fps": "60"},
                 }
 
-            with patch("tools.mosaik.instar.diagnose_file", side_effect=fake_diagnose):
+            with patch("tools.mosaik.instar.preflight_file", side_effect=fake_diagnose):
                 report = run_instar(root)
 
             self.assertEqual(report["overall_status"], "WARN")
             self.assertEqual(report["files_found"], 2)
+            self.assertEqual(report["mode"], "technical")
             self.assertEqual([item["status"] for item in report["items"]], ["PASS", "WARN"])
 
 

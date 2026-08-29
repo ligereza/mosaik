@@ -15,7 +15,8 @@ Set-ExecutionPolicy -Scope Process Bypass
 .\tools\Test-VJPreflight.ps1 -MediaRoot "D:\VJ\Media" -ProjectRoot "D:\VJ\Shows\show-01"
 .\tools\Get-VJSystemSnapshot.ps1 -OutputPath ".\artifacts\snapshot.json"
 
-python .\tools\mosaik_cli.py instar "D:\VJ\Media" --target-fps 60 --report ".\artifacts\instar.json"
+python .\tools\mosaik_cli.py instar "D:\VJ\Media" --target-fps 60 --report ".\artifacts\instar.json" --sidecars-dir ".\artifacts\instar-sidecars"
+python .\tools\mosaik_cli.py instar "D:\VJ\Media" --deep --report ".\artifacts\instar-deep.json"
 python .\tools\mosaik_cli.py diagnose "D:\VJ\Media\clip.mp4" --report ".\artifacts\clip-report.json"
 python .\tools\mosaik_cli.py dxv "D:\VJ\Media\clip.mp4" --fps 60
 ```
@@ -28,7 +29,9 @@ Instala las dependencias Python con:
 python -m pip install -r requirements.txt
 ```
 
-El runtime de MOSAIK usa la biblioteca estándar de Python. Para analizar media
+El runtime de MOSAIK usa la biblioteca estándar de Python. El preflight técnico
+de INSTAR usa sólo FFprobe y no decodifica todo el video; `--deep` activa el
+diagnóstico adicional de luminancia. Para analizar media
 se necesitan `ffmpeg` y `ffprobe` disponibles en `PATH`; para la integración
 directa con Resolume se necesita Arena/Avenue 7.26 o posterior y su MCP local.
 
@@ -60,7 +63,7 @@ artifacts/         Salidas locales; ignoradas por Git.
 
 ## Próximos incrementos
 
-1. Validar `MOSAIK Diagnose` con clips sintéticos y casos reales.
+1. Validar `INSTAR Media Preflight` con clips sintéticos y casos reales.
 2. Mejorar `MOSAIK DXV Assistant` con procesamiento por lotes y más perfiles.
 3. Empaquetar las herramientas como aplicación portable para colegas.
 4. Incorporar una plantilla de incidente para flicker, tearing, frames dropped y pérdida de rutas.
