@@ -68,7 +68,7 @@ Primera familia prevista:
 - `Output Safe`: limitación o protección de flashes y valores extremos cuando
   sea técnicamente viable.
 
-El primer FFGL será `MOSAIK IMAGO — Signal Guard`. Tendrá identidad por defecto
+El primer FFGL pertenecerá a `IMAGO`. Tendrá identidad por defecto
 y bypass inmediato. Las correcciones se limitarán a un perfil conocido o a
 parámetros manuales explícitos.
 
@@ -209,12 +209,12 @@ mantiene el modo seguro.
 La marca visible debe ser humana y técnica al mismo tiempo:
 
 ```text
-MOSAIK IMAGO — Signal Guard
+IMAGO
 Corrige niveles, negros y gamma durante el show.
 Host: Resolume / FFGL
 Modo: seguro, reversible, sin conexión al procesador
 
-MOSAIK NAYADE — Handoff Check
+NAYADE
 Verifica captura, routing, escala y destinos antes de salir.
 Host: Windows / XIO / house video
 Modo: sólo lectura
@@ -238,7 +238,7 @@ lavados durante el show”.
 
 ## Primera implementación
 
-### Paso 1: `MOSAIK INSTAR — Preflight`
+### Paso 1: `INSTAR`
 
 Herramienta externa de pre-show:
 
@@ -248,7 +248,7 @@ Herramienta externa de pre-show:
 - genera el perfil inicial de señal;
 - prepara los fixtures y el reporte de soundcheck.
 
-### Paso 2: `MOSAIK NAYADE — Handoff Check`
+### Paso 2: `NAYADE`
 
 Herramienta externa de soundcheck, sólo lectura:
 
@@ -259,7 +259,7 @@ Herramienta externa de soundcheck, sólo lectura:
 - genera `Signal Profile` y reporte;
 - verifica si el problema es routing, canvas, escala, formato o color.
 
-### Paso 3: `MOSAIK IMAGO — Signal Guard`
+### Paso 3: `IMAGO`
 
 Plugin FFGL de Resolume:
 
