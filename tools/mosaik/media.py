@@ -207,7 +207,9 @@ def analyze_luminance(
         str(media_path),
         "-an",
         "-vf",
-        f"fps={sample_fps},signalstats,metadata=print:file=-",
+        # Normalizamos solo la señal de análisis a 8 bits. El archivo original
+        # no se modifica y así YAVG queda comparable entre H.264, CineForm y DXV.
+        f"fps={sample_fps},format=yuv444p,signalstats,metadata=print:file=-",
         "-frames:v",
         str(max_samples),
         "-f",
@@ -278,7 +280,8 @@ def has_alpha(video_stream: dict[str, Any]) -> bool | None:
     if str(video_stream.get("codec_name") or "").lower() == "dxv":
         return None
     pixel_format = str(video_stream.get("pix_fmt") or "").lower()
-    return pixel_format.endswith("a") or "rgba" in pixel_format or "yuva" in pixel_format
+    alpha_formats = ("rgba", "argb", "bgra", "abgr", "gbrap", "yuva", "ayuv")
+    return any(marker in pixel_format for marker in alpha_formats)
 
 
 def summarize_video(probe: dict[str, Any]) -> dict[str, Any]:
