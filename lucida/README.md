@@ -96,6 +96,15 @@ requires `recovery=True` for a replacement snapshot. `checkpoint()` and
 actions. Its checkpoint contract is
 [`overlay-consumer-checkpoint.schema.json`](overlay/contracts/overlay-consumer-checkpoint.schema.json).
 
+`replay_overlay_json(source)` and `replay_overlay_path(path)` consume the
+strict `LucidaOverlayReplay` envelope, apply snapshots and deltas through
+`OverlayConsumer`, and return a deterministic `LucidaOverlayReplayReport`.
+The replay is local and read-only; malformed records, unsafe deltas, stale
+cursors, and sequence gaps fail explicitly. The fictional fixture is
+[`overlay-session-fictional.json`](overlay/fixtures/overlay-session-fictional.json)
+and its input contract is
+[`overlay-replay.schema.json`](overlay/contracts/overlay-replay.schema.json).
+
 ## Replay y dry-run
 
 ```python

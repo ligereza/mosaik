@@ -13,6 +13,8 @@ from lucida import (
     OverlayConsumerNotInitializedError,
     OverlayConsumerStaleError,
     build_overlay_cursor,
+    replay_overlay_json,
+    replay_overlay_path,
 )
 from lucida.contracts import LucidaContractError, LucidaState
 from lucida.overlay import (
@@ -411,3 +413,54 @@ def test_overlay_consumer_rejects_mismatched_snapshot_and_checkpoint_contracts()
     checkpoint["cursor"] = cursor
     with pytest.raises(ValueError, match="non-empty last_operation"):
         consumer.restore_checkpoint(checkpoint)
+
+
+def test_overlay_json_replay_is_deterministic_and_recoverable():
+    fixture_path = Path(__file__).parents[2] / "lucida" / "overlay" / "fixtures" / "overlay-session-fictional.json"
+    first = replay_overlay_path(fixture_path)
+    second = replay_overlay_json(fixture_path.read_text(encoding="utf-8"))
+
+    assert first == second
+    assert first["status"] == "PASS"
+    assert first["record_count"] == 5
+    assert first["snapshot_count"] == 2
+    assert first["delta_count"] == 3
+    assert first["final_view"]["status"] == "showing"
+    assert first["final_view"]["overlay_status"] == "recovered"
+    assert first["final_cursor"]["sequence"] == 2
+    assert first["checkpoint"]["safety"]["proposal_only"] is True
+    assert "metadata" not in json.dumps(first, sort_keys=True)
+
+
+def test_overlay_json_replay_rejects_malformed_or_unsafe_streams():
+    fixture_path = Path(__file__).parents[2] / "lucida" / "overlay" / "fixtures" / "overlay-session-fictional.json"
+    envelope = json.loads(fixture_path.read_text(encoding="utf-8"))
+
+    no_snapshot = json.loads(json.dumps(envelope, sort_keys=True))
+    no_snapshot["records"] = no_snapshot["records"][1:]
+    with pytest.raises(ValueError, match="first replay record"):
+        replay_overlay_json(no_snapshot)
+
+    gap = json.loads(json.dumps(envelope, sort_keys=True))
+    gap["records"][1]["cursor"]["sequence"] = 2
+    with pytest.raises(ValueError, match="skips"):
+        replay_overlay_json(gap)
+
+    unsafe = json.loads(json.dumps(envelope, sort_keys=True))
+    unsafe["records"][1]["changes"][0]["after"] = {"execute": "must-not-run"}
+    with pytest.raises(ValueError):
+        replay_overlay_json(unsafe)
+
+
+def test_overlay_replay_schema_is_strict_and_references_safe_contracts():
+    contracts_dir = Path(__file__).parents[2] / "lucida" / "overlay" / "contracts"
+    schema = json.loads(
+        (contracts_dir / "overlay-replay.schema.json").read_text(encoding="utf-8")
+    )
+
+    assert schema["additionalProperties"] is False
+    assert schema["properties"]["records"]["minItems"] == 1
+    variants = schema["properties"]["records"]["items"]["anyOf"]
+    assert variants[0]["properties"]["view"]["$ref"] == "overlay-view.schema.json"
+    assert variants[0]["properties"]["cursor"]["$ref"] == "overlay-cursor.schema.json"
+    assert variants[1]["properties"]["cursor"]["$ref"] == "overlay-cursor.schema.json"

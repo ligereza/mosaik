@@ -19,6 +19,12 @@ from .overlay_consumer import (
     OverlayConsumerStaleError,
     OverlayConsumerState,
 )
+from .overlay_replay import (
+    OverlayReplayError,
+    replay_overlay_json,
+    replay_overlay_path,
+    replay_overlay_records,
+)
 
 __all__ = [
     "CapabilityReport",
@@ -39,4 +45,8 @@ __all__ = [
     "OverlayConsumerNotInitializedError",
     "OverlayConsumerStaleError",
     "OverlayConsumerState",
+    "OverlayReplayError",
+    "replay_overlay_json",
+    "replay_overlay_path",
+    "replay_overlay_records",
 ]
