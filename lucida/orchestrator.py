@@ -10,6 +10,7 @@ from adapters.vj.contracts import VJEvent, VJResult, VJState
 
 from .capabilities import ImagoCapability, InstarCapability, NayadeCapability
 from .contracts import CAPABILITY_NAMES, CapabilityReport, LucidaState
+from .overlay import build_overlay_view
 
 
 class LucidaError(ValueError):
@@ -116,6 +117,11 @@ class LucidaOrchestrator:
                 "resolume_opened": False,
             },
         }
+
+    def read_overlay_view(self, state: LucidaState | Mapping[str, Any]) -> dict[str, Any]:
+        """Return a bounded projection suitable for a future invisible overlay."""
+
+        return build_overlay_view(state)
 
     def read_state(self, state: LucidaState | Mapping[str, Any]) -> dict[str, Any]:
         """Expose the same state contract without any UI or host dependency."""

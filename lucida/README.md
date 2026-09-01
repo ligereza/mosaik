@@ -55,6 +55,11 @@ overlay = orchestrator.read_overlay(state)
 renderizarla dentro del host que corresponda, pero LUCIDA no asume un toolkit
 gráfico ni una integración no autorizada.
 
+`read_overlay_view` ofrece una proyección compacta y acotada para esa futura
+superficie. Incluye estado, capacidades, propuestas pendientes y desconocidos,
+pero omite payloads de eventos, metadata arbitraria, rutas y credenciales. Su
+modo es siempre `read_only` y `proposal_only`.
+
 ## Replay y dry-run
 
 ```python
