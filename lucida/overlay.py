@@ -86,7 +86,7 @@ def build_overlay_view(
             if isinstance(unknown, str) and unknown.strip()
         }
     )[:max_unknowns]
-    next_attention = _next_attention(proposal_views, unknowns)
+    next_attention = _next_attention(proposal_views, unknowns, current.vj_state.phase)
 
     return {
         "contract_type": "LucidaOverlayView",
@@ -137,7 +137,8 @@ def _proposal_view(proposal: VJProposal) -> dict[str, Any]:
 def _next_attention(
     proposals: list[dict[str, Any]],
     unknowns: list[str],
-) -> dict[str, Any] | None:
+    phase: str,
+) -> dict[str, Any]:
     if proposals:
         proposal = proposals[0]
         return {
@@ -147,7 +148,7 @@ def _next_attention(
         }
     if unknowns:
         return {"kind": "unknown", "id": "unknown-001", "reason": unknowns[0]}
-    return None
+    return {"kind": "phase", "id": f"phase-{phase}", "reason": "Awaiting the next event."}
 
 
 __all__ = ["OVERLAY_VIEW_SCHEMA_VERSION", "build_overlay_view"]

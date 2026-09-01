@@ -2,7 +2,9 @@ import json
 
 import pytest
 
+from adapters.vj.contracts import VJState
 from lucida import LucidaOrchestrator
+from lucida.contracts import LucidaState
 from lucida.overlay import build_overlay_view
 
 
@@ -70,3 +72,21 @@ def test_overlay_view_limits_are_explicit_and_empty_state_is_safe():
 
     with pytest.raises(ValueError, match="non-negative integer"):
         build_overlay_view(state, max_proposals=-1)
+
+
+def test_overlay_view_empty_state_has_one_deterministic_phase_attention_item():
+    state = LucidaState(
+        session_id="session-empty",
+        vj_state=VJState(session_id="session-empty"),
+    )
+
+    view = build_overlay_view(state)
+
+    assert view["capabilities"] == []
+    assert view["pending_proposals"] == []
+    assert view["unknowns"] == []
+    assert view["next_attention"] == {
+        "kind": "phase",
+        "id": "phase-preflight",
+        "reason": "Awaiting the next event.",
+    }

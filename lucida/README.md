@@ -60,6 +60,10 @@ superficie. Incluye estado, capacidades, propuestas pendientes y desconocidos,
 pero omite payloads de eventos, metadata arbitraria, rutas y credenciales. Su
 modo es siempre `read_only` y `proposal_only`.
 
+The bounded view uses deterministic ordering, explicit list limits, and always
+returns one `next_attention` item. When no proposal or unknown is available,
+the item points to the current phase without requesting an action.
+
 ## Replay y dry-run
 
 ```python
