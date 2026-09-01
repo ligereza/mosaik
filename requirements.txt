@@ -5,6 +5,7 @@ Pillow>=10,<13
 av>=14,<17
 scenedetect[opencv]>=0.6.6,<0.7
 jsonschema>=4.23,<5
+pyserial>=3.5,<4
 
 # Esta dependencia se utiliza para ejecutar la suite de pruebas.
 pytest==9.1.1

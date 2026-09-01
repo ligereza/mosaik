@@ -8,6 +8,12 @@ from tools.mosaik.adapt import build_adaptation_plan, build_filter_graph, render
 from tools.mosaik.instar import discover_media_files, run_instar
 from tools.mosaik.media import format_fps, has_alpha, parse_fraction
 from tools.mosaik.nayade import build_experiment_matrix, create_session, get_next_step, record_event
+from tools.mosaik.processors import (
+    build_processor_snapshot,
+    diagnose_case,
+    discover_serial_devices,
+    match_processor_profiles,
+)
 from tools.mosaik.preflight import preflight_file, sidecar_from_report
 from tools.mosaik.contracts import build_clip_profile, derive_behavior_profile, suggest_semantic_cues
 from tools.mosaik.resolume import (
@@ -29,7 +35,6 @@ class AdaptationTests(unittest.TestCase):
         self.assertIn("hstack=inputs=", pattern)
         self.assertIn("crop=1520:180:", marquee)
         self.assertIn("mod(t*120", marquee)
-
     def test_adaptation_plan_deduplicates_shared_input_group(self):
         mapping_plan = {
             "plan_type": "InstarResolumeMappingPlan",
@@ -835,6 +840,68 @@ class NayadeSessionTests(unittest.TestCase):
             self.assertEqual(report["overall_status"], "WARN")
             self.assertIn("SAFE", risks)
             self.assertIn("create_derived_media", operations)
+
+
+class ProcessorTests(unittest.TestCase):
+    def test_match_processor_profile_uses_descriptor_without_opening_port(self):
+        device = {
+            "device": "COM7",
+            "description": "NovaStar VX600 USB Control",
+            "manufacturer": "NovaStar",
+            "product": "VX600",
+            "vid_pid": "1234:5678",
+        }
+
+        matches = match_processor_profiles(device)
+
+        self.assertEqual(matches[0]["profile_id"], "novastar-vx600")
+        self.assertIn("keyword:novastar", matches[0]["reasons"])
+
+    def test_unknown_snapshot_is_read_only_and_requires_module_profile(self):
+        snapshot = build_processor_snapshot({"transport": "usb_serial", "device": "COM99"})
+
+        self.assertTrue(snapshot["read_only"])
+        self.assertEqual(snapshot["identification"]["model"]["value"], "unknown-led-processor")
+        self.assertIsNone(snapshot["module_profile_id"])
+        self.assertTrue(snapshot["safety"]["unknown_device_write_blocked"])
+        self.assertFalse(snapshot["safety"]["commands_sent"])
+        self.assertFalse(snapshot["safety"]["writes_attempted"])
+
+    def test_discovery_never_opens_ports(self):
+        fake_port = type(
+            "FakePort",
+            (),
+            {
+                "device": "COM7",
+                "description": "NovaStar VX600 USB Control",
+                "manufacturer": "NovaStar",
+                "product": "VX600",
+                "serial_number": "SN-1",
+                "interface": "USB",
+                "location": "1-2",
+                "hwid": "USB VID:PID=1234:5678",
+                "vid": 0x1234,
+                "pid": 0x5678,
+            },
+        )()
+        with patch("serial.tools.list_ports.comports", return_value=[fake_port]) as comports:
+            report = discover_serial_devices()
+
+        comports.assert_called_once_with()
+        self.assertTrue(report["read_only"])
+        self.assertFalse(report["safety"]["ports_opened"])
+        self.assertFalse(report["safety"]["commands_sent"])
+        self.assertEqual(report["devices"][0]["best_match"]["profile_id"], "novastar-vx600")
+
+    def test_saturday_case_keeps_before_black_and_marks_unknown_range_state(self):
+        report = diagnose_case(Path("data/cases/soundcheck-2026-08-29-vc2.json"))
+        finding_ids = {finding["id"] for finding in report["findings"]}
+
+        self.assertIn("raised_black_level", finding_ids)
+        self.assertIn("extreme_gamma_low_brightness", finding_ids)
+        self.assertIn("multi_stage_level_compensation", finding_ids)
+        self.assertNotIn("possible_double_range_conversion", finding_ids)
+        self.assertIn("processor_range_state_not_recorded", finding_ids)
 
 
 if __name__ == "__main__":

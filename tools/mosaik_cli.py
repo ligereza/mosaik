@@ -16,6 +16,17 @@ from mosaik.instar import run_instar, text_report as instar_text_report, write_r
 from mosaik.manifest import write_manifest
 from mosaik.media import MosaikError
 from mosaik.nayade import create_session, get_next_step, record_event, text_report as nayade_text_report
+from mosaik.processors import (
+    case_text_report,
+    catalog_text_report,
+    diagnose_case,
+    discover_serial_devices,
+    discovery_text_report,
+    load_processor_catalog,
+    snapshot_from_serial_device,
+    snapshot_text_report,
+    write_json as write_processor_json,
+)
 from mosaik.resolume import (
     advanced_output_text_report,
     build_mapping_plan,
@@ -181,6 +192,26 @@ def build_parser() -> argparse.ArgumentParser:
     session_record.add_argument("--step-id", help="Paso planificado exacto que se está registrando.")
     session_next = session_commands.add_parser("next", help="Muestra la próxima prueba pendiente de la sesión.")
     session_next.add_argument("session", help="Archivo JSON de sesión NAYADE.")
+
+    processor = commands.add_parser(
+        "nayade-processor",
+        aliases=["processor"],
+        help="Inspecciona procesadores LED y diagnostica casos NAYADE sin escribir en hardware.",
+    )
+    processor_commands = processor.add_subparsers(dest="processor_command", required=True)
+    processor_catalog = processor_commands.add_parser("catalog", help="Muestra los perfiles locales de procesadores.")
+    processor_catalog.add_argument("--catalog", help="Ruta alternativa al catálogo JSON.")
+    processor_discover = processor_commands.add_parser("discover", help="Enumera puertos USB/COM sin abrirlos.")
+    processor_discover.add_argument("--catalog", help="Ruta alternativa al catálogo JSON.")
+    processor_discover.add_argument("--report", help="Ruta opcional para guardar el descubrimiento JSON.")
+    processor_snapshot = processor_commands.add_parser("snapshot", help="Crea un snapshot de un puerto en modo lectura.")
+    processor_snapshot.add_argument("--device", required=True, help="Puerto, por ejemplo COM3.")
+    processor_snapshot.add_argument("--model", help="Perfil exacto confirmado por el operador; evita inferencias.")
+    processor_snapshot.add_argument("--catalog", help="Ruta alternativa al catálogo JSON.")
+    processor_snapshot.add_argument("-o", "--output", required=True, help="Archivo JSON del snapshot.")
+    processor_case = processor_commands.add_parser("diagnose-case", help="Diagnostica un caso de soundcheck ya registrado.")
+    processor_case.add_argument("case", help="Caso JSON de NAYADE.")
+    processor_case.add_argument("--report", help="Ruta opcional para guardar el diagnóstico JSON.")
     return parser
 
 
@@ -378,6 +409,7 @@ def main(argv: list[str] | None = None) -> int:
                 print(nayade_text_report(session_document))
                 print(f"\nSesión JSON: {Path(args.output).expanduser().resolve()}")
                 return 0
+
             if args.session_command == "record":
                 parameters = {}
                 if args.parameters:
@@ -416,6 +448,35 @@ def main(argv: list[str] | None = None) -> int:
                     print(f"Objetivos: {', '.join(step.get('targets') or [])}")
                     print(f"Parámetros: {json.dumps(step.get('parameters') or {}, ensure_ascii=False)}")
                     print(f"Comprobar: {', '.join(step.get('expected_checks') or [])}")
+                return 0
+        if args.command in {"nayade-processor", "processor"}:
+            if args.processor_command == "catalog":
+                catalog = load_processor_catalog(args.catalog)
+                print(catalog_text_report(catalog))
+                return 0
+            if args.processor_command == "discover":
+                report = discover_serial_devices(args.catalog)
+                print(discovery_text_report(report))
+                if args.report:
+                    report_path = write_processor_json(report, args.report)
+                    print(f"\nDescubrimiento JSON: {report_path}")
+                return 0
+            if args.processor_command == "snapshot":
+                snapshot = snapshot_from_serial_device(
+                    args.device,
+                    model=args.model,
+                    catalog_path=args.catalog,
+                )
+                print(snapshot_text_report(snapshot))
+                report_path = write_processor_json(snapshot, args.output)
+                print(f"\nSnapshot JSON: {report_path}")
+                return 0
+            if args.processor_command == "diagnose-case":
+                report = diagnose_case(args.case)
+                print(case_text_report(report))
+                if args.report:
+                    report_path = write_processor_json(report, args.report)
+                    print(f"\nDiagnóstico JSON: {report_path}")
                 return 0
     except MosaikError as exc:
         print(f"MOSAIK ERROR: {exc}", file=sys.stderr)

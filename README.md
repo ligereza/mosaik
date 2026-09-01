@@ -23,6 +23,8 @@ python .\tools\mosaik_cli.py instar-map "D:\VJ\Shows\venue-advanced-output.xml" 
 python .\tools\mosaik_cli.py instar-testcard "D:\VJ\Shows\venue-advanced-output.xml" --output ".\artifacts\venue-geometry-testcard.mp4" --report ".\artifacts\venue-geometry-testcard.json"
 python .\tools\mosaik_cli.py nayade-session init ".\artifacts\venue-geometry-testcard.json" --output ".\artifacts\venue-soundcheck.json" --seed 4821
 python .\tools\mosaik_cli.py resolume-cues "D:\VJ\Shows\show.avc" --report ".\artifacts\cues.json"
+python .\tools\mosaik_cli.py nayade-processor catalog
+python .\tools\mosaik_cli.py nayade-processor discover --report ".\artifacts\processor-discovery.json"
 ```
 
 ## Dependencias
@@ -165,3 +167,12 @@ La decisión de herramientas adoptadas y pendientes está en
 
 La arquitectura de esta integración está documentada en
 `docs/architecture/integracion-mosaik-resolume-mcp.md`.
+
+### NAYADE y procesadores LED
+
+El catálogo inicial de procesadores está en `data/processors/catalog.json` y
+los perfiles físicos de módulos siguen `schemas/module-profile.schema.json`.
+NAYADE comienza con descubrimiento USB/COM y snapshots en solo lectura; no
+envía comandos ni modifica procesadores. El flujo y sus límites están en
+`docs/runbooks/nayade-processor.md`, y la investigación de familias, pitch,
+indoor/outdoor y protocolos está en `docs/research/procesadores-led-y-modulos.md`.
