@@ -64,6 +64,12 @@ The bounded view uses deterministic ordering, explicit list limits, and always
 returns one `next_attention` item. When no proposal or unknown is available,
 the item points to the current phase without requesting an action.
 
+`diff_overlay_view(previous_view, current_view)` accepts only complete
+`LucidaOverlayView` dictionaries. It compares seven safe fields in fixed order
+and returns at most seven JSON-safe change records. It ignores identity and
+phase-only changes, and rejects payloads, metadata, filesystem paths,
+credentials, and action fields.
+
 ## Replay y dry-run
 
 ```python

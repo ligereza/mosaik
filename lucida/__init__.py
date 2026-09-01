@@ -3,6 +3,7 @@
 from .capabilities import ImagoCapability, InstarCapability, NayadeCapability
 from .contracts import CapabilityReport, LucidaState
 from .orchestrator import LucidaOrchestrator
+from .overlay import OverlayDiffError, build_overlay_view, diff_overlay_view
 
 __all__ = [
     "CapabilityReport",
@@ -11,4 +12,7 @@ __all__ = [
     "LucidaOrchestrator",
     "LucidaState",
     "NayadeCapability",
+    "OverlayDiffError",
+    "build_overlay_view",
+    "diff_overlay_view",
 ]

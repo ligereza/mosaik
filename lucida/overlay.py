@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from typing import Any, Mapping
 
 from adapters.vj.contracts import VJProposal
@@ -10,6 +11,51 @@ from .contracts import CAPABILITY_NAMES, LucidaState
 
 
 OVERLAY_VIEW_SCHEMA_VERSION = "0.1"
+OVERLAY_DIFF_FIELDS = (
+    "status",
+    "overlay_status",
+    "capabilities",
+    "pending_proposals",
+    "unknowns",
+    "next_attention",
+    "safety",
+)
+MAX_DIFF_CHANGES = len(OVERLAY_DIFF_FIELDS)
+_OVERLAY_FIELDS = {
+    "contract_type",
+    "schema_version",
+    "surface",
+    "mode",
+    "session_id",
+    "phase",
+    "status",
+    "overlay_status",
+    "capabilities",
+    "pending_proposals",
+    "unknowns",
+    "next_attention",
+    "safety",
+}
+_CAPABILITY_VIEW_FIELDS = {
+    "capability",
+    "state",
+    "observed_count",
+    "expected_result_count",
+    "unknowns",
+}
+_PROPOSAL_VIEW_FIELDS = {
+    "proposal_id",
+    "event_id",
+    "phase",
+    "operation",
+    "reason",
+    "risk",
+    "requires_explicit_approval",
+    "reversible",
+    "execution_mode",
+}
+_NEXT_ATTENTION_FIELDS = {"kind", "id", "reason"}
+_SAFETY_FIELDS = {"proposal_only", "automatic_actions", "external_side_effects"}
 _DEFAULT_CAPABILITY_LIMIT = 3
 _DEFAULT_PROPOSAL_LIMIT = 8
 _DEFAULT_UNKNOWNS_LIMIT = 8
@@ -21,6 +67,120 @@ _SAFE_STATE_KEYS = (
     "show_status",
     "recovery_status",
 )
+
+
+class OverlayDiffError(ValueError):
+    """Raised when an overlay diff input is not a projected view."""
+
+
+def diff_overlay_view(
+    previous_view: Mapping[str, Any],
+    current_view: Mapping[str, Any],
+    *,
+    max_changes: int = MAX_DIFF_CHANGES,
+) -> list[dict[str, Any]]:
+    """Return bounded, deterministic changes between two projected views."""
+
+    if isinstance(max_changes, bool) or not isinstance(max_changes, int) or max_changes < 0:
+        raise OverlayDiffError("max_changes must be a non-negative integer")
+    previous = _validated_projected_view(previous_view, "previous_view")
+    current = _validated_projected_view(current_view, "current_view")
+    changes: list[dict[str, Any]] = []
+    for field_name in OVERLAY_DIFF_FIELDS:
+        before = previous[field_name]
+        after = current[field_name]
+        if before != after:
+            changes.append(
+                {
+                    "field": field_name,
+                    "before": _json_copy(before),
+                    "after": _json_copy(after),
+                }
+            )
+    return changes[:max_changes]
+
+
+def _validated_projected_view(value: Mapping[str, Any], field_name: str) -> dict[str, Any]:
+    if not isinstance(value, Mapping):
+        raise OverlayDiffError(f"{field_name} must be a mapping.")
+    unexpected = set(value) - _OVERLAY_FIELDS
+    if unexpected:
+        raise OverlayDiffError(
+            f"{field_name} has unsupported fields: {sorted(unexpected)}."
+        )
+    required = _OVERLAY_FIELDS
+    missing = required - set(value)
+    if missing:
+        raise OverlayDiffError(f"{field_name} missing fields: {sorted(missing)}.")
+    if value.get("contract_type") != "LucidaOverlayView":
+        raise OverlayDiffError(f"{field_name}.contract_type must be LucidaOverlayView.")
+    if value.get("schema_version") != OVERLAY_VIEW_SCHEMA_VERSION:
+        raise OverlayDiffError(
+            f"{field_name}.schema_version must be {OVERLAY_VIEW_SCHEMA_VERSION}."
+        )
+    if value.get("surface") != "LUCIDA":
+        raise OverlayDiffError(f"{field_name}.surface must be LUCIDA.")
+    if value.get("mode") != "read_only":
+        raise OverlayDiffError(f"{field_name}.mode must be read_only.")
+    for text_field in ("session_id", "phase", "status", "overlay_status"):
+        if not isinstance(value.get(text_field), str):
+            raise OverlayDiffError(f"{field_name}.{text_field} must be text.")
+    for list_field in ("capabilities", "pending_proposals", "unknowns"):
+        if not isinstance(value.get(list_field), list):
+            raise OverlayDiffError(f"{field_name}.{list_field} must be a list.")
+    for capability in value["capabilities"]:
+        if not isinstance(capability, Mapping):
+            raise OverlayDiffError(f"{field_name}.capabilities items must be objects.")
+        if set(capability) != _CAPABILITY_VIEW_FIELDS:
+            raise OverlayDiffError(f"{field_name}.capabilities contains unsupported fields.")
+        if not isinstance(capability.get("state"), Mapping):
+            raise OverlayDiffError(f"{field_name}.capabilities state must be an object.")
+        if not set(capability["state"]).issubset(_SAFE_STATE_KEYS):
+            raise OverlayDiffError(f"{field_name}.capabilities state contains unsafe fields.")
+        if not isinstance(capability.get("unknowns"), list):
+            raise OverlayDiffError(f"{field_name}.capabilities unknowns must be a list.")
+    for proposal in value["pending_proposals"]:
+        if not isinstance(proposal, Mapping):
+            raise OverlayDiffError(f"{field_name}.pending_proposals items must be objects.")
+        if set(proposal) != _PROPOSAL_VIEW_FIELDS:
+            raise OverlayDiffError(f"{field_name}.pending_proposals contains unsupported fields.")
+        if proposal.get("requires_explicit_approval") is not True:
+            raise OverlayDiffError(f"{field_name}.pending_proposals must require approval.")
+        if proposal.get("reversible") is not True:
+            raise OverlayDiffError(f"{field_name}.pending_proposals must be reversible.")
+        if proposal.get("execution_mode") != "proposal_only":
+            raise OverlayDiffError(f"{field_name}.pending_proposals must be proposal_only.")
+    next_attention = value.get("next_attention")
+    if not isinstance(next_attention, Mapping):
+        raise OverlayDiffError(f"{field_name}.next_attention must be an object.")
+    if set(next_attention) != _NEXT_ATTENTION_FIELDS:
+        raise OverlayDiffError(f"{field_name}.next_attention contains unsupported fields.")
+    if not all(isinstance(next_attention.get(key), str) for key in _NEXT_ATTENTION_FIELDS):
+        raise OverlayDiffError(f"{field_name}.next_attention must contain text fields.")
+    safety = value.get("safety")
+    if not isinstance(safety, Mapping):
+        raise OverlayDiffError(f"{field_name}.safety must be an object.")
+    if set(safety) != _SAFETY_FIELDS:
+        raise OverlayDiffError(f"{field_name}.safety contains unsupported fields.")
+    if safety.get("proposal_only") is not True:
+        raise OverlayDiffError(f"{field_name}.safety must remain proposal_only.")
+    if safety.get("automatic_actions") is not False or safety.get("external_side_effects") is not False:
+        raise OverlayDiffError(f"{field_name}.safety must remain read_only.")
+    return _json_copy(dict(value))
+
+
+def _json_copy(value: Any) -> Any:
+    try:
+        serialized = json.dumps(
+            value,
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=True,
+            allow_nan=False,
+        )
+    except (TypeError, ValueError) as exc:
+        raise OverlayDiffError("overlay values must be JSON serializable.") from exc
+    return json.loads(serialized)
 
 
 def build_overlay_view(
@@ -151,4 +311,11 @@ def _next_attention(
     return {"kind": "phase", "id": f"phase-{phase}", "reason": "Awaiting the next event."}
 
 
-__all__ = ["OVERLAY_VIEW_SCHEMA_VERSION", "build_overlay_view"]
+__all__ = [
+    "MAX_DIFF_CHANGES",
+    "OVERLAY_DIFF_FIELDS",
+    "OVERLAY_VIEW_SCHEMA_VERSION",
+    "OverlayDiffError",
+    "build_overlay_view",
+    "diff_overlay_view",
+]

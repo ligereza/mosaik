@@ -5,7 +5,12 @@ import pytest
 from adapters.vj.contracts import VJState
 from lucida import LucidaOrchestrator
 from lucida.contracts import LucidaState
-from lucida.overlay import build_overlay_view
+from lucida.overlay import (
+    MAX_DIFF_CHANGES,
+    OverlayDiffError,
+    build_overlay_view,
+    diff_overlay_view,
+)
 
 
 def _state():
@@ -90,3 +95,80 @@ def test_overlay_view_empty_state_has_one_deterministic_phase_attention_item():
         "id": "phase-preflight",
         "reason": "Awaiting the next event.",
     }
+
+
+def test_overlay_diff_is_stable_and_reports_proposal_and_attention_changes():
+    _, state = _state()
+    previous = build_overlay_view(state)
+    current = json.loads(json.dumps(previous, sort_keys=True))
+    current["pending_proposals"][0]["reason"] = "Review the updated proposal."
+    current["next_attention"] = {
+        "kind": "unknown",
+        "id": "unknown-001",
+        "reason": "A safe operator review is still required.",
+    }
+
+    first = diff_overlay_view(previous, current)
+    second = diff_overlay_view(previous, current)
+
+    assert first == second
+    assert [item["field"] for item in first] == ["pending_proposals", "next_attention"]
+    assert first[0]["after"][0]["reason"] == "Review the updated proposal."
+    assert first[1]["after"]["kind"] == "unknown"
+    assert diff_overlay_view(previous, previous) == []
+
+
+def test_overlay_diff_compares_only_safe_fields_and_enforces_bounds():
+    _, state = _state()
+    previous = build_overlay_view(state)
+    current = json.loads(json.dumps(previous, sort_keys=True))
+    current["session_id"] = "other-session"
+    current["phase"] = "show"
+    current["status"] = "changed"
+    current["overlay_status"] = "changed"
+    current["unknowns"] = ["Unknown change."]
+    current["next_attention"] = {
+        "kind": "unknown",
+        "id": "unknown-001",
+        "reason": "Unknown change.",
+    }
+    current["safety"] = dict(current["safety"])
+
+    changes = diff_overlay_view(previous, current, max_changes=1)
+
+    assert len(changes) == 1
+    assert len(diff_overlay_view(previous, current)) <= MAX_DIFF_CHANGES
+    assert changes[0]["field"] == "status"
+
+
+def test_overlay_diff_rejects_non_projected_or_unsafe_inputs():
+    _, state = _state()
+    view = build_overlay_view(state)
+
+    with pytest.raises(OverlayDiffError, match="mapping"):
+        diff_overlay_view([], view)
+
+    invalid_contract = dict(view)
+    invalid_contract["contract_type"] = "RawState"
+    with pytest.raises(OverlayDiffError, match="contract_type"):
+        diff_overlay_view(view, invalid_contract)
+
+    invalid_schema = dict(view)
+    invalid_schema["schema_version"] = "9.9"
+    with pytest.raises(OverlayDiffError, match="schema_version"):
+        diff_overlay_view(view, invalid_schema)
+
+    unsafe = dict(view)
+    unsafe["payload"] = {"secret": "must-not-display"}
+    with pytest.raises(OverlayDiffError, match="unsupported fields"):
+        diff_overlay_view(view, unsafe)
+
+    nested_unsafe = json.loads(json.dumps(view, sort_keys=True))
+    nested_unsafe["pending_proposals"][0]["payload"] = {"secret": "must-not-display"}
+    with pytest.raises(OverlayDiffError, match="pending_proposals"):
+        diff_overlay_view(view, nested_unsafe)
+
+    unsafe_safety = json.loads(json.dumps(view, sort_keys=True))
+    unsafe_safety["safety"]["execute"] = "must-not-run"
+    with pytest.raises(OverlayDiffError, match="safety"):
+        diff_overlay_view(view, unsafe_safety)
