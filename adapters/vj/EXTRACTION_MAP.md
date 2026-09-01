@@ -4,8 +4,7 @@ Este documento registra qué ideas se extraen de `CAPACIDADES.md` y qué queda
 fuera del adaptador reusable. VJ no copia obras, clips, presets personales,
 showfiles, XML de venues, rutas locales ni configuraciones privadas.
 
-La relación conceptual con LUCIDA queda registrada como origen de la capa de
-coordinación; esta rama conserva la identidad VJ y no implementa un core nuevo.
+Esta rama conserva la identidad VJ y no implementa un core nuevo.
 
 ## Núcleo reusable que entra en VJ
 
