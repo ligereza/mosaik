@@ -1,5 +1,6 @@
 import json
 from dataclasses import replace
+from pathlib import Path
 
 import pytest
 
@@ -223,3 +224,38 @@ def test_orchestrator_diff_rejects_invalid_state_through_existing_contracts():
     invalid_current["vj_state"]["phase"] = "not-a-phase"
     with pytest.raises(ValueError, match="phase"):
         orchestrator.diff_overlay_view(state, invalid_current)
+
+
+def test_overlay_contract_schemas_match_the_safe_runtime_surface():
+    contracts_dir = Path(__file__).parents[2] / "lucida" / "overlay" / "contracts"
+    view_schema = json.loads(
+        (contracts_dir / "overlay-view.schema.json").read_text(encoding="utf-8")
+    )
+    diff_schema = json.loads(
+        (contracts_dir / "overlay-diff.schema.json").read_text(encoding="utf-8")
+    )
+    _, state = _state()
+    view = build_overlay_view(state)
+    diff = diff_overlay_view(view, {**view, "status": "changed"})
+
+    assert view_schema["additionalProperties"] is False
+    assert set(view_schema["required"]) == set(view)
+    assert diff_schema["maxItems"] == MAX_DIFF_CHANGES
+    assert set(diff_schema["items"]["required"]) == {"field", "before", "after"}
+    assert all(item["field"] in diff_schema["items"]["properties"]["field"]["enum"] for item in diff)
+
+
+def test_overlay_contract_schemas_represent_proposal_only_safety():
+    contracts_dir = Path(__file__).parents[2] / "lucida" / "overlay" / "contracts"
+    view_schema = json.loads(
+        (contracts_dir / "overlay-view.schema.json").read_text(encoding="utf-8")
+    )
+    safety = view_schema["properties"]["safety"]["properties"]
+    proposal = view_schema["properties"]["pending_proposals"]["items"]["properties"]
+
+    assert safety["proposal_only"]["const"] is True
+    assert safety["automatic_actions"]["const"] is False
+    assert safety["external_side_effects"]["const"] is False
+    assert proposal["requires_explicit_approval"]["const"] is True
+    assert proposal["reversible"]["const"] is True
+    assert proposal["execution_mode"]["const"] == "proposal_only"

@@ -76,6 +76,12 @@ credentials, and action fields.
 implementation. Invalid state mappings are rejected by the existing state
 contracts. Internal payloads and metadata are never emitted in the result.
 
+The machine-readable contracts are
+[`overlay-view.schema.json`](overlay/contracts/overlay-view.schema.json) and
+[`overlay-diff.schema.json`](overlay/contracts/overlay-diff.schema.json). They
+allow a future host or transparent overlay to validate the safe shape without
+importing LUCIDA internals.
+
 ## Replay y dry-run
 
 ```python
