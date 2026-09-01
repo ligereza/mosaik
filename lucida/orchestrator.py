@@ -37,7 +37,7 @@ class LucidaOrchestrator:
                 capability=name,
                 observed=("Sin eventos procesados.",),
                 state={"status": "idle"},
-                unknowns=("La capacidad aún no ha recibido un evento.",),
+                unknowns=("The capability has not received an event yet.",),
             )
             for name in CAPABILITY_NAMES
         )

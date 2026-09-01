@@ -35,7 +35,7 @@ class VJAdapter:
 
     def initial_state(self, session_id: str, metadata: Mapping[str, Any] | None = None) -> VJState:
         if not isinstance(session_id, str) or not session_id.strip():
-            raise VJAdapterError("session_id debe ser texto no vacío.")
+            raise VJAdapterError("session_id must be non-empty text.")
         return VJState(session_id=session_id.strip(), metadata=dict(metadata or {}))
 
     def process(self, event: VJEvent | Mapping[str, Any], state: VJState | Mapping[str, Any]) -> tuple[VJState, tuple[VJProposal, ...]]:
@@ -111,9 +111,9 @@ class VJAdapter:
             if event_time < current_time:
                 raise VJAdapterError("Los eventos deben llegar en orden temporal.")
         if event.phase not in _ALLOWED_NEXT_PHASES[state.phase]:
-            raise VJAdapterError(f"Transición no permitida: {state.phase} -> {event.phase}")
+            raise VJAdapterError(f"Transition not allowed: {state.phase} -> {event.phase}")
         if state.status == "closed":
-            raise VJAdapterError("No se pueden procesar eventos después del cierre.")
+            raise VJAdapterError("Events cannot be processed after closure.")
 
     @staticmethod
     def _status_for(event: VJEvent) -> str:
@@ -155,7 +155,7 @@ class VJAdapter:
                 self._proposal(
                     event,
                     "observe-show",
-                    "Registrar el inicio del show para permitir replay y análisis posterior.",
+                    "Record the show start to support replay and later analysis.",
                     "low",
                     ("show-start", "timestamp"),
                 ),
@@ -176,7 +176,7 @@ class VJAdapter:
                 self._proposal(
                     event,
                     "prepare-recovery",
-                    "Comparar el estado actual con el último checkpoint antes de proponer recuperación.",
+                    "Compare the current state with the last checkpoint before proposing recovery.",
                     "medium",
                     ("checkpoint", "recovery", "operator-approval"),
                 ),
@@ -186,7 +186,7 @@ class VJAdapter:
                 self._proposal(
                     event,
                     "verify-recovery",
-                    "Registrar que las pruebas posteriores a la recuperación fueron verificadas.",
+                    "Record that post-recovery tests were verified.",
                     "low",
                     ("recovery", "verification"),
                 ),
@@ -196,7 +196,7 @@ class VJAdapter:
                 self._proposal(
                     event,
                     "close-session",
-                    "Conservar el resumen y los resultados de la sesión para replay.",
+                    "Preserve the session summary and results for replay.",
                     "low",
                     ("closure", "replay"),
                 ),

@@ -41,7 +41,7 @@ def replay_fixture(fixture: Mapping[str, Any]) -> dict[str, Any]:
     if not isinstance(session_id, str) or not session_id.strip():
         raise ReplayError("El fixture necesita session_id.")
     if not isinstance(events, list) or not events:
-        raise ReplayError("El fixture necesita events no vacíos.")
+        raise ReplayError("The fixture needs a non-empty events list.")
     if not isinstance(results, list):
         raise ReplayError("results debe ser una lista.")
 

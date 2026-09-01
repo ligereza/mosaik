@@ -79,6 +79,9 @@ reporte.
 - Los detalles de medios, cues, mapping, GPU, protocolos y hardware siguen
   siendo implementaciones exclusivas o pendientes de MOSAIK.
 
+La convención de ASCII técnico y la verificación offline están documentadas en
+[`CONTRIBUTING.md`](CONTRIBUTING.md).
+
 ## Siguiente integración con XIO
 
 El siguiente paso es acordar un contrato de entrada con XIO para convertir su

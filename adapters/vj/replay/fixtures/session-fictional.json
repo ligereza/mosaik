@@ -80,7 +80,7 @@
       "proposal_id": "proposal-evt-002-checkpoint-preparation",
       "recorded_at": "2026-01-10T20:21:00Z",
       "status": "accepted",
-      "notes": "Mapping y testcard aprobados por el operador.",
+      "notes": "Mapping and testcard approved by the operator.",
       "evidence": ["testcard-review"]
     },
     {
@@ -98,7 +98,7 @@
       "proposal_id": "proposal-evt-004-capture-incident",
       "recorded_at": "2026-01-10T22:37:20Z",
       "status": "accepted",
-      "notes": "Se conserva el síntoma antes de intervenir.",
+      "notes": "The symptom is preserved before intervention.",
       "evidence": ["black-pattern-note"]
     },
     {
@@ -107,7 +107,7 @@
       "proposal_id": "proposal-evt-005-prepare-recovery",
       "recorded_at": "2026-01-10T22:39:10Z",
       "status": "accepted",
-      "notes": "Recuperación aprobada explícitamente.",
+      "notes": "Recovery explicitly approved.",
       "evidence": ["checkpoint-evt-002"]
     },
     {
@@ -116,7 +116,7 @@
       "proposal_id": "proposal-evt-006-verify-recovery",
       "recorded_at": "2026-01-10T22:44:00Z",
       "status": "accepted",
-      "notes": "Pruebas de recuperación aprobadas.",
+      "notes": "Recovery tests approved.",
       "evidence": ["black", "white", "geometry"]
     },
     {
@@ -125,7 +125,7 @@
       "proposal_id": "proposal-evt-007-close-session",
       "recorded_at": "2026-01-11T00:00:01Z",
       "status": "observed",
-      "notes": "Replay listo para análisis posterior.",
+      "notes": "Replay ready for later analysis.",
       "evidence": ["show-log"]
     }
   ]

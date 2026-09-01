@@ -23,10 +23,10 @@ class _BaseCapability:
         if not self.supports(event):
             return CapabilityReport(
                 capability=self.name,
-                observed=(f"Sin evento dirigido a {self.name} en esta transición.",),
+                observed=(f"No event directed to {self.name} in this transition.",),
                 state={"status": "idle", "last_phase": state.phase},
                 expected_results=(),
-                unknowns=(f"No hay evidencia de {self.name} para este evento.",),
+                unknowns=(f"No evidence for {self.name} is available for this event.",),
             )
 
         payload = event.payload
@@ -49,20 +49,20 @@ class _BaseCapability:
         )
 
     def _observed(self, event: VJEvent) -> tuple[str, ...]:
-        return (f"{self.name} observó {event.event_type} en fase {event.phase}.",)
+        return (f"{self.name} observed {event.event_type} in phase {event.phase}.",)
 
     def _reason(self, event: VJEvent) -> str:
-        return f"Sugerir una revisión de {self.name} basada en el evento {event.event_id}."
+        return f"Suggest a {self.name} review based on event {event.event_id}."
 
     def _state(self, payload: dict[str, Any]) -> dict[str, Any]:
         return {"payload_status": payload.get("status", "unknown")}
 
     def _unknowns(self) -> tuple[str, ...]:
-        return ("La aplicación host y el hardware externo no están conectados en modo offline.",)
+        return ("The host application and external hardware are not connected in offline mode.",)
 
 
 class InstarCapability(_BaseCapability):
-    """Preflight de medios, formato y preparación de superficies."""
+    """Preflight for media, format, and surface preparation."""
 
     name = "INSTAR"
     phases = ("preflight",)
@@ -77,13 +77,13 @@ class InstarCapability(_BaseCapability):
 
 
 class NayadeCapability(_BaseCapability):
-    """Soundcheck de señal, procesador y coexistencia de superficies."""
+    """Soundcheck for signal, processor, and surface coexistence."""
 
     name = "NAYADE"
     phases = ("preparation",)
     operation = "review-soundcheck-signal"
     risk = "medium"
-    expected = "El operador confirma señal, geometría y color sin escribir en el procesador."
+    expected = "The operator confirms signal, geometry, and color without writing to the processor."
 
     def _state(self, payload: dict[str, Any]) -> dict[str, Any]:
         return {
@@ -93,7 +93,7 @@ class NayadeCapability(_BaseCapability):
 
 
 class ImagoCapability(_BaseCapability):
-    """Observación del show, incidentes y recuperación en vivo."""
+    """Observation of the show, incidents, and live recovery."""
 
     name = "IMAGO"
     phases = ("show", "incident", "recovery", "closure")

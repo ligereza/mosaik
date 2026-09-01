@@ -17,7 +17,7 @@ class ContractError(ValueError):
 
 def _required_text(value: Any, field_name: str) -> str:
     if not isinstance(value, str) or not value.strip():
-        raise ContractError(f"{field_name} debe ser texto no vacío.")
+        raise ContractError(f"{field_name} must be non-empty text.")
     return value.strip()
 
 
@@ -26,7 +26,7 @@ def _timestamp(value: Any) -> str:
     try:
         datetime.fromisoformat(text.replace("Z", "+00:00"))
     except ValueError as exc:
-        raise ContractError(f"timestamp no es ISO-8601 válido: {text}") from exc
+        raise ContractError(f"timestamp is not valid ISO-8601: {text}") from exc
     return text
 
 
@@ -103,7 +103,7 @@ class VJProposal:
         if phase not in PHASES:
             raise ContractError(f"phase desconocida: {phase}")
         if value.get("requires_explicit_approval", True) is not True:
-            raise ContractError("Toda propuesta VJ debe exigir aprobación explícita.")
+            raise ContractError("Every VJ proposal must require explicit approval.")
         if value.get("reversible", True) is not True:
             raise ContractError("Toda propuesta VJ debe ser recuperable/reversible.")
         if value.get("execution_mode", "proposal_only") != "proposal_only":

@@ -24,7 +24,7 @@ class LucidaContractError(ValueError):
 
 def _required_text(value: Any, field_name: str) -> str:
     if not isinstance(value, str) or not value.strip():
-        raise LucidaContractError(f"{field_name} debe ser texto no vacío.")
+        raise LucidaContractError(f"{field_name} must be non-empty text.")
     return value.strip()
 
 
@@ -33,7 +33,7 @@ def _timestamp(value: Any, field_name: str) -> str:
     try:
         datetime.fromisoformat(text.replace("Z", "+00:00"))
     except ValueError as exc:
-        raise LucidaContractError(f"{field_name} no es ISO-8601 válido: {text}") from exc
+        raise LucidaContractError(f"{field_name} is not valid ISO-8601: {text}") from exc
     return text
 
 
