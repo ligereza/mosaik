@@ -1,5 +1,5 @@
 {
-  "fixture_type": "LimenVJReplayFixture",
+  "fixture_type": "VJReplayFixture",
   "schema_version": "0.1",
   "session_id": "fictional-vj-session-001",
   "events": [

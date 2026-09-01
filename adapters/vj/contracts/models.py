@@ -107,7 +107,7 @@ class VJProposal:
         if value.get("reversible", True) is not True:
             raise ContractError("Toda propuesta VJ debe ser recuperable/reversible.")
         if value.get("execution_mode", "proposal_only") != "proposal_only":
-            raise ContractError("El adaptador LIMEN no ejecuta acciones directamente.")
+            raise ContractError("El adaptador VJ no ejecuta acciones directamente.")
         return cls(
             proposal_id=_required_text(value.get("proposal_id"), "proposal_id"),
             event_id=_required_text(value.get("event_id"), "event_id"),

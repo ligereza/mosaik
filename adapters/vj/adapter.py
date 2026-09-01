@@ -31,7 +31,7 @@ _ALLOWED_NEXT_PHASES = {
 class VJAdapter:
     """Translate VJ lifecycle events into recoverable, explicit proposals."""
 
-    name = "limen-vj-adapter"
+    name = "vj-interface-layer"
 
     def initial_state(self, session_id: str, metadata: Mapping[str, Any] | None = None) -> VJState:
         if not isinstance(session_id, str) or not session_id.strip():

@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://limen.tools/contracts/vj-event.schema.json",
-  "title": "LIMEN VJ Event",
+  "$id": "urn:vj-interface-layer:contracts:vj-event",
+  "title": "VJ Event",
   "type": "object",
   "additionalProperties": false,
   "required": ["event_id", "timestamp", "phase", "event_type", "payload"],

@@ -1,1 +1,1 @@
-"""Adapters for LIMEN integrations."""
+"""Adapters for VJ integrations."""

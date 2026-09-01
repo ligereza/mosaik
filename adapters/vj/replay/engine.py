@@ -97,7 +97,7 @@ def replay_fixture(fixture: Mapping[str, Any]) -> dict[str, Any]:
         and not final_state["open_incidents"]
     )
     return {
-        "replay_type": "LimenVJReplay",
+        "replay_type": "VJReplay",
         "schema_version": "0.1",
         "session_id": session_id,
         "status": "PASS" if complete else "REVIEW",

@@ -1,8 +1,11 @@
-# LIMEN VJ Adapter
+# VJ Adapter
 
 Adaptador de dominio para conectar una sesión VJ con el núcleo reusable de
-LIMEN. En esta primera extracción el adaptador es una máquina de estados pura:
+VJ. En esta primera extracción el adaptador es una máquina de estados pura:
 recibe eventos y estado, genera propuestas auditables y registra resultados.
+
+La capa conserva una relación conceptual con LUCIDA como sistema de
+coordinación, pero la identidad y los contratos de esta rama son VJ.
 
 No ejecuta comandos, no abre puertos, no llama a Resolume, no controla
 procesadores LED y no modifica un show.

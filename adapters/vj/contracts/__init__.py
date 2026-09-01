@@ -1,4 +1,4 @@
-"""Data contracts for the LIMEN VJ adapter."""
+"""Data contracts for the VJ adapter."""
 
 from .models import (
     PHASES,

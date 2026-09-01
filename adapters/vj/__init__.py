@@ -1,4 +1,4 @@
-"""Reusable VJ adapter for LIMEN.
+"""Reusable VJ adapter for the VJ interface layer.
 
 The adapter is deliberately side-effect free: it consumes events and states,
 returns proposals, and records results. It never talks to a live show by

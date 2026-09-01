@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://limen.tools/contracts/vj-result.schema.json",
-  "title": "LIMEN VJ Result",
+  "$id": "urn:vj-interface-layer:contracts:vj-result",
+  "title": "VJ Result",
   "type": "object",
   "additionalProperties": false,
   "required": ["result_id", "proposal_id", "recorded_at", "status"],

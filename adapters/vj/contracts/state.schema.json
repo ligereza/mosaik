@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://limen.tools/contracts/vj-state.schema.json",
-  "title": "LIMEN VJ State",
+  "$id": "urn:vj-interface-layer:contracts:vj-state",
+  "title": "VJ State",
   "type": "object",
   "additionalProperties": false,
   "required": ["session_id", "phase", "status", "sequence", "pending_proposal_ids", "results"],

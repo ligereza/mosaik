@@ -1,1 +1,1 @@
-"""Tests for the LIMEN VJ adapter."""
+"""Tests for the VJ adapter."""

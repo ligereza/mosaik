@@ -1,10 +1,13 @@
-# Mapa de extracción MOSAIK -> LIMEN
+# Mapa de extracción MOSAIK -> VJ
 
 Este documento registra qué ideas se extraen de `CAPACIDADES.md` y qué queda
-fuera del adaptador reusable. LIMEN no copia obras, clips, presets personales,
+fuera del adaptador reusable. VJ no copia obras, clips, presets personales,
 showfiles, XML de venues, rutas locales ni configuraciones privadas.
 
-## Núcleo reusable que entra en LIMEN
+La relación conceptual con LUCIDA queda registrada como origen de la capa de
+coordinación; esta rama conserva la identidad VJ y no implementa un core nuevo.
+
+## Núcleo reusable que entra en VJ
 
 | Capacidad conceptual | Destino | Representación |
 | --- | --- | --- |
@@ -19,9 +22,9 @@ showfiles, XML de venues, rutas locales ni configuraciones privadas.
 | Análisis de errores | `incident.detected` | Categoría, síntomas y evidencia en payload; propuesta de captura sin intervención |
 | Replay de sesión | `adapters/vj/replay/engine.py` | Replay determinista sin efectos externos |
 
-## Adaptador VJ que entra en LIMEN
+## Adaptador VJ que entra en la capa de interfaz
 
-Estos conceptos pertenecen al dominio VJ, pero LIMEN solo define el contrato y
+Estos conceptos pertenecen al dominio VJ, pero el adaptador solo define el contrato y
 el ciclo de vida; no incorpora los motores especializados de MOSAIK.
 
 | Dominio | Cómo se representa ahora | Implementación especializada pendiente |
@@ -57,7 +60,7 @@ Quedan explícitamente fuera de esta primera extracción:
 
 ## Capacidades que permanecen exclusivas de MOSAIK
 
-La rama LIMEN no copia ni extrae la implementación concreta de estas
+La rama VJ no copia ni extrae la implementación concreta de estas
 capacidades:
 
 - análisis de carpetas de visuales de INSTAR;
@@ -76,7 +79,7 @@ capacidades:
 - scripts PowerShell de preflight y snapshots del equipo.
 
 Estas funciones pueden convertirse en futuros adaptadores que emitan eventos,
-estados, propuestas y resultados, pero no forman parte del núcleo LIMEN.
+estados, propuestas y resultados, pero no forman parte de este adaptador VJ.
 
 ## Decisión sobre el core
 

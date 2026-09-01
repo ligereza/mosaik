@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://limen.tools/contracts/vj-proposal.schema.json",
-  "title": "LIMEN VJ Proposal",
+  "$id": "urn:vj-interface-layer:contracts:vj-proposal",
+  "title": "VJ Proposal",
   "type": "object",
   "additionalProperties": false,
   "required": ["proposal_id", "event_id", "phase", "operation", "reason", "risk", "requires_explicit_approval", "reversible", "execution_mode"],
