@@ -1,6 +1,6 @@
 from lucida.replay.session import SignalEnvelope
 from lucida.signals.host import HostResult, HostSignalBoundary
-from lucida.signals.xio_bridge import parse_application_event
+from lucida.signals.xio_bridge import ApplicationEvent, parse_application_event
 
 
 def _signal():
@@ -115,6 +115,7 @@ def test_host_boundary_rejects_non_vj_xio_without_phase_or_replay_mutation():
         }
     )
     initial_report = boundary.report()
+    assert isinstance(application_event, ApplicationEvent)
 
     first = boundary.receive_xio(application_event)
     second = boundary.receive_xio(application_event)
