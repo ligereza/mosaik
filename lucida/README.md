@@ -104,6 +104,8 @@ cursors, and sequence gaps fail explicitly. The fictional fixture is
 [`overlay-session-fictional.json`](overlay/fixtures/overlay-session-fictional.json)
 and its input contract is
 [`overlay-replay.schema.json`](overlay/contracts/overlay-replay.schema.json).
+The deterministic output contract is
+[`overlay-replay-report.schema.json`](overlay/contracts/overlay-replay-report.schema.json).
 
 ## Replay y dry-run
 

@@ -14,10 +14,12 @@ completed:
     evidence: LUCIDA at 94bcc81849176fb85fd2aa04cd2ea50c17d70197; 93 tests passed.
   - item: Implemented strict JSON replay for snapshots, deltas, cursors, and recovery snapshots.
     evidence: Focused overlay suite passed with 21 tests; complete suite passed with 96 tests before commit.
+  - item: Added a machine-readable schema for the deterministic replay report.
+    evidence: Report schema test passes against the fictional replay output.
 
 current_state:
-  files_or_resources: Branch LUCIDA at 94bcc81; replay module, fixture, schema, tests, and docs are ready for commit.
-  tests_and_checks: 21 focused overlay tests and 96 complete pytest tests passed; git diff check clean.
+  files_or_resources: Branch LUCIDA at 5866c3c; replay report schema and coverage are ready for commit.
+  tests_and_checks: 22 focused overlay tests and 97 complete pytest tests passed; git diff check clean.
   assumptions: The replay envelope will contain one initial snapshot followed by delta records; recovery snapshots are explicit records.
   open_questions: None required for this bounded additive path.
   blockers: None.
@@ -25,5 +27,5 @@ current_state:
   delegation_refs: None.
   last_critique: A pure JSON replay is higher value than another live-host integration because it verifies the complete data path without external side effects.
   estimated_remaining_effort: Moderate; one implementation and verification milestone.
-  next_action: Commit and push the replay milestone, then inspect whether any adjacent high-value gap remains.
+  next_action: Commit and push the replay report schema, then perform final scope review.
   next_checkpoint_trigger: After focused replay tests pass and before commit/push.

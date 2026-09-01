@@ -464,3 +464,19 @@ def test_overlay_replay_schema_is_strict_and_references_safe_contracts():
     assert variants[0]["properties"]["view"]["$ref"] == "overlay-view.schema.json"
     assert variants[0]["properties"]["cursor"]["$ref"] == "overlay-cursor.schema.json"
     assert variants[1]["properties"]["cursor"]["$ref"] == "overlay-cursor.schema.json"
+
+
+def test_overlay_replay_report_schema_matches_the_deterministic_output():
+    contracts_dir = Path(__file__).parents[2] / "lucida" / "overlay" / "contracts"
+    schema = json.loads(
+        (contracts_dir / "overlay-replay-report.schema.json").read_text(encoding="utf-8")
+    )
+    fixture_path = Path(__file__).parents[2] / "lucida" / "overlay" / "fixtures" / "overlay-session-fictional.json"
+    report = replay_overlay_path(fixture_path)
+
+    assert schema["additionalProperties"] is False
+    assert set(schema["required"]) == set(report)
+    assert schema["properties"]["final_view"]["$ref"] == "overlay-view.schema.json"
+    assert schema["properties"]["final_cursor"]["$ref"] == "overlay-cursor.schema.json"
+    assert schema["properties"]["checkpoint"]["$ref"] == "overlay-consumer-checkpoint.schema.json"
+    assert report["safety"]["replay_only"] is True
