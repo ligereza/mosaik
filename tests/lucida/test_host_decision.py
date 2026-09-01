@@ -95,3 +95,16 @@ def test_recorder_adds_audit_receipt_without_mutating_proposal():
     assert replay.state.audit_log[-1]["execution_asserted"] is False
     assert replay.state.audit_log[-1]["mode"] == "proposal_only"
     assert not hasattr(decision, "execute")
+
+
+def test_recorder_rejects_duplicate_decision_id_without_second_audit_entry():
+    replay = SessionReplay("session-001")
+    recorder = ProposalDecisionRecorder(audit_sink=replay.record_audit)
+
+    recorder.record(_decision())
+
+    with pytest.raises(DecisionContractError, match="duplicate decision_id"):
+        recorder.record(_decision())
+
+    assert len(recorder.decisions) == 1
+    assert len(replay.state.audit_log) == 1
