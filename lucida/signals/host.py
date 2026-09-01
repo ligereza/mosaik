@@ -94,6 +94,14 @@ def _safe_signal_details(value: Any) -> tuple[int | None, str | None, str | None
 
 
 def _safe_xio_details(value: Any) -> tuple[int | None, str | None, str | None, str | None, dict[str, Any]]:
+    if isinstance(value, ApplicationEvent):
+        return (
+            value.sequence,
+            value.source_timestamp,
+            value.source_app,
+            value.event_id,
+            value.trace_metadata(),
+        )
     if not isinstance(value, Mapping):
         return None, None, None, None, {}
     sequence = value.get("sequence") if isinstance(value.get("sequence"), int) else None
