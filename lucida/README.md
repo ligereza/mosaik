@@ -82,7 +82,21 @@ reporte.
 La convención de ASCII técnico y la verificación offline están documentadas en
 [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
+La frontera opcional de señales OSC/Resolume está documentada en
+[`signals/README.md`](signals/README.md); recibe envelopes inyectados y no abre
+sockets por sí misma.
+
 ## Siguiente integración con XIO
+
+## OSC boundary
+
+`lucida.resolume_adapter` accepts validated OSC envelopes supplied by an
+external bridge. It normalizes them into the existing VJ event contract and
+returns the read-only overlay state through an optional injected sender. It
+does not open sockets, discover hosts, require Resolume, or execute proposals.
+Message identity and per-source sequence are checked before the event reaches
+the orchestrator. Duplicate messages are idempotent; conflicting reuse and
+out-of-order messages are rejected.
 
 El siguiente paso es acordar un contrato de entrada con XIO para convertir su
 registro de sesión en `VJEvent` sin copiar su almacenamiento ni introducir una
