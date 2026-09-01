@@ -82,6 +82,12 @@ The machine-readable contracts are
 allow a future host or transparent overlay to validate the safe shape without
 importing LUCIDA internals.
 
+`LucidaOrchestrator.read_overlay_cursor(state)` exposes only the session
+sequence, last event timestamp, last event id, and checkpoint id needed by an
+incremental consumer to identify the state revision. It excludes metadata and
+keeps the same proposal-only safety flags. Its machine-readable contract is
+[`overlay-cursor.schema.json`](overlay/contracts/overlay-cursor.schema.json).
+
 ## Replay y dry-run
 
 ```python

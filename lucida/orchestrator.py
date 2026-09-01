@@ -13,6 +13,7 @@ from .contracts import CAPABILITY_NAMES, CapabilityReport, LucidaState
 from .overlay import (
     MAX_DIFF_CHANGES,
     build_overlay_view,
+    build_overlay_cursor,
     diff_overlay_view as diff_projected_overlay_view,
 )
 
@@ -126,6 +127,11 @@ class LucidaOrchestrator:
         """Return a bounded projection suitable for a future invisible overlay."""
 
         return build_overlay_view(state)
+
+    def read_overlay_cursor(self, state: LucidaState | Mapping[str, Any]) -> dict[str, Any]:
+        """Return a safe revision cursor for incremental overlay consumption."""
+
+        return build_overlay_cursor(state)
 
     def diff_overlay_view(
         self,

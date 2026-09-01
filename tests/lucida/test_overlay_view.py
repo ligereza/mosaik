@@ -5,10 +5,11 @@ from pathlib import Path
 import pytest
 
 from adapters.vj.contracts import VJState
-from lucida import LucidaOrchestrator
+from lucida import LucidaOrchestrator, build_overlay_cursor
 from lucida.contracts import LucidaContractError, LucidaState
 from lucida.overlay import (
     MAX_DIFF_CHANGES,
+    OverlayCursorError,
     OverlayDiffError,
     build_overlay_view,
     diff_overlay_view,
@@ -259,3 +260,37 @@ def test_overlay_contract_schemas_represent_proposal_only_safety():
     assert proposal["requires_explicit_approval"]["const"] is True
     assert proposal["reversible"]["const"] is True
     assert proposal["execution_mode"]["const"] == "proposal_only"
+
+
+def test_overlay_cursor_exposes_safe_revision_fields_for_incremental_consumers():
+    orchestrator, state = _state()
+    cursor = orchestrator.read_overlay_cursor(state)
+    equivalent = build_overlay_cursor(LucidaState.from_dict(state.to_dict()))
+
+    assert cursor == equivalent
+    assert cursor["contract_type"] == "LucidaOverlayCursor"
+    assert cursor["sequence"] == state.vj_state.sequence
+    assert cursor["last_event_id"] == state.vj_state.last_event_id
+    assert cursor["last_timestamp"] == state.vj_state.last_timestamp
+    assert cursor["checkpoint_id"] == state.vj_state.checkpoint_id
+    assert cursor["safety"] == {
+        "proposal_only": True,
+        "automatic_actions": False,
+        "external_side_effects": False,
+    }
+    assert "metadata" not in cursor
+
+
+def test_overlay_cursor_schema_and_validation_reject_unsafe_revision_values():
+    contracts_dir = Path(__file__).parents[2] / "lucida" / "overlay" / "contracts"
+    schema = json.loads(
+        (contracts_dir / "overlay-cursor.schema.json").read_text(encoding="utf-8")
+    )
+    assert schema["additionalProperties"] is False
+    assert schema["properties"]["sequence"]["minimum"] == 0
+    assert schema["properties"]["safety"]["properties"]["proposal_only"]["const"] is True
+
+    orchestrator, state = _state()
+    invalid_state = replace(state, vj_state=replace(state.vj_state, sequence=-1))
+    with pytest.raises(OverlayCursorError, match="non-negative integer"):
+        orchestrator.read_overlay_cursor(invalid_state)

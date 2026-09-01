@@ -73,6 +73,10 @@ class OverlayDiffError(ValueError):
     """Raised when an overlay diff input is not a projected view."""
 
 
+class OverlayCursorError(ValueError):
+    """Raised when an overlay cursor cannot describe a safe state revision."""
+
+
 def diff_overlay_view(
     previous_view: Mapping[str, Any],
     current_view: Mapping[str, Any],
@@ -269,6 +273,35 @@ def build_overlay_view(
     }
 
 
+def build_overlay_cursor(state: LucidaState | Mapping[str, Any]) -> dict[str, Any]:
+    """Project the safe state position for incremental overlay consumers."""
+
+    current = state if isinstance(state, LucidaState) else LucidaState.from_dict(state)
+    vj_state = current.vj_state
+    if isinstance(vj_state.sequence, bool) or not isinstance(vj_state.sequence, int) or vj_state.sequence < 0:
+        raise OverlayCursorError("state sequence must be a non-negative integer.")
+    for field_name in ("last_event_id", "last_timestamp", "checkpoint_id"):
+        value = getattr(vj_state, field_name)
+        if value is not None and (not isinstance(value, str) or not value.strip()):
+            raise OverlayCursorError(f"{field_name} must be text or null.")
+    return {
+        "contract_type": "LucidaOverlayCursor",
+        "schema_version": OVERLAY_VIEW_SCHEMA_VERSION,
+        "surface": "LUCIDA",
+        "mode": "read_only",
+        "session_id": current.session_id,
+        "sequence": vj_state.sequence,
+        "last_event_id": vj_state.last_event_id,
+        "last_timestamp": vj_state.last_timestamp,
+        "checkpoint_id": vj_state.checkpoint_id,
+        "safety": {
+            "proposal_only": True,
+            "automatic_actions": False,
+            "external_side_effects": False,
+        },
+    }
+
+
 def _safe_state(value: Mapping[str, Any]) -> dict[str, Any]:
     if not isinstance(value, Mapping):
         return {}
@@ -315,7 +348,9 @@ __all__ = [
     "MAX_DIFF_CHANGES",
     "OVERLAY_DIFF_FIELDS",
     "OVERLAY_VIEW_SCHEMA_VERSION",
+    "OverlayCursorError",
     "OverlayDiffError",
+    "build_overlay_cursor",
     "build_overlay_view",
     "diff_overlay_view",
 ]
