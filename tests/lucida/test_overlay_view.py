@@ -5,7 +5,15 @@ from pathlib import Path
 import pytest
 
 from adapters.vj.contracts import VJState
-from lucida import LucidaOrchestrator, build_overlay_cursor
+from lucida import (
+    LucidaOrchestrator,
+    OverlayConsumer,
+    OverlayConsumerConflictError,
+    OverlayConsumerGapError,
+    OverlayConsumerNotInitializedError,
+    OverlayConsumerStaleError,
+    build_overlay_cursor,
+)
 from lucida.contracts import LucidaContractError, LucidaState
 from lucida.overlay import (
     MAX_DIFF_CHANGES,
@@ -13,6 +21,7 @@ from lucida.overlay import (
     OverlayDiffError,
     build_overlay_view,
     diff_overlay_view,
+    validate_overlay_cursor,
 )
 
 
@@ -294,3 +303,111 @@ def test_overlay_cursor_schema_and_validation_reject_unsafe_revision_values():
     invalid_state = replace(state, vj_state=replace(state.vj_state, sequence=-1))
     with pytest.raises(OverlayCursorError, match="non-negative integer"):
         orchestrator.read_overlay_cursor(invalid_state)
+
+    invalid_cursor = dict(orchestrator.read_overlay_cursor(state))
+    invalid_cursor["last_timestamp"] = "not-a-timestamp"
+    invalid_timestamp_state = replace(
+        state,
+        vj_state=replace(state.vj_state, last_timestamp="not-a-timestamp"),
+    )
+    with pytest.raises(OverlayCursorError, match="ISO-8601"):
+        build_overlay_cursor(invalid_timestamp_state)
+    with pytest.raises(OverlayCursorError, match="ISO-8601"):
+        validate_overlay_cursor(invalid_cursor)
+
+
+def test_overlay_consumer_applies_deterministic_delta_and_restores_checkpoint():
+    orchestrator, state = _state()
+    view = orchestrator.read_overlay_view(state)
+    cursor = orchestrator.read_overlay_cursor(state)
+    consumer = OverlayConsumer()
+    consumer.accept_snapshot(view, cursor)
+
+    next_view = json.loads(json.dumps(view, sort_keys=True))
+    next_view["overlay_status"] = "result_recorded"
+    changes = diff_overlay_view(view, next_view)
+    next_cursor = dict(cursor)
+    consumer.apply_delta(changes, next_cursor)
+
+    checkpoint = consumer.checkpoint()
+    restored = OverlayConsumer()
+    restored.restore_checkpoint(checkpoint)
+
+    assert restored.view == next_view
+    assert restored.cursor == cursor
+    assert restored.state.applied_delta_count == 1
+    restored.state.view["status"] = "local mutation"
+    assert restored.view["status"] == view["status"]
+    assert restored.view["overlay_status"] == "result_recorded"
+    assert checkpoint["safety"]["external_side_effects"] is False
+    assert "metadata" not in json.dumps(checkpoint, sort_keys=True)
+
+
+def test_overlay_consumer_rejects_uninitialized_stale_gap_and_before_conflicts():
+    orchestrator, state = _state()
+    view = orchestrator.read_overlay_view(state)
+    cursor = orchestrator.read_overlay_cursor(state)
+    consumer = OverlayConsumer()
+    with pytest.raises(OverlayConsumerNotInitializedError):
+        consumer.apply_delta([], cursor)
+    consumer.accept_snapshot(view, cursor)
+
+    stale_cursor = dict(cursor)
+    stale_cursor["sequence"] = 0
+    with pytest.raises(OverlayConsumerStaleError):
+        consumer.apply_delta([], stale_cursor)
+
+    gap_cursor = dict(cursor)
+    gap_cursor["sequence"] = cursor["sequence"] + 2
+    with pytest.raises(OverlayConsumerGapError):
+        consumer.apply_delta([], gap_cursor)
+
+    bad_change = [{"field": "status", "before": "wrong", "after": "changed"}]
+    with pytest.raises(OverlayConsumerConflictError, match="before"):
+        consumer.apply_delta(bad_change, cursor)
+
+
+def test_overlay_consumer_requires_explicit_recovery_and_rejects_unsafe_changes():
+    orchestrator, state = _state()
+    view = orchestrator.read_overlay_view(state)
+    cursor = orchestrator.read_overlay_cursor(state)
+    consumer = OverlayConsumer()
+    consumer.accept_snapshot(view, cursor)
+
+    with pytest.raises(OverlayConsumerConflictError, match="recovery=True"):
+        consumer.accept_snapshot(view, cursor)
+
+    unsafe_change = [{
+        "field": "status",
+        "before": view["status"],
+        "after": {"execute": "must-not-run"},
+    }]
+    unsafe_cursor = dict(cursor)
+    unsafe_cursor["sequence"] = cursor["sequence"] + 1
+    unsafe_cursor["last_event_id"] = "evt-next"
+    unsafe_cursor["last_timestamp"] = "2026-01-10T20:01:00Z"
+    with pytest.raises(OverlayConsumerConflictError):
+        consumer.apply_delta(unsafe_change, unsafe_cursor)
+
+    consumer.accept_snapshot(view, cursor, recovery=True)
+    assert consumer.state.last_operation == "recovery_snapshot"
+
+
+def test_overlay_consumer_rejects_mismatched_snapshot_and_checkpoint_contracts():
+    orchestrator, state = _state()
+    view = orchestrator.read_overlay_view(state)
+    cursor = orchestrator.read_overlay_cursor(state)
+    consumer = OverlayConsumer()
+    mismatched_cursor = dict(cursor)
+    mismatched_cursor["session_id"] = "other-session"
+
+    with pytest.raises(OverlayConsumerConflictError, match="sessions differ"):
+        consumer.accept_snapshot(view, mismatched_cursor)
+
+    checkpoint = consumer.checkpoint()
+    checkpoint["status"] = "ready"
+    checkpoint["last_operation"] = "empty"
+    checkpoint["view"] = view
+    checkpoint["cursor"] = cursor
+    with pytest.raises(ValueError, match="non-empty last_operation"):
+        consumer.restore_checkpoint(checkpoint)

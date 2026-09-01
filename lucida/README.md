@@ -88,6 +88,14 @@ incremental consumer to identify the state revision. It excludes metadata and
 keeps the same proposal-only safety flags. Its machine-readable contract is
 [`overlay-cursor.schema.json`](overlay/contracts/overlay-cursor.schema.json).
 
+`OverlayConsumer` is the host-neutral state machine for an incremental reader.
+It accepts one initial snapshot, applies only deltas whose `before` values
+match the current bounded view, rejects stale cursors and sequence gaps, and
+requires `recovery=True` for a replacement snapshot. `checkpoint()` and
+`restore_checkpoint()` provide explicit recoverability without executing
+actions. Its checkpoint contract is
+[`overlay-consumer-checkpoint.schema.json`](overlay/contracts/overlay-consumer-checkpoint.schema.json).
+
 ## Replay y dry-run
 
 ```python

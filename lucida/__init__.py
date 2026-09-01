@@ -10,6 +10,15 @@ from .overlay import (
     build_overlay_view,
     diff_overlay_view,
 )
+from .overlay_consumer import (
+    OverlayConsumer,
+    OverlayConsumerConflictError,
+    OverlayConsumerError,
+    OverlayConsumerGapError,
+    OverlayConsumerNotInitializedError,
+    OverlayConsumerStaleError,
+    OverlayConsumerState,
+)
 
 __all__ = [
     "CapabilityReport",
@@ -23,4 +32,11 @@ __all__ = [
     "build_overlay_cursor",
     "build_overlay_view",
     "diff_overlay_view",
+    "OverlayConsumer",
+    "OverlayConsumerConflictError",
+    "OverlayConsumerError",
+    "OverlayConsumerGapError",
+    "OverlayConsumerNotInitializedError",
+    "OverlayConsumerStaleError",
+    "OverlayConsumerState",
 ]

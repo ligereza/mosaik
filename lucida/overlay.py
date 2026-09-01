@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime
 from typing import Any, Mapping
 
 from adapters.vj.contracts import VJProposal
@@ -56,6 +57,18 @@ _PROPOSAL_VIEW_FIELDS = {
 }
 _NEXT_ATTENTION_FIELDS = {"kind", "id", "reason"}
 _SAFETY_FIELDS = {"proposal_only", "automatic_actions", "external_side_effects"}
+_CURSOR_FIELDS = {
+    "contract_type",
+    "schema_version",
+    "surface",
+    "mode",
+    "session_id",
+    "sequence",
+    "last_event_id",
+    "last_timestamp",
+    "checkpoint_id",
+    "safety",
+}
 _DEFAULT_CAPABILITY_LIMIT = 3
 _DEFAULT_PROPOSAL_LIMIT = 8
 _DEFAULT_UNKNOWNS_LIMIT = 8
@@ -284,22 +297,65 @@ def build_overlay_cursor(state: LucidaState | Mapping[str, Any]) -> dict[str, An
         value = getattr(vj_state, field_name)
         if value is not None and (not isinstance(value, str) or not value.strip()):
             raise OverlayCursorError(f"{field_name} must be text or null.")
-    return {
-        "contract_type": "LucidaOverlayCursor",
-        "schema_version": OVERLAY_VIEW_SCHEMA_VERSION,
-        "surface": "LUCIDA",
-        "mode": "read_only",
-        "session_id": current.session_id,
-        "sequence": vj_state.sequence,
-        "last_event_id": vj_state.last_event_id,
-        "last_timestamp": vj_state.last_timestamp,
-        "checkpoint_id": vj_state.checkpoint_id,
-        "safety": {
-            "proposal_only": True,
-            "automatic_actions": False,
-            "external_side_effects": False,
-        },
-    }
+    return validate_overlay_cursor(
+        {
+            "contract_type": "LucidaOverlayCursor",
+            "schema_version": OVERLAY_VIEW_SCHEMA_VERSION,
+            "surface": "LUCIDA",
+            "mode": "read_only",
+            "session_id": current.session_id,
+            "sequence": vj_state.sequence,
+            "last_event_id": vj_state.last_event_id,
+            "last_timestamp": vj_state.last_timestamp,
+            "checkpoint_id": vj_state.checkpoint_id,
+            "safety": {
+                "proposal_only": True,
+                "automatic_actions": False,
+                "external_side_effects": False,
+            },
+        }
+    )
+
+
+def validate_overlay_cursor(value: Mapping[str, Any]) -> dict[str, Any]:
+    """Validate and copy a cursor without exposing internal state."""
+
+    if not isinstance(value, Mapping):
+        raise OverlayCursorError("overlay cursor must be a mapping.")
+    if set(value) != _CURSOR_FIELDS:
+        raise OverlayCursorError("overlay cursor contains unsupported or missing fields.")
+    if value.get("contract_type") != "LucidaOverlayCursor":
+        raise OverlayCursorError("overlay cursor contract_type is invalid.")
+    if value.get("schema_version") != OVERLAY_VIEW_SCHEMA_VERSION:
+        raise OverlayCursorError("overlay cursor schema_version is invalid.")
+    if value.get("surface") != "LUCIDA" or value.get("mode") != "read_only":
+        raise OverlayCursorError("overlay cursor surface or mode is invalid.")
+    if not isinstance(value.get("session_id"), str) or not value["session_id"].strip():
+        raise OverlayCursorError("overlay cursor session_id must be non-empty text.")
+    sequence = value.get("sequence")
+    if isinstance(sequence, bool) or not isinstance(sequence, int) or sequence < 0:
+        raise OverlayCursorError("overlay cursor sequence must be a non-negative integer.")
+    for field_name in ("last_event_id", "last_timestamp", "checkpoint_id"):
+        field_value = value.get(field_name)
+        if field_value is not None and (
+            not isinstance(field_value, str) or not field_value.strip()
+        ):
+            raise OverlayCursorError(f"overlay cursor {field_name} must be text or null.")
+    if value["last_timestamp"] is not None:
+        try:
+            datetime.fromisoformat(value["last_timestamp"].replace("Z", "+00:00"))
+        except ValueError as exc:
+            raise OverlayCursorError("overlay cursor last_timestamp must be ISO-8601.") from exc
+    safety = value.get("safety")
+    if not isinstance(safety, Mapping) or set(safety) != _SAFETY_FIELDS:
+        raise OverlayCursorError("overlay cursor safety is invalid.")
+    if (
+        safety.get("proposal_only") is not True
+        or safety.get("automatic_actions") is not False
+        or safety.get("external_side_effects") is not False
+    ):
+        raise OverlayCursorError("overlay cursor safety must remain read_only.")
+    return _json_copy(dict(value))
 
 
 def _safe_state(value: Mapping[str, Any]) -> dict[str, Any]:
@@ -353,4 +409,5 @@ __all__ = [
     "build_overlay_cursor",
     "build_overlay_view",
     "diff_overlay_view",
+    "validate_overlay_cursor",
 ]
