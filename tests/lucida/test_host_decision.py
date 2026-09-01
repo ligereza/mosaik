@@ -95,4 +95,3 @@ def test_recorder_adds_audit_receipt_without_mutating_proposal():
     assert replay.state.audit_log[-1]["execution_asserted"] is False
     assert replay.state.audit_log[-1]["mode"] == "proposal_only"
     assert not hasattr(decision, "execute")
-
