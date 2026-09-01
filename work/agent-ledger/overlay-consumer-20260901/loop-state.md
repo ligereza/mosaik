@@ -9,7 +9,7 @@ core_acceptance_criteria:
   - run the complete suite and push each coherent milestone to origin/LUCIDA
 authorized_extensions:
   - additive host-neutral contracts directly required for incremental consumption
-status: active
+status: complete
 
 completed:
   - item: Added orchestrator access to bounded overlay diffs.
@@ -22,7 +22,7 @@ completed:
     evidence: Focused overlay suite passed with 18 tests; complete suite passed with 93 tests before commit.
 
 current_state:
-  files_or_resources: LUCIDA branch at 0248e635a50c87fbcfba19f11b6064b7b6d5f681 before the consumer commit; consumer files and checkpoint are staged next.
+  files_or_resources: LUCIDA branch at d18597736be3f231eb271937c6193ae1b3747f91; origin/LUCIDA synchronized; working tree clean.
   tests_and_checks: 18 focused overlay tests and 93 complete pytest tests passed; git diff check clean.
   assumptions: A future consumer needs a stateful local buffer and explicit recovery when a delta cannot be applied.
   open_questions: None required for the next additive milestone.
@@ -31,5 +31,5 @@ current_state:
   delegation_refs: None.
   last_critique: The strict consumer state machine was selected over more projection fields or host integration because it directly prevents stale and misapplied deltas.
   estimated_remaining_effort: Low; publish this milestone and perform a final scope review.
-  next_action: Commit and push the consumer milestone, then verify branch synchronization and decide whether any safe high-value extension remains.
+  next_action: No further high-value host-neutral extension remains within scope; wait for a concrete host integration decision.
   next_checkpoint_trigger: After consumer tests pass and before commit/push.
