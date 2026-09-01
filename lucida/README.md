@@ -70,6 +70,12 @@ and returns at most seven JSON-safe change records. It ignores identity and
 phase-only changes, and rejects payloads, metadata, filesystem paths,
 credentials, and action fields.
 
+`LucidaOrchestrator.diff_overlay_view(previous_state, current_state)` accepts
+`LucidaState` objects or state mappings, projects both through
+`read_overlay_view`, and delegates the comparison to the bounded diff
+implementation. Invalid state mappings are rejected by the existing state
+contracts. Internal payloads and metadata are never emitted in the result.
+
 ## Replay y dry-run
 
 ```python

@@ -10,7 +10,11 @@ from adapters.vj.contracts import VJEvent, VJResult, VJState
 
 from .capabilities import ImagoCapability, InstarCapability, NayadeCapability
 from .contracts import CAPABILITY_NAMES, CapabilityReport, LucidaState
-from .overlay import build_overlay_view
+from .overlay import (
+    MAX_DIFF_CHANGES,
+    build_overlay_view,
+    diff_overlay_view as diff_projected_overlay_view,
+)
 
 
 class LucidaError(ValueError):
@@ -122,6 +126,21 @@ class LucidaOrchestrator:
         """Return a bounded projection suitable for a future invisible overlay."""
 
         return build_overlay_view(state)
+
+    def diff_overlay_view(
+        self,
+        previous_state: LucidaState | Mapping[str, Any],
+        current_state: LucidaState | Mapping[str, Any],
+        *,
+        max_changes: int = MAX_DIFF_CHANGES,
+    ) -> list[dict[str, Any]]:
+        """Diff two states through the bounded, read-only overlay projection."""
+
+        return diff_projected_overlay_view(
+            self.read_overlay_view(previous_state),
+            self.read_overlay_view(current_state),
+            max_changes=max_changes,
+        )
 
     def read_state(self, state: LucidaState | Mapping[str, Any]) -> dict[str, Any]:
         """Expose the same state contract without any UI or host dependency."""

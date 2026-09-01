@@ -1,10 +1,11 @@
 import json
+from dataclasses import replace
 
 import pytest
 
 from adapters.vj.contracts import VJState
 from lucida import LucidaOrchestrator
-from lucida.contracts import LucidaState
+from lucida.contracts import LucidaContractError, LucidaState
 from lucida.overlay import (
     MAX_DIFF_CHANGES,
     OverlayDiffError,
@@ -172,3 +173,53 @@ def test_overlay_diff_rejects_non_projected_or_unsafe_inputs():
     unsafe_safety["safety"]["execute"] = "must-not-run"
     with pytest.raises(OverlayDiffError, match="safety"):
         diff_overlay_view(view, unsafe_safety)
+
+
+def test_orchestrator_diff_projects_states_and_returns_bounded_changes():
+    orchestrator, state = _state()
+    equivalent = LucidaState.from_dict(state.to_dict())
+    assert orchestrator.diff_overlay_view(state, equivalent) == []
+
+    changed_proposal = replace(state.proposals[0], reason="Review the changed proposal.")
+    changed = replace(state, proposals=(changed_proposal, *state.proposals[1:]))
+    changes = orchestrator.diff_overlay_view(state, changed, max_changes=1)
+
+    assert len(changes) == 1
+    assert changes[0]["field"] == "pending_proposals"
+    assert changes[0]["after"][0]["reason"] == "Review the changed proposal."
+
+
+def test_orchestrator_diff_redacts_internal_metadata_and_payload_state():
+    orchestrator, state = _state()
+    private_report = replace(
+        state.capabilities[0],
+        state={
+            **state.capabilities[0].state,
+            "payload": {"secret": "must-not-leak"},
+        },
+    )
+    private_state = replace(
+        state,
+        capabilities=(private_report, *state.capabilities[1:]),
+        metadata={"private_path": "C:\\private", "credential": "secret"},
+    )
+
+    changes = orchestrator.diff_overlay_view(state, private_state)
+    serialized = json.dumps(changes, ensure_ascii=False, sort_keys=True)
+
+    assert changes == []
+    assert "must-not-leak" not in serialized
+    assert "private_path" not in serialized
+    assert "credential" not in serialized
+
+
+def test_orchestrator_diff_rejects_invalid_state_through_existing_contracts():
+    orchestrator, state = _state()
+
+    with pytest.raises(LucidaContractError, match="session_id"):
+        orchestrator.diff_overlay_view({}, state)
+
+    invalid_current = state.to_dict()
+    invalid_current["vj_state"]["phase"] = "not-a-phase"
+    with pytest.raises(ValueError, match="phase"):
+        orchestrator.diff_overlay_view(state, invalid_current)
