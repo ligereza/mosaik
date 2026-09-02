@@ -30,6 +30,7 @@ from mosaik.instar import run_instar, text_report as instar_text_report, write_r
 from mosaik.manifest import write_manifest
 from mosaik.media import MosaikError
 from mosaik.nayade import create_session, get_next_step, record_event, text_report as nayade_text_report
+from mosaik.output_probe import output_probe_text_report, probe_windows_output
 from mosaik.processors import (
     case_text_report,
     catalog_text_report,
@@ -287,7 +288,11 @@ def build_parser() -> argparse.ArgumentParser:
     processor_reconcile.add_argument("--processor-snapshot", help="Snapshot JSON de descubrimiento.")
     processor_reconcile.add_argument("--module-profile", help="Perfil JSON del módulo LED.")
     processor_reconcile.add_argument("--mapping", help="Mapa o plan JSON de Advanced Output.")
+    processor_reconcile.add_argument("--output-probe", help="Sonda JSON de salida Windows/GPU.")
     processor_reconcile.add_argument("--report", help="Ruta opcional para guardar la reconciliación JSON.")
+    processor_probe = processor_commands.add_parser("probe-output", help="Captura salida Windows/GPU y EDID en solo lectura.")
+    processor_probe.add_argument("--timeout", type=float, default=10.0, help="Tiempo máximo de consulta WMI en segundos.")
+    processor_probe.add_argument("--report", required=True, help="Archivo JSON de la sonda.")
     return parser
 
 
@@ -665,6 +670,7 @@ def main(argv: list[str] | None = None) -> int:
                         ("processor_snapshot", args.processor_snapshot),
                         ("module_profile", args.module_profile),
                         ("mapping", args.mapping),
+                        ("output_probe", args.output_probe),
                     )
                     if path
                 }
@@ -674,6 +680,12 @@ def main(argv: list[str] | None = None) -> int:
                     report_path = write_processor_json(report, args.report)
                     print(f"\nReconciliación JSON: {report_path}")
                 return 1 if report["status"] == "FAIL" else 0
+            if args.processor_command == "probe-output":
+                report = probe_windows_output(timeout_seconds=args.timeout)
+                print(output_probe_text_report(report))
+                report_path = write_processor_json(report, args.report)
+                print(f"\nSonda JSON: {report_path}")
+                return 0
     except (MosaikError, ReplayError, VJProjectError) as exc:
         print(f"MOSAIK ERROR: {exc}", file=sys.stderr)
         return 2

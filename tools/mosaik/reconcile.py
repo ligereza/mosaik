@@ -14,7 +14,7 @@ from .media import MosaikError
 RECONCILIATION_SCHEMA_VERSION = "0.1"
 _RESOLUTION = re.compile(r"^\s*(\d+)\s*[xX]\s*(\d+)\s*$")
 _DOCUMENT_NAMES = frozenset(
-    {"signal_profile", "processor_observation", "processor_snapshot", "module_profile", "mapping"}
+    {"signal_profile", "processor_observation", "processor_snapshot", "module_profile", "mapping", "output_probe"}
 )
 
 
@@ -386,6 +386,46 @@ def reconcile_signal_chain(documents: Mapping[str, Mapping[str, Any]]) -> dict[s
                 action="Probar un círculo y comparar InputRect con OutputRect durante NAYADE.",
             )
 
+    output_probe = documents.get("output_probe")
+    if output_probe:
+        output_signal = output_probe.get("output_signal") or {}
+        if isinstance(output_signal, Mapping):
+            _resolution_fact(
+                facts,
+                seen_facts,
+                resolutions,
+                label="gpu.output",
+                subject="gpu.output",
+                value=output_signal.get("resolution"),
+                origin="observed",
+                confidence=0.75,
+                source="output_probe",
+            )
+            refresh_hz = _number(output_signal.get("refresh_hz"))
+            if refresh_hz is not None:
+                fps_values["gpu.output"] = refresh_hz
+                _fact(
+                    facts,
+                    seen_facts,
+                    subject="gpu.output",
+                    property_name="refresh_hz",
+                    value=int(refresh_hz) if refresh_hz.is_integer() else refresh_hz,
+                    origin="observed",
+                    confidence=0.75,
+                    source="output_probe",
+                )
+            for field_name in ("color_range", "color_space"):
+                _fact(
+                    facts,
+                    seen_facts,
+                    subject="gpu.output",
+                    property_name=field_name,
+                    value=output_signal.get(field_name),
+                    origin="observed",
+                    confidence=0.4 if output_signal.get(field_name) == "unknown" else 0.75,
+                    source="output_probe",
+                )
+
     module = documents.get("module_profile")
     if module:
         value, origin, confidence, _ = _fact_value(module.get("environment"))
@@ -463,6 +503,8 @@ def reconcile_signal_chain(documents: Mapping[str, Mapping[str, Any]]) -> dict[s
     compare_resolution("signal.source", "processor.input")
     compare_resolution("processor.input", "mapping.composition")
     compare_resolution("signal.source", "mapping.composition")
+    compare_resolution("signal.source", "gpu.output")
+    compare_resolution("processor.input", "gpu.output")
     if "processor.input" in resolutions and "processor.output" in resolutions:
         scaling = resolutions["processor.input"] != resolutions["processor.output"]
         calculations.append(
@@ -483,7 +525,7 @@ def reconcile_signal_chain(documents: Mapping[str, Mapping[str, Any]]) -> dict[s
                 risk="medium",
             )
 
-    for left, right in (("signal.source", "processor.input"), ("signal.source", "processor.output")):
+    for left, right in (("signal.source", "processor.input"), ("signal.source", "processor.output"), ("signal.source", "gpu.output")):
         if left in fps_values and right in fps_values and not math.isclose(fps_values[left], fps_values[right], rel_tol=0.0, abs_tol=0.01):
             _conflict(
                 conflicts,
@@ -525,7 +567,7 @@ def reconcile_signal_chain(documents: Mapping[str, Mapping[str, Any]]) -> dict[s
             evidence=["missing:module_profile"],
         )
 
-    unknown_count = sum(1 for name in ("signal_profile", "processor_observation", "processor_snapshot", "module_profile", "mapping") if name not in documents)
+    unknown_count = sum(1 for name in ("signal_profile", "processor_observation", "processor_snapshot", "module_profile", "mapping", "output_probe") if name not in documents)
     status = "FAIL" if any(item["severity"] == "high" for item in conflicts) else ("REVIEW" if conflicts or unknown_count else "PASS")
     known_confidences = [item["confidence"] for item in facts]
     return {

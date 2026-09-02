@@ -93,6 +93,14 @@ def _documents():
             "composition": {"width": 1920, "height": 1080},
             "validation": {"status": "PASS"},
         },
+        "output_probe": {
+            "output_signal": {
+                "resolution": "1920x1080",
+                "refresh_hz": 60,
+                "color_range": "unknown",
+                "color_space": "unknown",
+            }
+        },
     }
 
 
@@ -102,6 +110,7 @@ def test_reconciliation_crosses_signal_processor_module_and_mapping():
     assert report["status"] == "PASS"
     assert report["summary"]["conflict_count"] == 0
     assert any(item["kind"] == "pixel_pitch" for item in report["calculations"])
+    assert any(item["subject"] == "gpu.output" for item in report["facts"])
     assert report["safety"] == {
         "read_only": True,
         "commands_sent": False,
