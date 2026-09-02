@@ -19,7 +19,6 @@ python .\tools\mosaik_cli.py instar "D:\VJ\Media" --target-fps 60 --report ".\ar
 python .\tools\mosaik_cli.py instar "D:\VJ\Media" --deep --report ".\artifacts\instar-deep.json"
 python .\tools\mosaik_cli.py diagnose "D:\VJ\Media\clip.mp4" --report ".\artifacts\clip-report.json"
 python .\tools\mosaik_cli.py dxv "D:\VJ\Media\clip.mp4" --fps 60
-<<<<<<< HEAD
 python .\tools\mosaik_cli.py instar-map "D:\VJ\Shows\venue-advanced-output.xml" --catalog ".\artifacts\instar-manifest.json" --report ".\artifacts\mapping-plan.json"
 python .\tools\mosaik_cli.py instar-testcard "D:\VJ\Shows\venue-advanced-output.xml" --output ".\artifacts\venue-geometry-testcard.mp4" --report ".\artifacts\venue-geometry-testcard.json"
 python .\tools\mosaik_cli.py nayade-session init ".\artifacts\venue-geometry-testcard.json" --output ".\artifacts\venue-soundcheck.json" --seed 4821
