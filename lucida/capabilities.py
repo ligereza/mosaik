@@ -123,7 +123,9 @@ def _profile_state(payload: dict[str, Any]) -> dict[str, Any]:
             affected_fact_paths = {
                 *comparison["changed_fields"],
                 *comparison["origin_changes"],
+                *comparison["source_changes"],
                 *comparison["confidence_drops"],
+                *comparison["processor_capability_changes"],
             }
             bounded_change_count = len(affected_fact_paths) + sum(
                 bool(comparison[field_name])

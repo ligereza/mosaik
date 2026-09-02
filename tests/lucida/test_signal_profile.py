@@ -189,8 +189,29 @@ def test_compare_signal_profiles_reports_drift_without_raw_values():
     assert comparison["changed_fields"] == ["source.range"]
     assert comparison["confidence_drops"] == ["source.range"]
     assert comparison["origin_changes"] == ["house.input"]
+    assert comparison["source_changes"] == []
+    assert comparison["processor_capability_changes"] == []
     assert comparison["unknown_delta"] == 1
     assert "limited" not in json.dumps(comparison)
+
+
+def test_compare_signal_profiles_detects_provenance_and_processor_capability_changes():
+    expected = _profile()
+    observed = copy.deepcopy(expected)
+    observed["source"]["range"]["source"] = "capture-output"
+    observed["processor"]["capabilities"]["supports_read_only_query"] = "yes"
+    observed["processor"]["capabilities"]["new_capability"] = "unknown"
+
+    comparison = compare_signal_profiles(expected, observed)
+
+    assert comparison["status"] == "changed"
+    assert comparison["changed_fields"] == []
+    assert comparison["source_changes"] == ["source.range"]
+    assert comparison["processor_capability_changes"] == [
+        "processor.capabilities.new_capability",
+        "processor.capabilities.supports_read_only_query",
+    ]
+    assert "capture-output" not in json.dumps(comparison)
 
 
 def test_profile_drift_count_includes_non_value_changes():

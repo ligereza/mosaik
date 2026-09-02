@@ -62,8 +62,9 @@ procesador desde HDMI y no escribe en hardware.
 el overlay: validez, etapa, conteos de desconocidos/inferidos, confianza mínima
 y modo read-only del procesador.
 `compare_signal_profiles()` permite contrastar un baseline con una observación y
-reporta sólo drift, cambios de origen, caídas de confianza y deltas de datos
-desconocidos; nunca devuelve los valores crudos.
+reporta sólo drift, cambios de origen y procedencia, capacidades del procesador,
+caídas de confianza y deltas de datos desconocidos; nunca devuelve los valores
+crudos.
 La misma proyección acotada se conserva cuando el flujo pasa de NAYADE a IMAGO,
 por lo que una deriva observada durante el show sigue siendo visible sin
 convertirse en una corrección automática.

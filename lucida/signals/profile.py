@@ -327,6 +327,7 @@ def compare_signal_profiles(
     changed_fields: list[str] = []
     origin_changes: list[str] = []
     confidence_drops: list[str] = []
+    source_changes: list[str] = []
     expected_unknown_count = 0
     observed_unknown_count = 0
     for field_name in PROFILE_FACT_PATHS:
@@ -336,11 +337,20 @@ def compare_signal_profiles(
             changed_fields.append(field_name)
         if expected_fact.origin != observed_fact.origin:
             origin_changes.append(field_name)
+        if expected_fact.source != observed_fact.source:
+            source_changes.append(field_name)
         if observed_fact.confidence < expected_fact.confidence:
             confidence_drops.append(field_name)
         expected_unknown_count += expected_fact.origin == "unknown"
         observed_unknown_count += observed_fact.origin == "unknown"
 
+    expected_capabilities = expected_profile.processor.get("capabilities", {})
+    observed_capabilities = observed_profile.processor.get("capabilities", {})
+    processor_capability_changes = [
+        f"processor.capabilities.{name}"
+        for name in sorted(set(expected_capabilities) | set(observed_capabilities))
+        if expected_capabilities.get(name) != observed_capabilities.get(name)
+    ]
     recommendation_changed = expected_profile.recommendation != observed_profile.recommendation
     read_only_changed = (
         expected_profile.processor["read_only"] != observed_profile.processor["read_only"]
@@ -349,7 +359,9 @@ def compare_signal_profiles(
     is_changed = bool(
         changed_fields
         or origin_changes
+        or source_changes
         or confidence_drops
+        or processor_capability_changes
         or recommendation_changed
         or read_only_changed
         or stage_changed
@@ -358,7 +370,9 @@ def compare_signal_profiles(
         "status": "changed" if is_changed else "stable",
         "changed_fields": changed_fields,
         "origin_changes": origin_changes,
+        "source_changes": source_changes,
         "confidence_drops": confidence_drops,
+        "processor_capability_changes": processor_capability_changes,
         "unknown_delta": observed_unknown_count - expected_unknown_count,
         "recommendation_changed": recommendation_changed,
         "read_only_changed": read_only_changed,
