@@ -51,6 +51,17 @@ Las referencias del grafo XIO usan los `$id` URN de cada contrato; un host que
 use JSON Schema debe registrarlos localmente y no depender de resolver rutas o
 descargar schemas durante un show.
 
+## Signal profile
+
+`profile.py` normaliza el contrato compartido de señal para `INSTAR`, `NAYADE`
+e `IMAGO`. Conserva cada dato como `declared`, `observed`, `inferred` o
+`unknown`, junto con su confianza y fuente. `validate_signal_profile()` sólo
+valida y devuelve una copia canónica; no identifica módulos, no infiere un
+procesador desde HDMI y no escribe en hardware.
+
+El schema de referencia es
+[`signal-profile.schema.json`](../../schemas/signal-profile.schema.json).
+
 ## Host result receipt
 
 Una propuesta puede recibir un `ProposalDecision` con estado `accepted`,

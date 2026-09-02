@@ -37,6 +37,8 @@ la capacidad correspondiente a la fase crea una propuesta para ese evento.
 - replay/dry-run y tests offline.
 - consumidor offline XIO con resultado serializable, envelope de overlay
   atómico y validación runtime de identidad entre contratos.
+- normalizador de `SignalProfile` para conservar hechos, origen, confianza y
+  evidencia sin inferir ni controlar hardware.
 
 ## Implementado pero no verificado contra sistemas reales
 

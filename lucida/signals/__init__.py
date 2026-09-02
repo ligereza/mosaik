@@ -12,6 +12,13 @@ from .boundary import (
     UnknownAddressError,
 )
 from .replay import SignalReplayError, replay_fixture, replay_path
+from .profile import (
+    SignalEvidence,
+    SignalFact,
+    SignalProfile,
+    SignalProfileError,
+    validate_signal_profile,
+)
 
 _XIO_EXPORTS = {
     "ApplicationEvent",
@@ -46,6 +53,11 @@ __all__ = [
     "SignalReceive",
     "SignalReplayError",
     "UnknownAddressError",
+    "SignalEvidence",
+    "SignalFact",
+    "SignalProfile",
+    "SignalProfileError",
+    "validate_signal_profile",
     "ApplicationEvent",
     "XioClockError",
     "XioConsumeResult",
