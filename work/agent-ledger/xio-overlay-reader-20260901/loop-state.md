@@ -7,4 +7,6 @@
 - Milestone: `XioEventConsumer.read_overlay()` and `read_overlay_cursor()` implemented and tested against altered private input.
 - Evidence: focused XIO/LUCIDA suite `41 passed`; `git diff --check` clean.
 - Evidence: focused XIO/LUCIDA suite `41 passed`; complete suite `108 passed`; `git diff --check` clean; no LUCIDA test process active; new code and ledger content pass ASCII.
-- Next: commit and push to `origin/LUCIDA`, then verify the remote tip.
+- Evidence: focused XIO/LUCIDA suite `41 passed`; complete suite `108 passed`; `git diff --check` clean; no LUCIDA test process active; new code and ledger content pass ASCII.
+- Published: commit `04c4a08` pushed to `origin/LUCIDA`; working tree clean.
+- Closure: XIO now has a direct safe view/cursor path without copying raw payload or provenance into overlay output. Further expansion should require a concrete host or transport contract.
