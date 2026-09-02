@@ -27,6 +27,7 @@ python .\tools\mosaik_cli.py nayade-processor catalog
 python .\tools\mosaik_cli.py nayade-processor discover --report ".\artifacts\processor-discovery.json"
 python .\tools\mosaik_cli.py nayade-processor validate-case ".\data\cases\soundcheck-2026-08-29-vc2.json"
 python .\tools\mosaik_cli.py nayade-processor reconcile --processor-observation ".\artifacts\processor-observation.json" --mapping ".\artifacts\mapping-plan.json" --report ".\artifacts\reconciliation.json"
+python .\tools\mosaik_cli.py nayade-processor protocol --reconciliation ".\artifacts\reconciliation.json" --mapping ".\artifacts\mapping-plan.json" --report ".\artifacts\soundcheck-protocol.json"
 python .\tools\mosaik_cli.py nayade-processor probe-output --report ".\artifacts\output-probe.json"
 python .\tools\validate_schema_graph.py
 python .\tools\mosaik_cli.py vj-replay ".\adapters\vj\replay\fixtures\plugin-bridges-fictional.json" --report ".\artifacts\vj-replay.json"
@@ -161,6 +162,13 @@ python .\tools\mosaik_cli.py instar-adapt `
 El detalle operativo está en `docs/runbooks/instar-adaptacion.md`.
 El flujo completo, desde catálogo hasta soundcheck, está en
 `docs/runbooks/instar-preshow.md`.
+
+`nayade-processor protocol` transforma los hallazgos de un caso, una
+reconciliación y/o un mapping en un checklist de soundcheck ordenado. Incluye
+blackout, PLUGE, grises, primarios, geometría y movimiento, y eleva las pruebas
+de escalado cuando la evidencia lo justifica. Cada paso conserva su motivo,
+observación esperada y campos de registro. El comando no genera patrones, no
+envía comandos y no escribe en el procesador.
 La decisión de herramientas adoptadas y pendientes está en
 `docs/research/adopcion-herramientas.md`.
 

@@ -20,6 +20,10 @@ python tools/mosaik_cli.py nayade-processor reconcile `
   --report Z:\MOSAIK\runs\nayade\reconciliation.json
 python tools/mosaik_cli.py nayade-processor probe-output `
   --report Z:\MOSAIK\runs\nayade\output-probe.json
+python tools/mosaik_cli.py nayade-processor protocol `
+  --reconciliation Z:\MOSAIK\runs\nayade\reconciliation.json `
+  --mapping Z:\MOSAIK\runs\nayade\mapping-plan.json `
+  --report Z:\MOSAIK\runs\nayade\soundcheck-protocol.json
 ```
 
 `discover` consulta el inventario USB/COM del sistema, pero no abre los puertos. Si no aparece nada, todavía puede existir un procesador controlable por Ethernet o por el software del fabricante.
@@ -39,6 +43,12 @@ el procesador y todas sus recomendaciones requieren aprobación explícita.
 `probe-output` se ejecuta en el portátil VJ antes de tocar la cadena. Registra
 resolución, Hz, adaptador y EDID de forma acotada; no puede confirmar por sí
 solo RGB Full/Limited ni lo que finalmente recibe cada salida del procesador.
+
+`protocol` convierte la evidencia disponible en un checklist determinista. La
+línea base cubre blackout, PLUGE/near-black, grises, primarios, geometría y
+movimiento; los conflictos de rango, escalado, resolución, deformación o
+estabilidad elevan las pruebas relacionadas. La salida es `plan_only`: no emite
+patrones ni cambia el hardware.
 
 ## Flujo de llegada al venue
 

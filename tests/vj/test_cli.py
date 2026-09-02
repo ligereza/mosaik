@@ -151,3 +151,37 @@ def test_nayade_reconcile_cli_writes_a_bounded_report(tmp_path, capsys):
     assert output["status"] == "REVIEW"
     assert output["safety"]["source_paths_exposed"] is False
     assert "scaling" in capsys.readouterr().out
+
+
+def test_nayade_protocol_cli_writes_operator_plan(tmp_path, capsys):
+    reconciliation_path = tmp_path / "reconciliation.json"
+    report_path = tmp_path / "protocol.json"
+    reconciliation_path.write_text(
+        json.dumps(
+            {
+                "status": "FAIL",
+                "conflicts": [{"id": "range_mismatch", "severity": "high"}],
+                "calculations": [],
+                "facts": [],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    exit_code = main(
+        [
+            "nayade-processor",
+            "protocol",
+            "--reconciliation",
+            str(reconciliation_path),
+            "--report",
+            str(report_path),
+        ]
+    )
+
+    assert exit_code == 0
+    output = json.loads(report_path.read_text(encoding="utf-8"))
+    assert output["protocol_type"] == "NayadeSoundcheckProtocol"
+    assert output["status"] == "REVIEW"
+    assert any(step["pattern"] == "pluge_near_black" for step in output["steps"])
+    assert "range_mismatch" in capsys.readouterr().out

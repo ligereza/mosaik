@@ -48,6 +48,7 @@ from mosaik.reconcile import (
     reconcile_signal_chain,
     reconciliation_text_report,
 )
+from mosaik.protocol import build_soundcheck_protocol, protocol_text_report
 from mosaik.resolume import (
     advanced_output_text_report,
     build_mapping_plan,
@@ -290,6 +291,11 @@ def build_parser() -> argparse.ArgumentParser:
     processor_reconcile.add_argument("--mapping", help="Mapa o plan JSON de Advanced Output.")
     processor_reconcile.add_argument("--output-probe", help="Sonda JSON de salida Windows/GPU.")
     processor_reconcile.add_argument("--report", help="Ruta opcional para guardar la reconciliación JSON.")
+    processor_protocol = processor_commands.add_parser("protocol", help="Genera un protocolo de soundcheck basado en evidencia, sin tocar hardware.")
+    processor_protocol.add_argument("--case", help="Caso JSON de NAYADE; se diagnostica antes de generar el protocolo.")
+    processor_protocol.add_argument("--reconciliation", help="Reconciliación JSON de cadena.")
+    processor_protocol.add_argument("--mapping", help="Mapa o plan JSON de Advanced Output.")
+    processor_protocol.add_argument("--report", help="Ruta opcional para guardar el protocolo JSON.")
     processor_probe = processor_commands.add_parser("probe-output", help="Captura salida Windows/GPU y EDID en solo lectura.")
     processor_probe.add_argument("--timeout", type=float, default=10.0, help="Tiempo máximo de consulta WMI en segundos.")
     processor_probe.add_argument("--report", required=True, help="Archivo JSON de la sonda.")
@@ -680,6 +686,16 @@ def main(argv: list[str] | None = None) -> int:
                     report_path = write_processor_json(report, args.report)
                     print(f"\nReconciliación JSON: {report_path}")
                 return 1 if report["status"] == "FAIL" else 0
+            if args.processor_command == "protocol":
+                case_report = diagnose_case(args.case) if args.case else None
+                reconciliation = load_reconciliation_document(args.reconciliation) if args.reconciliation else None
+                mapping = load_reconciliation_document(args.mapping) if args.mapping else None
+                report = build_soundcheck_protocol(case_report, reconciliation, mapping)
+                print(protocol_text_report(report))
+                if args.report:
+                    report_path = write_processor_json(report, args.report)
+                    print(f"\nProtocolo JSON: {report_path}")
+                return 0
             if args.processor_command == "probe-output":
                 report = probe_windows_output(timeout_seconds=args.timeout)
                 print(output_probe_text_report(report))
