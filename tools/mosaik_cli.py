@@ -10,6 +10,14 @@ from pathlib import Path
 
 from mosaik.diagnose import diagnose_file, text_report
 from mosaik.dxv import convert_to_dxv
+from mosaik.imago import (
+    build_show_session,
+    load_session as load_imago_session,
+    next_proposal,
+    record_event,
+    record_result as record_imago_result,
+    write_session as write_imago_session,
+)
 from mosaik.media import MosaikError
 
 
@@ -47,6 +55,25 @@ def build_parser() -> argparse.ArgumentParser:
     dxv.add_argument("--dry-run", action="store_true", help="Muestra la operación sin convertir.")
     dxv.add_argument("--ffmpeg", default="ffmpeg", help="Ruta o nombre de FFmpeg.")
     dxv.add_argument("--ffprobe", default="ffprobe", help="Ruta o nombre de FFprobe.")
+
+    imago = commands.add_parser("imago-session", help="Registra observaciones proposal-only del show.")
+    imago_commands = imago.add_subparsers(dest="imago_command", required=True)
+    imago_init = imago_commands.add_parser("init", help="Crea una sesion de show.")
+    imago_init.add_argument("-o", "--output", required=True)
+    imago_init.add_argument("--session-id", default="imago-session")
+    imago_init.add_argument("--name", default="IMAGO Show")
+    imago_init.add_argument("--created-at")
+    imago_event = imago_commands.add_parser("event", help="Registra un evento observado.")
+    imago_event.add_argument("session")
+    imago_event.add_argument("--event-type", required=True, choices=("show_started", "cue_fired", "incident_detected", "recovery_started", "recovery_verified", "show_closed"))
+    imago_event.add_argument("--payload", default="{}")
+    imago_event.add_argument("--recorded-at")
+    imago_result = imago_commands.add_parser("result", help="Registra un resultado de propuesta.")
+    imago_result.add_argument("session")
+    imago_result.add_argument("--proposal-id", required=True)
+    imago_result.add_argument("--result", required=True, choices=("accepted", "rejected", "review"))
+    imago_result.add_argument("--notes", default="")
+    imago_result.add_argument("--recorded-at")
     return parser
 
 
@@ -103,6 +130,33 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"Resolución: {result['video'].get('width')} × {result['video'].get('height')}")
                 print(f"FPS: {result['video'].get('average_fps')}")
             return 0
+
+        if args.command == "imago-session":
+            if args.imago_command == "init":
+                session = build_show_session(
+                    session_id=args.session_id,
+                    name=args.name,
+                    created_at=args.created_at,
+                )
+                output = write_imago_session(session, args.output)
+                print(json.dumps({"status": "created", "output": str(output), "next": next_proposal(session)}, ensure_ascii=False, indent=2))
+                return 0
+            if args.imago_command == "event":
+                session = load_imago_session(args.session)
+                try:
+                    payload = json.loads(args.payload)
+                except json.JSONDecodeError as exc:
+                    raise MosaikError("--payload must be valid JSON.") from exc
+                updated = record_event(session, event_type=args.event_type, payload=payload, recorded_at=args.recorded_at)
+                output = write_imago_session(updated, args.session)
+                print(json.dumps({"status": "recorded", "output": str(output), "next": next_proposal(updated)}, ensure_ascii=False, indent=2))
+                return 0
+            if args.imago_command == "result":
+                session = load_imago_session(args.session)
+                updated = record_imago_result(session, proposal_id=args.proposal_id, result=args.result, notes=args.notes, recorded_at=args.recorded_at)
+                output = write_imago_session(updated, args.session)
+                print(json.dumps({"status": "recorded", "output": str(output), "next": next_proposal(updated)}, ensure_ascii=False, indent=2))
+                return 0
     except MosaikError as exc:
         print(f"MOSAIK ERROR: {exc}", file=sys.stderr)
         return 2
