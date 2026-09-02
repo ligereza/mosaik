@@ -34,6 +34,17 @@ El launcher prefiere `.venv\Scripts\python.exe`. Si todavía no existe, usa el
 `python` disponible en `PATH` y muestra un error accionable si no encuentra
 Python.
 
+Antes de un show, se puede comprobar la copia portable y sus dependencias sin
+abrir Resolume ni tocar hardware:
+
+```powershell
+& "C:\Ruta\MOSAIK\tools\Invoke-MOSAIK.ps1" doctor --report "D:\VJ\Reports\doctor.json"
+```
+
+`PASS` confirma el entorno base; `WARN` indica capacidades opcionales o
+herramientas externas ausentes; `FAIL` requiere corregir el entorno antes de
+usar la función afectada.
+
 ## Límites de seguridad
 
 - La CLI sólo cambia archivos cuando el comando recibe explícitamente una ruta

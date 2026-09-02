@@ -223,6 +223,20 @@ operador/orquestador y `--previous` permite rechazar saltos de fase. El modo
 etapas y devuelve un replay determinista. Las rutas se usan sólo como entrada
 y no se incluyen en el reporte generado.
 
+### Diagnóstico portable
+
+La copia portable puede verificarse antes de un show sin abrir Resolume ni
+modificar hardware:
+
+```powershell
+& ".\tools\Invoke-MOSAIK.ps1" doctor --report ".\artifacts\doctor.json"
+```
+
+El comando revisa Python, módulos base, FFmpeg/FFprobe y los módulos GPU
+opcionales. `FAIL` bloquea el entorno base; `WARN` sólo señala una capacidad
+opcional o una herramienta externa ausente. El reporte declara sus límites y
+no contiene rutas de medios analizados.
+
 ### NAYADE y procesadores LED
 
 El catálogo inicial de procesadores está en `data/processors/catalog.json` y

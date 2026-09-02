@@ -16,6 +16,7 @@ from adapters.vj import VJProjectError, build_stage_event, load_project_document
 from adapters.vj.replay import ReplayError, replay_plugin_bridge_path, replay_project_manifest_path
 from mosaik.adapt import run_adaptation, text_report as adapt_text_report, write_adaptation_plan
 from mosaik.diagnose import diagnose_file, text_report
+from mosaik.doctor import doctor_text_report, run_doctor, write_doctor_report
 from mosaik.dxv import convert_to_dxv
 from mosaik.imago import (
     build_show_session,
@@ -88,6 +89,12 @@ def _resolution(value: str) -> tuple[int, int]:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="mosaik", description="Herramientas MOSAIK para flujo VJ.")
     commands = parser.add_subparsers(dest="command", required=True)
+
+    doctor = commands.add_parser(
+        "doctor",
+        help="Comprueba el entorno portable sin controlar Resolume ni hardware.",
+    )
+    doctor.add_argument("--report", help="Ruta opcional para guardar el diagnóstico JSON.")
 
     instar = commands.add_parser("instar", help="Ejecuta el preflight de media de una carpeta.")
     instar.add_argument("media_root", help="Carpeta raíz con los videos del show.")
@@ -329,6 +336,14 @@ def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
     try:
+        if args.command == "doctor":
+            report = run_doctor()
+            print(doctor_text_report(report))
+            if args.report:
+                report_path = write_doctor_report(report, args.report)
+                print(f"\nDiagnóstico JSON: {report_path}")
+            return 1 if report["overall_status"] == "FAIL" else 0
+
         if args.command == "instar":
             show_profile = load_show_profile(args.show_profile) if args.show_profile else None
             profile_target = target_values(show_profile) if show_profile else {}
