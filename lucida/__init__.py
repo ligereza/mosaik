@@ -25,6 +25,7 @@ from .overlay_consumer import (
 )
 from .overlay_replay import (
     OverlayReplayError,
+    OverlayReplayRecorder,
     replay_overlay_json,
     replay_overlay_path,
     replay_overlay_records,
@@ -54,6 +55,7 @@ __all__ = [
     "OverlayConsumerStaleError",
     "OverlayConsumerState",
     "OverlayReplayError",
+    "OverlayReplayRecorder",
     "replay_overlay_json",
     "replay_overlay_path",
     "replay_overlay_records",

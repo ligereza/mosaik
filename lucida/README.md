@@ -119,6 +119,10 @@ The deterministic output contract is
 [`overlay-replay-report.schema.json`](overlay/contracts/overlay-replay-report.schema.json).
 The atomic update path is exercised by
 [`overlay-atomic-update-fictional.json`](overlay/fixtures/overlay-atomic-update-fictional.json).
+`OverlayReplayRecorder` creates the same strict envelope from successive
+`LucidaState` values: it starts with a snapshot, records atomic updates, and
+requires an explicit `recovery=True` for replacement snapshots. Its output can
+be passed directly to `replay_overlay_json` for an offline roundtrip check.
 
 ## Replay y dry-run
 

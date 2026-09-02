@@ -6,12 +6,116 @@ import json
 from pathlib import Path
 from typing import Any, Mapping
 
-from .overlay import OVERLAY_VIEW_SCHEMA_VERSION, validate_overlay_update
+from .contracts import LucidaState
+from .overlay import (
+    OVERLAY_VIEW_SCHEMA_VERSION,
+    build_overlay_cursor,
+    build_overlay_update,
+    build_overlay_view,
+    validate_overlay_update,
+)
 from .overlay_consumer import OverlayConsumer, OverlayConsumerError
 
 
 class OverlayReplayError(ValueError):
     """Raised when an overlay replay envelope cannot be consumed safely."""
+
+
+class OverlayReplayRecorder:
+    """Build a deterministic replay envelope from successive LUCIDA states."""
+
+    def __init__(self, session_id: str | None = None) -> None:
+        if session_id is not None and (
+            not isinstance(session_id, str) or not session_id.strip()
+        ):
+            raise OverlayReplayError("session_id must be non-empty text or null.")
+        self._session_id = session_id
+        self._state: LucidaState | None = None
+        self._consumer = OverlayConsumer()
+        self._records: list[dict[str, Any]] = []
+
+    @property
+    def record_count(self) -> int:
+        return len(self._records)
+
+    def start(self, state: LucidaState | Mapping[str, Any]) -> dict[str, Any]:
+        """Start a recording with one explicit initial snapshot."""
+
+        if self._records:
+            raise OverlayReplayError("the replay recorder has already started.")
+        current = _recorder_state(state)
+        self._assert_session(current)
+        record = _snapshot_record(current, recovery=False)
+        try:
+            self._consumer.accept_snapshot(record["view"], record["cursor"])
+        except (OverlayConsumerError, KeyError, TypeError, ValueError) as exc:
+            raise OverlayReplayError(f"initial snapshot cannot be recorded: {exc}") from exc
+        self._state = current
+        self._records.append(record)
+        return _copy_json(record)
+
+    def record(
+        self,
+        state: LucidaState | Mapping[str, Any],
+        *,
+        recovery: bool = False,
+    ) -> dict[str, Any]:
+        """Record one update or explicitly authorized recovery snapshot."""
+
+        if self._state is None:
+            raise OverlayReplayError("start() must be called before record().")
+        if not isinstance(recovery, bool):
+            raise OverlayReplayError("recovery must be boolean.")
+        current = _recorder_state(state)
+        self._assert_session(current)
+        if recovery:
+            record = _snapshot_record(current, recovery=True)
+            try:
+                self._consumer.accept_snapshot(
+                    record["view"],
+                    record["cursor"],
+                    recovery=True,
+                )
+            except (OverlayConsumerError, KeyError, TypeError, ValueError) as exc:
+                raise OverlayReplayError(f"recovery snapshot cannot be recorded: {exc}") from exc
+        else:
+            try:
+                update = build_overlay_update(self._state, current)
+                self._consumer.apply_update(update)
+            except (OverlayConsumerError, KeyError, TypeError, ValueError) as exc:
+                raise OverlayReplayError(f"atomic update cannot be recorded: {exc}") from exc
+            record = {"kind": "update", "update": update}
+        self._state = current
+        self._records.append(record)
+        return _copy_json(record)
+
+    def envelope(self) -> dict[str, Any]:
+        """Return the strict replay envelope without private state."""
+
+        if not self._records:
+            raise OverlayReplayError("the replay recorder has no records.")
+        return {
+            "contract_type": "LucidaOverlayReplay",
+            "schema_version": OVERLAY_VIEW_SCHEMA_VERSION,
+            "records": _copy_json(self._records),
+        }
+
+    def to_json(self) -> str:
+        """Serialize the replay envelope with stable JSON formatting."""
+
+        return json.dumps(
+            self.envelope(),
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=True,
+            allow_nan=False,
+        )
+
+    def _assert_session(self, state: LucidaState) -> None:
+        if self._session_id is None:
+            self._session_id = state.session_id
+        if state.session_id != self._session_id:
+            raise OverlayReplayError("recorder state sessions differ.")
 
 
 def replay_overlay_json(source: str | bytes | bytearray | Mapping[str, Any]) -> dict[str, Any]:
@@ -40,6 +144,37 @@ def replay_overlay_path(path: str | Path) -> dict[str, Any]:
     except (OSError, UnicodeError) as exc:
         raise OverlayReplayError(f"overlay replay file cannot be read: {replay_path}") from exc
     return replay_overlay_json(source)
+
+
+def _recorder_state(state: LucidaState | Mapping[str, Any]) -> LucidaState:
+    try:
+        return state if isinstance(state, LucidaState) else LucidaState.from_dict(state)
+    except (KeyError, TypeError, ValueError) as exc:
+        raise OverlayReplayError(f"recorder state is invalid: {exc}") from exc
+
+
+def _snapshot_record(state: LucidaState, *, recovery: bool) -> dict[str, Any]:
+    return {
+        "kind": "snapshot",
+        "recovery": recovery,
+        "view": build_overlay_view(state),
+        "cursor": build_overlay_cursor(state),
+    }
+
+
+def _copy_json(value: Any) -> Any:
+    try:
+        return json.loads(
+            json.dumps(
+                value,
+                sort_keys=True,
+                separators=(",", ":"),
+                ensure_ascii=True,
+                allow_nan=False,
+            )
+        )
+    except (TypeError, ValueError) as exc:
+        raise OverlayReplayError("replay recorder values must be JSON serializable.") from exc
 
 
 def replay_overlay_records(envelope: Mapping[str, Any]) -> dict[str, Any]:
@@ -159,6 +294,7 @@ def _validated_envelope(envelope: Mapping[str, Any]) -> list[Mapping[str, Any]]:
 
 __all__ = [
     "OverlayReplayError",
+    "OverlayReplayRecorder",
     "replay_overlay_json",
     "replay_overlay_path",
     "replay_overlay_records",

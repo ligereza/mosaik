@@ -13,6 +13,7 @@ from lucida import (
     OverlayConsumerNotInitializedError,
     OverlayConsumerStaleError,
     OverlayReplayError,
+    OverlayReplayRecorder,
     OverlayUpdateError,
     build_overlay_cursor,
     build_overlay_update,
@@ -506,6 +507,49 @@ def test_overlay_json_replay_rejects_altered_atomic_payload_without_partial_repo
     altered_cursor["records"][1]["update"]["cursor"]["sequence"] = 2
     with pytest.raises(OverlayReplayError, match="skips"):
         replay_overlay_json(altered_cursor)
+
+
+def test_overlay_replay_recorder_roundtrips_updates_and_recovery_snapshots():
+    orchestrator, state = _state()
+    next_state = replace(state, overlay_status="result_recorded")
+    recovered_state = replace(next_state, overlay_status="recovered")
+    recorder = OverlayReplayRecorder("session-overlay")
+
+    initial = recorder.start(state)
+    update = recorder.record(next_state)
+    recovery = recorder.record(recovered_state, recovery=True)
+    envelope = recorder.envelope()
+
+    assert initial["kind"] == "snapshot"
+    assert update["kind"] == "update"
+    assert update["update"]["view_digest"]
+    assert recovery["kind"] == "snapshot"
+    assert recovery["recovery"] is True
+    assert recorder.record_count == 3
+    assert recorder.to_json() == recorder.to_json()
+
+    report = replay_overlay_json(recorder.to_json())
+    assert report["record_count"] == 3
+    assert report["update_count"] == 1
+    assert report["snapshot_count"] == 2
+    assert report["final_view"]["overlay_status"] == "recovered"
+    assert replay_overlay_json(envelope) == report
+
+
+def test_overlay_replay_recorder_rejects_invalid_next_revision_without_appending():
+    orchestrator, state = _state()
+    recorder = OverlayReplayRecorder()
+    recorder.start(state)
+    invalid_state = replace(
+        state,
+        vj_state=replace(state.vj_state, sequence=state.vj_state.sequence + 2),
+    )
+
+    with pytest.raises(OverlayReplayError, match="skips"):
+        recorder.record(invalid_state)
+
+    assert recorder.record_count == 1
+    assert len(recorder.envelope()["records"]) == 1
 
 
 def test_overlay_replay_schema_is_strict_and_references_safe_contracts():
