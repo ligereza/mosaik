@@ -19,8 +19,8 @@
             "required": ["kind", "view", "cursor", "recovery"],
             "properties": {
               "kind": { "const": "snapshot" },
-              "view": { "$ref": "overlay-view.schema.json" },
-              "cursor": { "$ref": "overlay-cursor.schema.json" },
+              "view": { "$ref": "urn:mosaik:lucida:overlay-view" },
+              "cursor": { "$ref": "urn:mosaik:lucida:overlay-cursor" },
               "recovery": { "type": "boolean" }
             }
           },
@@ -55,7 +55,7 @@
                   }
                 }
               },
-              "cursor": { "$ref": "overlay-cursor.schema.json" }
+              "cursor": { "$ref": "urn:mosaik:lucida:overlay-cursor" }
             }
           },
           {
@@ -64,7 +64,7 @@
             "required": ["kind", "update"],
             "properties": {
               "kind": { "const": "update" },
-              "update": { "$ref": "overlay-update.schema.json" }
+              "update": { "$ref": "urn:mosaik:lucida:overlay-update" }
             }
           }
         ]

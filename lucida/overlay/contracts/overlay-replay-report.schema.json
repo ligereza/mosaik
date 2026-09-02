@@ -45,9 +45,9 @@
         }
       }
     },
-    "final_view": { "$ref": "overlay-view.schema.json" },
-    "final_cursor": { "$ref": "overlay-cursor.schema.json" },
-    "checkpoint": { "$ref": "overlay-consumer-checkpoint.schema.json" },
+    "final_view": { "$ref": "urn:mosaik:lucida:overlay-view" },
+    "final_cursor": { "$ref": "urn:mosaik:lucida:overlay-cursor" },
+    "checkpoint": { "$ref": "urn:mosaik:lucida:overlay-consumer-checkpoint" },
     "safety": {
       "type": "object",
       "additionalProperties": false,

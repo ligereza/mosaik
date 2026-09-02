@@ -25,7 +25,7 @@
     },
     "view": {
       "anyOf": [
-        { "$ref": "overlay-view.schema.json" },
+        { "$ref": "urn:mosaik:lucida:overlay-view" },
         { "type": "null" }
       ]
     },
@@ -37,7 +37,7 @@
     },
     "cursor": {
       "anyOf": [
-        { "$ref": "overlay-cursor.schema.json" },
+        { "$ref": "urn:mosaik:lucida:overlay-cursor" },
         { "type": "null" }
       ]
     },

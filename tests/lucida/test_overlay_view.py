@@ -609,10 +609,10 @@ def test_overlay_replay_schema_is_strict_and_references_safe_contracts():
     assert schema["additionalProperties"] is False
     assert schema["properties"]["records"]["minItems"] == 1
     variants = schema["properties"]["records"]["items"]["anyOf"]
-    assert variants[0]["properties"]["view"]["$ref"] == "overlay-view.schema.json"
-    assert variants[0]["properties"]["cursor"]["$ref"] == "overlay-cursor.schema.json"
-    assert variants[1]["properties"]["cursor"]["$ref"] == "overlay-cursor.schema.json"
-    assert variants[2]["properties"]["update"]["$ref"] == "overlay-update.schema.json"
+    assert variants[0]["properties"]["view"]["$ref"] == "urn:mosaik:lucida:overlay-view"
+    assert variants[0]["properties"]["cursor"]["$ref"] == "urn:mosaik:lucida:overlay-cursor"
+    assert variants[1]["properties"]["cursor"]["$ref"] == "urn:mosaik:lucida:overlay-cursor"
+    assert variants[2]["properties"]["update"]["$ref"] == "urn:mosaik:lucida:overlay-update"
 
 
 def test_overlay_replay_report_schema_matches_the_deterministic_output():
@@ -625,9 +625,9 @@ def test_overlay_replay_report_schema_matches_the_deterministic_output():
 
     assert schema["additionalProperties"] is False
     assert set(schema["required"]) == set(report)
-    assert schema["properties"]["final_view"]["$ref"] == "overlay-view.schema.json"
-    assert schema["properties"]["final_cursor"]["$ref"] == "overlay-cursor.schema.json"
-    assert schema["properties"]["checkpoint"]["$ref"] == "overlay-consumer-checkpoint.schema.json"
+    assert schema["properties"]["final_view"]["$ref"] == "urn:mosaik:lucida:overlay-view"
+    assert schema["properties"]["final_cursor"]["$ref"] == "urn:mosaik:lucida:overlay-cursor"
+    assert schema["properties"]["checkpoint"]["$ref"] == "urn:mosaik:lucida:overlay-consumer-checkpoint"
     assert report["safety"]["replay_only"] is True
     assert report["update_count"] == 0
 
