@@ -87,6 +87,19 @@ show-input projection. The caller supplies the event sequence; a report cannot
 silently invent ordering. This bridge is read-only and does not invoke INSTAR,
 FFmpeg, Resolume, or any transport.
 
+## NAYADE soundcheck bridge
+
+`build_nayade_event()` converts a NAYADE session into a `preparation` event.
+It keeps counts and bounded summaries for slices, input groups, planned steps,
+operator results, signal facts, and the passive processor observation. A
+processor observation must explicitly declare `read_only=true` and
+`commands_sent=false`; USB, serial, Ethernet, HDMI, and manual are recorded as
+facts only. Private source fields, notes, evidence text, and arbitrary payloads
+are not copied.
+`project_nayade_show_input()` reuses the same projection and requires the
+caller-provided sequence. It never opens a port or changes a soundcheck,
+processor, mapping, or show.
+
 ## Extensión
 
 Los adaptadores concretos de medios, cues, DXV, Art-Net/DMX/sACN, LED

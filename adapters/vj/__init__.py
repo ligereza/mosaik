@@ -13,6 +13,12 @@ from .instar_input import (
     build_instar_event,
     project_instar_show_input,
 )
+from .nayade_input import (
+    NayadeInputError,
+    NayadeInputProjector,
+    build_nayade_event,
+    project_nayade_show_input,
+)
 from .show_input import (
     ShowInputError,
     ShowInputProjection,
@@ -34,6 +40,10 @@ __all__ = [
     "InstarInputProjector",
     "build_instar_event",
     "project_instar_show_input",
+    "NayadeInputError",
+    "NayadeInputProjector",
+    "build_nayade_event",
+    "project_nayade_show_input",
     "ShowInputError",
     "ShowInputProjection",
     "ShowInputProjector",
