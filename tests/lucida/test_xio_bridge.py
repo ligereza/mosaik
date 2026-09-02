@@ -180,15 +180,20 @@ def test_xio_consume_result_schema_references_the_atomic_overlay_contract():
 
     assert schema["additionalProperties"] is False
     assert set(schema["required"]) == set(result)
-    assert schema["properties"]["application_event"]["$ref"] == "application-event.schema.json"
-    assert schema["properties"]["vj_event"]["$ref"] == "../../../adapters/vj/contracts/event.schema.json"
-    assert schema["properties"]["signal"]["$ref"] == "signal-envelope.schema.json"
-    assert schema["properties"]["record"]["$ref"] == "session-replay-record.schema.json"
-    assert schema["properties"]["overlay_update"]["$ref"] == "../../overlay/contracts/overlay-update.schema.json"
+    assert schema["properties"]["application_event"]["$ref"] == "urn:lucida:signals:application-event"
+    assert schema["properties"]["vj_event"]["$ref"] == "urn:vj-interface-layer:contracts:vj-event"
+    assert schema["properties"]["signal"]["$ref"] == "urn:lucida:signals:signal-envelope"
+    assert schema["properties"]["record"]["$ref"] == "urn:lucida:signals:session-replay-record"
+    assert schema["properties"]["overlay_update"]["$ref"] == "urn:mosaik:lucida:overlay-update"
 
 
-def test_xio_result_schema_references_resolve_to_local_contracts():
-    contracts_dir = Path(__file__).parents[2] / "lucida" / "signals" / "contracts"
+def test_xio_result_schema_references_resolve_to_registered_contract_ids():
+    repo_root = Path(__file__).parents[2]
+    schema_files = list(repo_root.glob("**/*.schema.json"))
+    registry = {
+        json.loads(path.read_text(encoding="utf-8"))["$id"]: path for path in schema_files
+    }
+    contracts_dir = repo_root / "lucida" / "signals" / "contracts"
     schema = json.loads(
         (contracts_dir / "xio-consume-result.schema.json").read_text(encoding="utf-8")
     )
@@ -196,7 +201,7 @@ def test_xio_result_schema_references_resolve_to_local_contracts():
     for property_schema in schema["properties"].values():
         reference = property_schema.get("$ref")
         if reference and not reference.startswith("http"):
-            assert (contracts_dir / reference).resolve().exists(), reference
+            assert reference in registry, reference
 
 
 def test_incomplete_application_event_is_rejected():

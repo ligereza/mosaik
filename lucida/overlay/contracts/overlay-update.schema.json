@@ -10,7 +10,7 @@
     "schema_version": { "const": "0.1" },
     "surface": { "const": "LUCIDA" },
     "mode": { "const": "read_only" },
-    "view": { "$ref": "overlay-view.schema.json" },
+    "view": { "$ref": "urn:mosaik:lucida:overlay-view" },
     "view_digest": {
       "type": "string",
       "pattern": "^[0-9a-f]{64}$"
@@ -40,7 +40,7 @@
         }
       }
     },
-    "cursor": { "$ref": "overlay-cursor.schema.json" },
+    "cursor": { "$ref": "urn:mosaik:lucida:overlay-cursor" },
     "safety": {
       "type": "object",
       "additionalProperties": false,

@@ -16,10 +16,10 @@
   "properties": {
     "contract_type": { "const": "XioConsumeResult" },
     "schema_version": { "const": "0.1" },
-    "application_event": { "$ref": "application-event.schema.json" },
-    "vj_event": { "$ref": "../../../adapters/vj/contracts/event.schema.json" },
-    "signal": { "$ref": "signal-envelope.schema.json" },
-    "record": { "$ref": "session-replay-record.schema.json" },
-    "overlay_update": { "$ref": "../../overlay/contracts/overlay-update.schema.json" }
+    "application_event": { "$ref": "urn:lucida:signals:application-event" },
+    "vj_event": { "$ref": "urn:vj-interface-layer:contracts:vj-event" },
+    "signal": { "$ref": "urn:lucida:signals:signal-envelope" },
+    "record": { "$ref": "urn:lucida:signals:session-replay-record" },
+    "overlay_update": { "$ref": "urn:mosaik:lucida:overlay-update" }
   }
 }

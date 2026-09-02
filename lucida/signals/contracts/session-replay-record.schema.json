@@ -17,15 +17,15 @@
   "properties": {
     "contract_type": { "const": "SessionReplayRecord" },
     "schema_version": { "const": "0.1" },
-    "event": { "$ref": "../../../adapters/vj/contracts/event.schema.json" },
-    "signal": { "$ref": "signal-envelope.schema.json" },
+    "event": { "$ref": "urn:vj-interface-layer:contracts:vj-event" },
+    "signal": { "$ref": "urn:lucida:signals:signal-envelope" },
     "proposals": {
       "type": "array",
-      "items": { "$ref": "../../../adapters/vj/contracts/proposal.schema.json" }
+      "items": { "$ref": "urn:vj-interface-layer:contracts:vj-proposal" }
     },
     "results": {
       "type": "array",
-      "items": { "$ref": "../../../adapters/vj/contracts/result.schema.json" }
+      "items": { "$ref": "urn:vj-interface-layer:contracts:vj-result" }
     },
     "state_after": {
       "type": "object",
@@ -34,7 +34,7 @@
         "contract_type": { "const": "LucidaState" },
         "schema_version": { "const": "0.1" },
         "session_id": { "type": "string", "minLength": 1 },
-        "vj_state": { "$ref": "../../../adapters/vj/contracts/state.schema.json" }
+        "vj_state": { "$ref": "urn:vj-interface-layer:contracts:vj-state" }
       }
     },
     "audit": { "type": "object" }

@@ -47,6 +47,9 @@ que referencia el contrato común de `overlay_update`.
 `validate_xio_consume_result()` permite validar ese resultado en runtime antes
 de aceptarlo, comprobando también la identidad y secuencia entre XIO, replay,
 signal y overlay.
+Las referencias del grafo XIO usan los `$id` URN de cada contrato; un host que
+use JSON Schema debe registrarlos localmente y no depender de resolver rutas o
+descargar schemas durante un show.
 
 ## Host result receipt
 

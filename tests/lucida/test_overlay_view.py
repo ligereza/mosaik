@@ -703,6 +703,6 @@ def test_atomic_overlay_update_rejects_truncated_diffs_and_has_a_schema():
         "cursor",
         "safety",
     }
-    assert schema["properties"]["view"]["$ref"] == "overlay-view.schema.json"
-    assert schema["properties"]["cursor"]["$ref"] == "overlay-cursor.schema.json"
+    assert schema["properties"]["view"]["$ref"] == "urn:mosaik:lucida:overlay-view"
+    assert schema["properties"]["cursor"]["$ref"] == "urn:mosaik:lucida:overlay-cursor"
     assert schema["properties"]["safety"]["properties"]["automatic_actions"]["const"] is False
