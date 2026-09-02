@@ -59,7 +59,13 @@
               "profile_unknown_count": { "type": ["integer", "null"], "minimum": 0 },
               "profile_inferred_count": { "type": ["integer", "null"], "minimum": 0 },
               "profile_min_confidence": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
-              "processor_read_only": { "type": ["boolean", "null"] }
+              "processor_read_only": { "type": ["boolean", "null"] },
+              "profile_comparison_status": { "type": ["string", "null"] },
+              "profile_changed_count": { "type": ["integer", "null"], "minimum": 0 },
+              "profile_confidence_drop_count": { "type": ["integer", "null"], "minimum": 0 },
+              "profile_unknown_delta": { "type": ["integer", "null"] },
+              "profile_recommendation_changed": { "type": ["boolean", "null"] },
+              "profile_read_only_changed": { "type": ["boolean", "null"] }
             }
           },
           "observed_count": { "type": "integer", "minimum": 0 },

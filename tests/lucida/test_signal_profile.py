@@ -6,7 +6,11 @@ import pytest
 from jsonschema import Draft202012Validator
 
 from lucida import LucidaOrchestrator
-from lucida.signals import SignalProfileError, validate_signal_profile
+from lucida.signals import (
+    SignalProfileError,
+    compare_signal_profiles,
+    validate_signal_profile,
+)
 
 
 def _fact(value, origin="observed", confidence=0.9):
@@ -169,3 +173,48 @@ def test_nayade_marks_malformed_signal_profile_without_failing_the_event():
     nayade = next(item for item in overlay["capabilities"] if item["capability"] == "NAYADE")
 
     assert nayade["state"]["profile_status"] == "invalid"
+
+
+def test_compare_signal_profiles_reports_drift_without_raw_values():
+    expected = _profile()
+    observed = copy.deepcopy(expected)
+    observed["source"]["range"]["value"] = "limited"
+    observed["source"]["range"]["confidence"] = 0.4
+    observed["house"]["input"]["origin"] = "unknown"
+
+    comparison = compare_signal_profiles(expected, observed)
+
+    assert comparison["status"] == "changed"
+    assert comparison["changed_fields"] == ["source.range"]
+    assert comparison["confidence_drops"] == ["source.range"]
+    assert comparison["origin_changes"] == ["house.input"]
+    assert comparison["unknown_delta"] == 1
+    assert "limited" not in json.dumps(comparison)
+
+
+def test_nayade_projects_profile_drift_metrics():
+    expected = _profile()
+    observed = copy.deepcopy(expected)
+    observed["capture"]["refresh_hz"]["value"] = 50
+    state = LucidaOrchestrator().initial_state("session-001")
+    state = LucidaOrchestrator().propose(
+        {
+            "event_id": "evt-profile-drift",
+            "timestamp": "2026-01-10T20:00:00Z",
+            "phase": "preparation",
+            "event_type": "soundcheck.profile.compare",
+            "payload": {
+                "signal_profile": observed,
+                "baseline_signal_profile": expected,
+            },
+        },
+        state,
+    )
+
+    overlay = LucidaOrchestrator().read_overlay(state)
+    nayade = next(item for item in overlay["capabilities"] if item["capability"] == "NAYADE")
+
+    assert nayade["state"]["profile_comparison_status"] == "changed"
+    assert nayade["state"]["profile_changed_count"] == 1
+    assert nayade["state"]["profile_confidence_drop_count"] == 0
+    assert nayade["state"]["profile_unknown_delta"] == 0

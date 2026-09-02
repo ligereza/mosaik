@@ -61,6 +61,9 @@ procesador desde HDMI y no escribe en hardware.
 `summarize_signal_profile()` expone a NAYADE únicamente métricas acotadas para
 el overlay: validez, etapa, conteos de desconocidos/inferidos, confianza mínima
 y modo read-only del procesador.
+`compare_signal_profiles()` permite contrastar un baseline con una observación y
+reporta sólo drift, cambios de origen, caídas de confianza y deltas de datos
+desconocidos; nunca devuelve los valores crudos.
 
 El schema de referencia es
 [`signal-profile.schema.json`](../../schemas/signal-profile.schema.json).

@@ -97,6 +97,12 @@ _SAFE_STATE_KEYS = (
     "profile_inferred_count",
     "profile_min_confidence",
     "processor_read_only",
+    "profile_comparison_status",
+    "profile_changed_count",
+    "profile_confidence_drop_count",
+    "profile_unknown_delta",
+    "profile_recommendation_changed",
+    "profile_read_only_changed",
 )
 
 

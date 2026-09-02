@@ -39,6 +39,13 @@ PROFILE_FIELDS = frozenset(
         "evidence",
     }
 )
+PROFILE_FACT_PATHS = (
+    *(f"source.{field}" for field in sorted(SOURCE_FIELDS)),
+    *(f"capture.{field}" for field in sorted(CAPTURE_FIELDS)),
+    *(f"house.{field}" for field in sorted(HOUSE_FIELDS)),
+    "processor.vendor",
+    "processor.model",
+)
 
 
 class SignalProfileError(ValueError):
@@ -288,11 +295,75 @@ class SignalProfile:
             "processor_read_only": self.processor["read_only"],
         }
 
+    def _facts_by_path(self) -> dict[str, SignalFact]:
+        facts: dict[str, SignalFact] = {}
+        for section_name in ("source", "capture", "house"):
+            section = getattr(self, section_name)
+            facts.update({f"{section_name}.{field}": fact for field, fact in section.items()})
+        facts["processor.vendor"] = self.processor["vendor"]
+        facts["processor.model"] = self.processor["model"]
+        return facts
+
 
 def validate_signal_profile(value: Mapping[str, Any]) -> dict[str, Any]:
     """Validate and return a detached canonical signal profile mapping."""
 
     return SignalProfile.from_dict(value).to_dict()
+
+
+def compare_signal_profiles(
+    expected: SignalProfile | Mapping[str, Any], observed: SignalProfile | Mapping[str, Any]
+) -> dict[str, Any]:
+    """Compare two profiles without returning their raw signal values."""
+
+    expected_profile = (
+        expected if isinstance(expected, SignalProfile) else SignalProfile.from_dict(expected)
+    )
+    observed_profile = (
+        observed if isinstance(observed, SignalProfile) else SignalProfile.from_dict(observed)
+    )
+    expected_facts = expected_profile._facts_by_path()
+    observed_facts = observed_profile._facts_by_path()
+    changed_fields: list[str] = []
+    origin_changes: list[str] = []
+    confidence_drops: list[str] = []
+    expected_unknown_count = 0
+    observed_unknown_count = 0
+    for field_name in PROFILE_FACT_PATHS:
+        expected_fact = expected_facts[field_name]
+        observed_fact = observed_facts[field_name]
+        if expected_fact.value != observed_fact.value:
+            changed_fields.append(field_name)
+        if expected_fact.origin != observed_fact.origin:
+            origin_changes.append(field_name)
+        if observed_fact.confidence < expected_fact.confidence:
+            confidence_drops.append(field_name)
+        expected_unknown_count += expected_fact.origin == "unknown"
+        observed_unknown_count += observed_fact.origin == "unknown"
+
+    recommendation_changed = expected_profile.recommendation != observed_profile.recommendation
+    read_only_changed = (
+        expected_profile.processor["read_only"] != observed_profile.processor["read_only"]
+    )
+    stage_changed = expected_profile.stage != observed_profile.stage
+    is_changed = bool(
+        changed_fields
+        or origin_changes
+        or confidence_drops
+        or recommendation_changed
+        or read_only_changed
+        or stage_changed
+    )
+    return {
+        "status": "changed" if is_changed else "stable",
+        "changed_fields": changed_fields,
+        "origin_changes": origin_changes,
+        "confidence_drops": confidence_drops,
+        "unknown_delta": observed_unknown_count - expected_unknown_count,
+        "recommendation_changed": recommendation_changed,
+        "read_only_changed": read_only_changed,
+        "stage_changed": stage_changed,
+    }
 
 
 def summarize_signal_profile(value: SignalProfile | Mapping[str, Any]) -> dict[str, Any]:
