@@ -75,6 +75,7 @@
             "external_side_effects": false
           }
         },
+        "view_digest": "0bcbe2cc8bc2d94837296b4a300af06530ab6b80118a7b17c26f7f0db722f969",
         "changes": [
           { "field": "status", "before": "created", "after": "ready" },
           { "field": "overlay_status", "before": "ready", "after": "observing" }

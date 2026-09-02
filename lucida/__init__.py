@@ -11,6 +11,7 @@ from .overlay import (
     build_overlay_update,
     build_overlay_view,
     diff_overlay_view,
+    overlay_view_digest,
     validate_overlay_update,
 )
 from .overlay_consumer import (
@@ -43,6 +44,7 @@ __all__ = [
     "build_overlay_update",
     "build_overlay_view",
     "diff_overlay_view",
+    "overlay_view_digest",
     "validate_overlay_update",
     "OverlayConsumer",
     "OverlayConsumerConflictError",

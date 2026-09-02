@@ -97,8 +97,10 @@ actions. Its checkpoint contract is
 [`overlay-consumer-checkpoint.schema.json`](overlay/contracts/overlay-consumer-checkpoint.schema.json).
 
 `build_overlay_update(previous_state, current_state)` packages the complete
-projected view, its bounded changes, and the matching revision cursor in one
-atomic `LucidaOverlayUpdate` envelope. The builder rejects truncated diffs.
+projected view, its SHA-256 view digest, bounded changes, and the matching
+revision cursor in one atomic `LucidaOverlayUpdate` envelope. The builder
+rejects truncated diffs and the digest prevents mixing a view from another
+revision.
 `OverlayConsumer.apply_update(update)` reconstructs the candidate view before
 mutating local state, so a mismatched view, diff, cursor, or safety envelope
 fails without a partial update. Its contract is

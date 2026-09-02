@@ -18,6 +18,7 @@ from lucida import (
     build_overlay_update,
     replay_overlay_json,
     replay_overlay_path,
+    overlay_view_digest,
 )
 from lucida.contracts import LucidaContractError, LucidaState
 from lucida.overlay import (
@@ -546,6 +547,7 @@ def test_atomic_overlay_update_binds_view_changes_and_cursor_for_consumers():
 
     assert update == build_overlay_update(state.to_dict(), current.to_dict())
     assert update["contract_type"] == "LucidaOverlayUpdate"
+    assert update["view_digest"] == overlay_view_digest(update["view"])
     assert update["changes"][0]["field"] == "overlay_status"
     assert update["view"] == orchestrator.read_overlay_view(current)
     assert update["cursor"] == orchestrator.read_overlay_cursor(current)
@@ -604,6 +606,7 @@ def test_atomic_overlay_update_rejects_truncated_diffs_and_has_a_schema():
         "surface",
         "mode",
         "view",
+        "view_digest",
         "changes",
         "cursor",
         "safety",

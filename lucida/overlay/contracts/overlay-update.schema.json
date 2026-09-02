@@ -4,13 +4,17 @@
   "title": "LUCIDA Atomic Overlay Update",
   "type": "object",
   "additionalProperties": false,
-  "required": ["contract_type", "schema_version", "surface", "mode", "view", "changes", "cursor", "safety"],
+  "required": ["contract_type", "schema_version", "surface", "mode", "view", "view_digest", "changes", "cursor", "safety"],
   "properties": {
     "contract_type": { "const": "LucidaOverlayUpdate" },
     "schema_version": { "const": "0.1" },
     "surface": { "const": "LUCIDA" },
     "mode": { "const": "read_only" },
     "view": { "$ref": "overlay-view.schema.json" },
+    "view_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
     "changes": {
       "type": "array",
       "maxItems": 7,

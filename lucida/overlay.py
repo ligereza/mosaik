@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 from datetime import datetime
 from typing import Any, Mapping
@@ -75,6 +76,7 @@ _UPDATE_FIELDS = {
     "surface",
     "mode",
     "view",
+    "view_digest",
     "changes",
     "cursor",
     "safety",
@@ -129,6 +131,20 @@ def diff_overlay_view(
                 }
             )
     return changes[:max_changes]
+
+
+def overlay_view_digest(view: Mapping[str, Any]) -> str:
+    """Return a deterministic digest for one validated projected view."""
+
+    validated = _validated_projected_view(view, "overlay_view")
+    canonical = json.dumps(
+        validated,
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=True,
+        allow_nan=False,
+    )
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
 def _validated_projected_view(value: Mapping[str, Any], field_name: str) -> dict[str, Any]:
@@ -412,6 +428,7 @@ def build_overlay_update(
             "surface": "LUCIDA",
             "mode": "read_only",
             "view": current_view,
+            "view_digest": overlay_view_digest(current_view),
             "changes": changes,
             "cursor": build_overlay_cursor(current_state),
             "safety": {
@@ -446,6 +463,13 @@ def validate_overlay_update(value: Mapping[str, Any]) -> dict[str, Any]:
         raise OverlayUpdateError(str(exc)) from exc
     if view["session_id"] != cursor["session_id"]:
         raise OverlayUpdateError("overlay update view and cursor sessions differ.")
+    view_digest = value["view_digest"]
+    if not isinstance(view_digest, str) or len(view_digest) != 64:
+        raise OverlayUpdateError("overlay update view_digest must be a SHA-256 hex digest.")
+    if any(character not in "0123456789abcdef" for character in view_digest):
+        raise OverlayUpdateError("overlay update view_digest must be lowercase hexadecimal.")
+    if view_digest != overlay_view_digest(view):
+        raise OverlayUpdateError("overlay update view_digest does not match the view.")
     changes = value["changes"]
     if not isinstance(changes, list):
         raise OverlayUpdateError("overlay update changes must be a list.")
@@ -476,6 +500,7 @@ def validate_overlay_update(value: Mapping[str, Any]) -> dict[str, Any]:
         "surface": "LUCIDA",
         "mode": "read_only",
         "view": view,
+        "view_digest": view_digest,
         "changes": copied_changes,
         "cursor": cursor,
         "safety": _json_copy(dict(safety)),
@@ -535,6 +560,7 @@ __all__ = [
     "build_overlay_update",
     "build_overlay_view",
     "diff_overlay_view",
+    "overlay_view_digest",
     "validate_overlay_cursor",
     "validate_overlay_update",
 ]
