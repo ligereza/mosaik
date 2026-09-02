@@ -54,6 +54,21 @@ La restauración de propuestas también respeta el schema publicado: exige los
 campos obligatorios y rechaza propiedades extra antes de registrar una
 propuesta.
 
+## Show input projection
+
+`ShowInputProjector` consumes a canonical `VJEvent` and returns only the
+metadata a future LUCIDA reducer needs: `show_state`, `show_phase`, an optional
+`preview_candidate`, source timestamp, sequence, and bounded provenance.
+Existing `OscResolumeBoundary.normalize()` can provide the event; `artnet`,
+`sacn`, and `timecode` are accepted as transport labels without opening a
+socket or implementing a protocol parser here.
+
+The projector rejects stale sequence or timestamp input and never mutates a
+`VJState`, creates a host action, or executes a `VJProposal`. Its replay helper
+uses the existing fixture loader and remains deterministic and side-effect free.
+The machine-readable contract is
+[`show-input.schema.json`](contracts/show-input.schema.json).
+
 ## Extensión
 
 Los adaptadores concretos de medios, cues, DXV, Art-Net/DMX/sACN, LED

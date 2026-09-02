@@ -20,6 +20,7 @@ Esta rama conserva la identidad VJ y no implementa un core nuevo.
 | Recuperación | `adapter.py` | Transiciones de incidente a recovery y verificación posterior |
 | Análisis de errores | `incident.detected` | Categoría, síntomas y evidencia en payload; propuesta de captura sin intervención |
 | Replay de sesión | `adapters/vj/replay/engine.py` | Replay determinista sin efectos externos |
+| Show input projection | `adapters/vj/show_input.py` | Proyección acotada de fase, estado, preview, secuencia y provenance |
 
 ## Adaptador VJ que entra en la capa de interfaz
 

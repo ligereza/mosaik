@@ -40,6 +40,7 @@ la capacidad correspondiente a la fase crea una propuesta para ese evento.
 - normalizador de `SignalProfile` para conservar hechos, origen, confianza y
   evidencia sin inferir ni controlar hardware.
 - comparación segura de perfiles para detectar drift entre soundcheck y show
+- contrato de entrada de show host-neutral para un futuro reducer de LUCIDA
   y conservar sus métricas al entrar en IMAGO.
   sin emitir correcciones.
 
