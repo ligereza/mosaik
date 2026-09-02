@@ -19,6 +19,12 @@ from .nayade_input import (
     build_nayade_event,
     project_nayade_show_input,
 )
+from .imago_input import (
+    ImagoInputError,
+    ImagoInputProjector,
+    build_imago_event,
+    project_imago_show_input,
+)
 from .show_input import (
     ShowInputError,
     ShowInputProjection,
@@ -44,6 +50,10 @@ __all__ = [
     "NayadeInputProjector",
     "build_nayade_event",
     "project_nayade_show_input",
+    "ImagoInputError",
+    "ImagoInputProjector",
+    "build_imago_event",
+    "project_imago_show_input",
     "ShowInputError",
     "ShowInputProjection",
     "ShowInputProjector",

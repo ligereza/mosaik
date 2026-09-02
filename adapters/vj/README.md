@@ -100,6 +100,19 @@ are not copied.
 caller-provided sequence. It never opens a port or changes a soundcheck,
 processor, mapping, or show.
 
+## IMAGO show bridge
+
+`build_imago_event()` converts an IMAGO session snapshot into an event whose
+phase follows the observed session status: preparation, show, incident,
+recovery, or closure. It preserves only bounded counts and summaries for
+checkpoints, incidents, proposals, results, profile identifiers, and event
+types. Event payloads, notes, reasons, and unknown text are intentionally not
+copied.
+Every proposal must still declare explicit approval, reversibility, and
+`proposal_only`; otherwise the bridge rejects the snapshot. The bridge records
+state for replay and downstream review, but never executes a cue, Resolume
+operation, recovery action, DMX message, or processor command.
+
 ## Extensión
 
 Los adaptadores concretos de medios, cues, DXV, Art-Net/DMX/sACN, LED
