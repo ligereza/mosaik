@@ -194,6 +194,8 @@ _PUBLIC_AUDIT_FIELDS = (
     "result_ids",
     "mode",
     "external_side_effects",
+    "status",
+    "execution_asserted",
 )
 
 
@@ -233,6 +235,12 @@ def _public_audit(entry: Mapping[str, Any]) -> dict[str, Any]:
                 result[field] = value
         elif field == "external_side_effects":
             if isinstance(value, bool):
+                result[field] = value
+        elif field == "status":
+            if value in {"accepted", "rejected", "unknown"}:
+                result[field] = value
+        elif field == "execution_asserted":
+            if value is False:
                 result[field] = value
         elif field == "mode":
             if value == "proposal_only":
@@ -326,6 +334,10 @@ def _validate_public_audit(value: Any, field_name: str) -> None:
         raise PublicReplayReportError(f"{field_name}.mode is invalid.")
     if "external_side_effects" in value and value["external_side_effects"] is not False:
         raise PublicReplayReportError(f"{field_name}.external_side_effects must be false.")
+    if "status" in value and value["status"] not in {"accepted", "rejected", "unknown"}:
+        raise PublicReplayReportError(f"{field_name}.status is invalid.")
+    if "execution_asserted" in value and value["execution_asserted"] is not False:
+        raise PublicReplayReportError(f"{field_name}.execution_asserted must be false.")
 
 
 def validate_public_report(value: Mapping[str, Any]) -> dict[str, Any]:

@@ -92,6 +92,10 @@ def test_public_report_omits_payload_arguments_metadata_and_free_form_notes():
             "event_id": "evt-public",
             "metadata": {"private": "do-not-share"},
             "notes": "do-not-share",
+            "reason": "private-reason",
+            "provenance": {"private": "do-not-share"},
+            "status": "accepted",
+            "execution_asserted": False,
             "mode": "proposal_only",
             "external_side_effects": False,
         }
@@ -107,10 +111,14 @@ def test_public_report_omits_payload_arguments_metadata_and_free_form_notes():
     assert "arguments" not in record["signal"]
     assert "metadata" not in record["event"]
     assert "metadata" not in record["audit"]
+    assert "reason" not in record["audit"]
+    assert "provenance" not in record["audit"]
     assert "secret_profile_value" not in serialized
     assert "secret-argument" not in serialized
     assert "do-not-share" not in serialized
     assert "secret-mode" not in serialized
+    host_audit = next(item for item in public["audit_log"] if item.get("status") == "accepted")
+    assert host_audit["execution_asserted"] is False
     assert public["safety"] == {
         "replay_only": True,
         "proposal_only": True,

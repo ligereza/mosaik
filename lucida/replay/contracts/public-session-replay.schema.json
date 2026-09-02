@@ -113,7 +113,9 @@
               "proposal_ids": { "type": "array", "items": { "type": "string" } },
               "result_ids": { "type": "array", "items": { "type": "string" } },
               "mode": { "type": "string", "minLength": 1 },
-              "external_side_effects": { "const": false }
+              "external_side_effects": { "const": false },
+              "status": { "enum": ["accepted", "rejected", "unknown"] },
+              "execution_asserted": { "const": false }
             }
           }
         }

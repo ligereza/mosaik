@@ -48,6 +48,9 @@ evidencia libre. `report()` sigue siendo la representación interna completa
 necesaria para reproducir la sesión.
 En los receipts públicos, `mode` sólo se conserva como `proposal_only`; otros
 textos de host se descartan.
+Los estados enumerados de `HostResult` (`accepted`, `rejected` o `unknown`) y
+`execution_asserted=false` sí se conservan para mantener la trazabilidad de la
+decisión sin publicar su razón o provenance.
 Para el flujo basado en fixtures también se puede usar
 `lucida.replay.public_replay_fixture(...)`; reutiliza exactamente el mismo
 motor y sólo cambia la proyección de salida.
