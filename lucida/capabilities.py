@@ -9,6 +9,35 @@ from adapters.vj.contracts import VJEvent, VJProposal, VJState
 from .contracts import CapabilityReport
 
 
+_PROFILE_CONTEXT_KEY = "_lucida_profile_context"
+_PROFILE_STATE_KEYS = frozenset(
+    {
+        "profile_status",
+        "profile_stage",
+        "profile_unknown_count",
+        "profile_inferred_count",
+        "profile_min_confidence",
+        "processor_read_only",
+        "profile_comparison_status",
+        "profile_changed_count",
+        "profile_confidence_drop_count",
+        "profile_unknown_delta",
+        "profile_recommendation_changed",
+        "profile_read_only_changed",
+        "profile_stage_changed",
+        "profile_context_status",
+    }
+)
+
+
+def _bounded_profile_state(value: Any) -> dict[str, Any]:
+    """Accept only already-projected profile metrics from session state."""
+
+    if not isinstance(value, dict):
+        return {}
+    return {key: value[key] for key in value if key in _PROFILE_STATE_KEYS}
+
+
 def _profile_state(payload: dict[str, Any]) -> dict[str, Any]:
     """Project optional profile facts into bounded capability metrics."""
 
@@ -21,6 +50,7 @@ def _profile_state(payload: dict[str, Any]) -> dict[str, Any]:
             state.update(summarize_signal_profile(profile))
         except SignalProfileError:
             state["profile_status"] = "invalid"
+        state["profile_context_status"] = "current"
     baseline = payload.get("baseline_signal_profile")
     if baseline is not None and profile is not None:
         try:
@@ -55,6 +85,16 @@ def _profile_state(payload: dict[str, Any]) -> dict[str, Any]:
     return state
 
 
+def _profile_state_for_event(event: VJEvent, state: VJState, profile_aware: bool) -> dict[str, Any]:
+    profile_state = _profile_state(event.payload) if profile_aware else {}
+    if profile_aware and not profile_state:
+        inherited = _bounded_profile_state(state.metadata.get(_PROFILE_CONTEXT_KEY))
+        if inherited:
+            inherited["profile_context_status"] = "inherited"
+            profile_state = inherited
+    return profile_state
+
+
 class _BaseCapability:
     name = ""
     phases: tuple[str, ...] = ()
@@ -77,19 +117,24 @@ class _BaseCapability:
             )
 
         payload = event.payload
+        profile_state = _profile_state_for_event(event, state, self.profile_aware)
         proposal = VJProposal(
             proposal_id=f"lucida-{self.name.lower()}-{event.event_id}",
             event_id=event.event_id,
             phase=event.phase,
             operation=self.operation,
-            reason=self._reason(event),
+            reason=self._reason(event, profile_state),
             risk=self.risk,
-            evidence=self._evidence(event),
+            evidence=self._evidence(event, profile_state),
         )
         return CapabilityReport(
             capability=self.name,
             observed=self._observed(event),
-            state={"status": "observed", "phase": event.phase, **self._state(payload)},
+            state={
+                "status": "observed",
+                "phase": event.phase,
+                **self._state(payload, profile_state),
+            },
             proposals=(proposal,),
             expected_results=(self.expected,),
             unknowns=self._unknowns(),
@@ -98,24 +143,36 @@ class _BaseCapability:
     def _observed(self, event: VJEvent) -> tuple[str, ...]:
         return (f"{self.name} observed {event.event_type} in phase {event.phase}.",)
 
-    def _reason(self, event: VJEvent) -> str:
-        profile_state = _profile_state(event.payload) if self.profile_aware else {}
+    def _reason(self, event: VJEvent, profile_state: dict[str, Any] | None = None) -> str:
+        profile_state = profile_state or {}
         if profile_state.get("profile_comparison_status") == "changed":
             changed_count = profile_state.get("profile_changed_count", 0)
+            if profile_state.get("profile_context_status") == "inherited":
+                return (
+                    f"Suggest a {self.name} review because the last soundcheck profile "
+                    f"differed from its baseline in {changed_count} bounded field(s); "
+                    "no new profile measurement was supplied."
+                )
             return (
                 f"Suggest a {self.name} review because the signal profile differs "
                 f"from its baseline in {changed_count} bounded field(s)."
             )
         return f"Suggest a {self.name} review based on event {event.event_id}."
 
-    def _evidence(self, event: VJEvent) -> tuple[str, ...]:
+    def _evidence(
+        self, event: VJEvent, profile_state: dict[str, Any] | None = None
+    ) -> tuple[str, ...]:
         evidence = ["lucida", self.name.lower(), "offline-observation"]
-        profile_state = _profile_state(event.payload) if self.profile_aware else {}
+        profile_state = profile_state or {}
         if profile_state.get("profile_comparison_status") == "changed":
             evidence.append("profile-drift")
+            if profile_state.get("profile_context_status") == "inherited":
+                evidence.append("profile-context-inherited")
         return tuple(evidence)
 
-    def _state(self, payload: dict[str, Any]) -> dict[str, Any]:
+    def _state(
+        self, payload: dict[str, Any], profile_state: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
         return {"payload_status": payload.get("status", "unknown")}
 
     def _unknowns(self) -> tuple[str, ...]:
@@ -130,7 +187,9 @@ class InstarCapability(_BaseCapability):
     operation = "review-media-and-mapping"
     expected = "El operador confirma medios, proporciones y mapping antes de continuar."
 
-    def _state(self, payload: dict[str, Any]) -> dict[str, Any]:
+    def _state(
+        self, payload: dict[str, Any], profile_state: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
         return {
             "media_status": payload.get("media_status", payload.get("status", "unknown")),
             "mapping_status": payload.get("mapping_status", "unknown"),
@@ -147,12 +206,14 @@ class NayadeCapability(_BaseCapability):
     expected = "The operator confirms signal, geometry, and color without writing to the processor."
     profile_aware = True
 
-    def _state(self, payload: dict[str, Any]) -> dict[str, Any]:
+    def _state(
+        self, payload: dict[str, Any], profile_state: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
         state = {
             "signal_status": payload.get("signal_status", payload.get("status", "unknown")),
             "processor_status": payload.get("processor_status", "unknown"),
         }
-        state.update(_profile_state(payload))
+        state.update(profile_state or {})
         return state
 
 
@@ -165,9 +226,11 @@ class ImagoCapability(_BaseCapability):
     expected = "El operador confirma la propuesta o registra el resultado observado."
     profile_aware = True
 
-    def _state(self, payload: dict[str, Any]) -> dict[str, Any]:
+    def _state(
+        self, payload: dict[str, Any], profile_state: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
         return {
             "show_mode": payload.get("mode", "unknown"),
             "incident_category": payload.get("category", "none"),
-            **_profile_state(payload),
+            **(profile_state or {}),
         }

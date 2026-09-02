@@ -104,6 +104,7 @@ _SAFE_STATE_KEYS = (
     "profile_recommendation_changed",
     "profile_read_only_changed",
     "profile_stage_changed",
+    "profile_context_status",
 )
 
 

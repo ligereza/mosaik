@@ -8,7 +8,13 @@ from typing import Any, Mapping
 from adapters.vj import VJAdapter
 from adapters.vj.contracts import VJEvent, VJResult, VJState
 
-from .capabilities import ImagoCapability, InstarCapability, NayadeCapability
+from .capabilities import (
+    _PROFILE_CONTEXT_KEY,
+    _profile_state,
+    ImagoCapability,
+    InstarCapability,
+    NayadeCapability,
+)
 from .contracts import CAPABILITY_NAMES, CapabilityReport, LucidaState
 from .overlay import (
     MAX_DIFF_CHANGES,
@@ -63,6 +69,11 @@ class LucidaOrchestrator:
         parsed_event = event if isinstance(event, VJEvent) else VJEvent.from_dict(event)
         current = state if isinstance(state, LucidaState) else LucidaState.from_dict(state)
         vj_state, lifecycle_proposals = self._vj_adapter.process(parsed_event, current.vj_state)
+        profile_state = _profile_state(parsed_event.payload)
+        vj_metadata = dict(vj_state.metadata)
+        if profile_state:
+            vj_metadata[_PROFILE_CONTEXT_KEY] = profile_state
+        vj_state = replace(vj_state, metadata=vj_metadata)
         reports = tuple(
             capability.evaluate(parsed_event, vj_state) for capability in self._capabilities
         )

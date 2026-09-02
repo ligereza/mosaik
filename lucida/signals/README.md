@@ -72,6 +72,11 @@ conteo acotado y la evidencia `profile-drift`; no incluyen los valores que
 cambiaron.
 El conteo incluye diferencias de hechos, origen, confianza, recomendación,
 modo read-only y etapa; el overlay sólo expone el total y banderas booleanas.
+El estado de sesión puede heredar esas métricas acotadas hacia IMAGO cuando un
+evento de show no repite el perfil; esa herencia se marca como `inherited` y no
+se considera una nueva medición.
+La propuesta también distingue esa herencia en su razón y evidencia para no
+presentar un dato antiguo como una observación del show actual.
 
 El schema de referencia es
 [`signal-profile.schema.json`](../../schemas/signal-profile.schema.json).

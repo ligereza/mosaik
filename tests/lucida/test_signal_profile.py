@@ -225,6 +225,51 @@ def test_profile_drift_count_includes_non_value_changes():
     assert "limited" not in json.dumps(overlay)
 
 
+def test_imago_inherits_bounded_soundcheck_context_without_raw_profile_values():
+    expected = _profile()
+    observed = copy.deepcopy(expected)
+    observed["source"]["range"]["value"] = "limited"
+    orchestrator = LucidaOrchestrator()
+    state = orchestrator.initial_state("session-001")
+    state = orchestrator.propose(
+        {
+            "event_id": "evt-soundcheck-context",
+            "timestamp": "2026-01-10T20:00:00Z",
+            "phase": "preparation",
+            "event_type": "soundcheck.profile.compare",
+            "payload": {
+                "signal_profile": observed,
+                "baseline_signal_profile": expected,
+            },
+        },
+        state,
+    )
+    state = orchestrator.propose(
+        {
+            "event_id": "evt-show-context",
+            "timestamp": "2026-01-10T22:00:00Z",
+            "phase": "show",
+            "event_type": "show.started",
+            "payload": {"mode": "improvised"},
+        },
+        state,
+    )
+
+    overlay = orchestrator.read_overlay(state)
+    imago = next(item for item in overlay["capabilities"] if item["capability"] == "IMAGO")
+    serialized_state = json.dumps(state.to_dict(), sort_keys=True)
+
+    assert imago["state"]["profile_context_status"] == "inherited"
+    assert imago["state"]["profile_comparison_status"] == "changed"
+    assert imago["state"]["profile_changed_count"] == 1
+    proposal = next(item for item in state.proposals if item.proposal_id == "lucida-imago-evt-show-context")
+    assert "last soundcheck profile" in proposal.reason
+    assert "no new profile measurement" in proposal.reason
+    assert "profile-context-inherited" in proposal.evidence
+    assert "limited" not in serialized_state
+    assert "limited" not in json.dumps(overlay)
+
+
 def test_nayade_projects_profile_drift_metrics():
     expected = _profile()
     observed = copy.deepcopy(expected)
