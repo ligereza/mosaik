@@ -82,6 +82,12 @@ The machine-readable contracts are
 allow a future host or transparent overlay to validate the safe shape without
 importing LUCIDA internals.
 
+The serialized integration state has its own registered contracts:
+[`lucida-state.schema.json`](../schemas/lucida-state.schema.json) and
+[`lucida-capability-report.schema.json`](../schemas/lucida-capability-report.schema.json).
+Replay records reference the complete `LucidaState` contract instead of relying
+on a partial inline description.
+
 `LucidaOrchestrator.read_overlay_cursor(state)` exposes only the session
 sequence, last event timestamp, last event id, and checkpoint id needed by an
 incremental consumer to identify the state revision. It excludes metadata and

@@ -27,16 +27,7 @@
       "type": "array",
       "items": { "$ref": "urn:vj-interface-layer:contracts:vj-result" }
     },
-    "state_after": {
-      "type": "object",
-      "required": ["contract_type", "schema_version", "session_id", "vj_state"],
-      "properties": {
-        "contract_type": { "const": "LucidaState" },
-        "schema_version": { "const": "0.1" },
-        "session_id": { "type": "string", "minLength": 1 },
-        "vj_state": { "$ref": "urn:vj-interface-layer:contracts:vj-state" }
-      }
-    },
+    "state_after": { "$ref": "urn:mosaik:lucida:state" },
     "audit": { "type": "object" }
   }
 }
