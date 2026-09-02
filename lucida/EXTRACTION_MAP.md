@@ -35,13 +35,15 @@ la capacidad correspondiente a la fase crea una propuesta para ese evento.
 - fixture ficticio completo de preflight, preparación, show, incidente,
   recuperación y cierre;
 - replay/dry-run y tests offline.
+- consumidor offline XIO con resultado serializable, envelope de overlay
+  atómico y validación runtime de identidad entre contratos.
 
 ## Implementado pero no verificado contra sistemas reales
 
 - semántica de los datos que pueda entregar un futuro host de Resolume;
 - correspondencia entre payloads VJ y protocolos o modelos de procesador;
 - lectura de configuraciones reales, timing de transporte y sincronización;
-- compatibilidad futura del contrato de eventos con XIO.
+- compatibilidad del transporte y de productores XIO reales.
 
 ## Fuera de LUCIDA; permanece exclusivo de MOSAIK o requiere otro adaptador
 
@@ -55,9 +57,12 @@ la capacidad correspondiente a la fase crea una propuesta para ese evento.
 - Art-Net, DMX, sACN, FFGL, timecode, audio real y control de luces;
 - base pública de venues, datos de colegas, UI embebida, MCP o GPU remota.
 
-## Relación futura con XIO
+## Relación actual con XIO
 
-XIO puede convertirse en un productor de eventos o consumidor de resultados,
-pero esa integración requiere un contrato explícito y no se incluye aquí. La
-frontera recomendada es `XIO → VJEvent → LUCIDA → propuesta → resultado`, sin
+XIO ya puede actuar como productor offline de eventos hacia LUCIDA. El bridge
+conserva la trazabilidad en `ApplicationEvent`, convierte a `VJEvent` y
+`SignalEnvelope`, registra el replay y devuelve un `XioConsumeResult` que
+incluye el overlay atómico. `validate_xio_consume_result()` comprueba la
+estructura y la identidad cruzada antes de que un host acepte el resultado.
+La frontera sigue siendo `XIO → VJEvent → LUCIDA → propuesta → resultado`, sin
 que LUCIDA tome control irreversible del show.

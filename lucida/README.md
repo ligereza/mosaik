@@ -159,9 +159,11 @@ La frontera opcional de señales OSC/Resolume está documentada en
 [`signals/README.md`](signals/README.md); recibe envelopes inyectados y no abre
 sockets por sí misma.
 
-## Siguiente integración con XIO
+## Estado actual de XIO
 
-El siguiente paso es acordar un contrato de entrada con XIO para convertir su
-registro de sesión en `VJEvent` sin copiar su almacenamiento ni introducir una
-dependencia obligatoria. Después se puede añadir un adaptador de lectura que
-alimente la superficie LUCIDA y mantenga la misma frontera proposal-only.
+LUCIDA ya dispone de un consumidor offline para el `ApplicationEvent` de XIO.
+El bridge convierte cada evento a `VJEvent` y `SignalEnvelope`, lo registra en
+`SessionReplay` y devuelve un resultado serializable con el overlay atómico.
+`validate_xio_consume_result()` permite prevalidar ese resultado antes de que
+un host lo acepte. El transporte real, la conexión con XIO y cualquier efecto
+externo siguen fuera de esta rama y requieren un adaptador autorizado.
