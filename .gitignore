@@ -1,5 +1,6 @@
 # Salidas locales de diagnóstico; pueden contener nombres de equipo o procesos.
 artifacts/
+.venv/
 __pycache__/
 *.py[cod]
 *.snapshot.json

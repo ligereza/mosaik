@@ -39,6 +39,16 @@ Instala las dependencias Python con:
 python -m pip install -r requirements.txt
 ```
 
+Para usar MOSAIK como colega sin conocer la estructura del repositorio:
+
+```powershell
+.\tools\Bootstrap-MOSAIK.ps1 -Dev
+.\tools\Invoke-MOSAIK.ps1 --help
+```
+
+El launcher usa `.venv` si existe y no cambia configuraciones del equipo.
+`-Gpu` instala sólo las dependencias NVIDIA opcionales.
+
 Para habilitar el análisis visual GPU en una máquina NVIDIA:
 
 ```powershell

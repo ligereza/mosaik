@@ -1,7 +1,7 @@
 # MOSAIK — Capacidades
 
 Documento de referencia del estado real del repositorio. Última revisión:
-2026-08-31.
+2026-09-02.
 
 MOSAIK es un repositorio de herramientas, contratos y conocimiento operativo
 para trabajo VJ. Su objetivo es convertir problemas habituales de preparación,
@@ -13,10 +13,11 @@ soundcheck y show en procesos reproducibles, medibles y seguros.
 | --- | --- | --- |
 | INSTAR | Implementado | Preflight, catálogo, análisis de visuales, DXV, cues y adaptación a superficies |
 | NAYADE | Implementado en primera versión | Tarjeta de prueba, matriz de soundcheck, catálogo de procesadores y diagnóstico de señal |
-| IMAGO | Planificado | Asistencia durante el show y consumo de planes aprobados |
+| IMAGO | Implementado en primera versión | Observación del show, cues, incidentes, checkpoints, recovery y cierre proposal-only |
 | Procesadores LED | Base segura implementada | Descubrimiento pasivo USB/COM, snapshots y catálogo; el control activo depende del modelo confirmado |
 | Integración Resolume | Lectura y generación de derivados | Lectura de composiciones, Advanced Output, cues y generación de planes; no modifica showfiles |
 | Interfaz visual | No implementada | La prioridad actual es el núcleo, los contratos y los flujos verificables |
+| CLI portable | Implementado en primera versión | Launcher Windows y bootstrap opcional; no altera showfiles ni hardware |
 
 ## Flujo MOSAIK
 
@@ -27,8 +28,8 @@ pre-show    soundcheck   show
 
 - `INSTAR` prepara y describe el material y el destino.
 - `NAYADE` verifica señal, geometría, superficie y condiciones del venue.
-- `IMAGO` será la capa de asistencia para operar el show con lo que ya fue
-  probado y aprobado.
+- `IMAGO` es la capa de asistencia para operar el show con lo que ya fue
+  probado y aprobado. Su salida sigue siendo proposal-only.
 
 ## INSTAR — preparación del material y del destino
 
@@ -282,7 +283,19 @@ python tools/mosaik_cli.py nayade-session init artifacts\testcard.json --output 
 python tools/mosaik_cli.py nayade-processor catalog
 python tools/mosaik_cli.py nayade-processor discover --report artifacts\processor-discovery.json
 python tools/mosaik_cli.py nayade-processor diagnose-case data\cases\soundcheck-2026-08-29-vc2.json
+python tools/mosaik_cli.py vj-project instar artifacts\instar.json --event-id instar-001 --sequence 1 --mode projection
+python tools/mosaik_cli.py vj-project-replay artifacts\vj-project-manifest.json --report artifacts\vj-project-replay.json
 ```
+
+## CLI portable
+
+`tools\Invoke-MOSAIK.ps1` permite ejecutar la CLI desde cualquier carpeta sin
+conocer la ruta interna del repositorio. Si existe un entorno `.venv` local lo
+usa; si no, utiliza `python` del sistema. `tools\Bootstrap-MOSAIK.ps1` crea ese
+entorno e instala las dependencias base; `-Gpu` agrega el backend NVIDIA
+opcional. Ambos scripts sólo preparan el entorno o ejecutan el comando pedido;
+no cambian BIOS, drivers, Resolume, procesadores ni showfiles.
+El procedimiento completo está en `docs\runbooks\instalacion-portable.md`.
 
 ## Contratos y organización
 
@@ -309,5 +322,5 @@ python tools/mosaik_cli.py nayade-processor diagnose-case data\cases\soundcheck-
 5. Generar automáticamente un protocolo de patrones según las hipótesis del
    diagnóstico.
 6. Integrar venue, snapshots y resultados de soundcheck sin duplicar perfiles.
-7. Diseñar IMAGO sobre planes aprobados, manteniendo el modo seguro por
-   defecto.
+7. Extender IMAGO para consumir planes aprobados, manteniendo el modo seguro
+   por defecto.
