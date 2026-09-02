@@ -8,6 +8,11 @@ import shlex
 import sys
 from pathlib import Path
 
+_REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
+if str(_REPOSITORY_ROOT) not in sys.path:
+    sys.path.insert(0, str(_REPOSITORY_ROOT))
+
+from adapters.vj.replay import ReplayError, replay_plugin_bridge_path
 from mosaik.adapt import run_adaptation, text_report as adapt_text_report, write_adaptation_plan
 from mosaik.diagnose import diagnose_file, text_report
 from mosaik.dxv import convert_to_dxv
@@ -105,6 +110,13 @@ def build_parser() -> argparse.ArgumentParser:
     dxv.add_argument("--dry-run", action="store_true", help="Muestra la operación sin convertir.")
     dxv.add_argument("--ffmpeg", default="ffmpeg", help="Ruta o nombre de FFmpeg.")
     dxv.add_argument("--ffprobe", default="ffprobe", help="Ruta o nombre de FFprobe.")
+
+    vj_replay = commands.add_parser(
+        "vj-replay",
+        help="Reproduce el flujo INSTAR, NAYADE e IMAGO desde un fixture sintetico.",
+    )
+    vj_replay.add_argument("fixture", help="Fixture JSON de replay de puentes VJ.")
+    vj_replay.add_argument("--report", help="Ruta opcional para guardar el reporte JSON.")
 
     imago = commands.add_parser("imago-session", help="Registra observaciones proposal-only del show.")
     imago_commands = imago.add_subparsers(dest="imago_command", required=True)
@@ -343,6 +355,16 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"FPS: {result['video'].get('average_fps')}")
             return 0
 
+        if args.command == "vj-replay":
+            report = replay_plugin_bridge_path(args.fixture)
+            print(json.dumps(report, ensure_ascii=False, indent=2))
+            if args.report:
+                report_path = Path(args.report).expanduser().resolve()
+                report_path.parent.mkdir(parents=True, exist_ok=True)
+                report_path.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+                print(f"\nReporte VJ replay: {report_path}")
+            return 0 if report["status"] == "PASS" else 1
+
         if args.command == "imago-session":
             if args.imago_command == "init":
                 session = build_show_session(
@@ -545,7 +567,7 @@ def main(argv: list[str] | None = None) -> int:
                     report_path = write_processor_json(report, args.report)
                     print(f"\nDiagnóstico JSON: {report_path}")
                 return 0
-    except MosaikError as exc:
+    except (MosaikError, ReplayError) as exc:
         print(f"MOSAIK ERROR: {exc}", file=sys.stderr)
         return 2
     return 1

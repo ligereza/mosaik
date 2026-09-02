@@ -26,6 +26,7 @@ python .\tools\mosaik_cli.py resolume-cues "D:\VJ\Shows\show.avc" --report ".\ar
 python .\tools\mosaik_cli.py nayade-processor catalog
 python .\tools\mosaik_cli.py nayade-processor discover --report ".\artifacts\processor-discovery.json"
 python .\tools\validate_schema_graph.py
+python .\tools\mosaik_cli.py vj-replay ".\adapters\vj\replay\fixtures\plugin-bridges-fictional.json" --report ".\artifacts\vj-replay.json"
 ```
 
 ## Dependencias
@@ -179,6 +180,13 @@ Resolume, DMX ni procesadores. El contrato esta en
 
 La arquitectura de esta integración está documentada en
 `docs/architecture/integracion-mosaik-resolume-mcp.md`.
+
+### Replay del flujo VJ
+
+`vj-replay` verifica desde la CLI el recorrido sintético `INSTAR -> NAYADE ->
+IMAGO`, incluyendo show, incidente, recuperación y cierre. Sólo procesa el
+fixture indicado, no abre transportes y no ejecuta propuestas ni cambios en el
+hardware.
 
 ### NAYADE y procesadores LED
 
