@@ -5,5 +5,6 @@
 - Starting commit: `21384a9`
 - Scope: tests only; no transport, host, GUI, GPU, or automatic actions.
 - Done: signal identity and XIO provenance session checks now have negative tests.
-- Evidence pending: focused suite, full suite, diff check, commit, push, and process check.
-- Next action: run the focused and complete test suites, then publish if clean.
+- Evidence: focused XIO suite `17 passed`; complete suite `115 passed`; `git diff --check` clean.
+- Published: commit `e6ae473` pushed to `origin/LUCIDA`; process check pending closure.
+- Closure: signal identity and XIO provenance checks are now protected by deterministic negative tests.
