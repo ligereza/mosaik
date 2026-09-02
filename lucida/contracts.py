@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime
+import json
 from typing import Any, Mapping
 
 from adapters.vj.contracts import VJProposal, VJState
@@ -45,6 +46,17 @@ def _mapping(value: Any, field_name: str) -> dict[str, Any]:
     return dict(value)
 
 
+def _json_mapping(value: Any, field_name: str) -> dict[str, Any]:
+    result = _mapping(value, field_name)
+    try:
+        json.dumps(result, ensure_ascii=True, allow_nan=False)
+    except (TypeError, ValueError) as exc:
+        raise LucidaContractError(
+            f"{field_name} debe contener valores JSON serializables."
+        ) from exc
+    return result
+
+
 def _texts(value: Any, field_name: str) -> tuple[str, ...]:
     if value is None:
         return ()
@@ -75,7 +87,7 @@ class CapabilityReport:
         return cls(
             capability=capability,
             observed=_texts(value.get("observed"), "observed"),
-            state=_mapping(value.get("state"), "state"),
+            state=_json_mapping(value.get("state"), "state"),
             proposals=proposals,
             expected_results=_texts(value.get("expected_results"), "expected_results"),
             unknowns=_texts(value.get("unknowns"), "unknowns"),
@@ -159,7 +171,7 @@ class LucidaState:
             capabilities=capabilities,
             proposals=proposals,
             overlay_status=_required_text(value.get("overlay_status", "ready"), "overlay_status"),
-            metadata=_mapping(value.get("metadata"), "metadata"),
+            metadata=_json_mapping(value.get("metadata"), "metadata"),
         )
 
     def to_dict(self) -> dict[str, Any]:

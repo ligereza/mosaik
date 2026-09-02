@@ -196,6 +196,15 @@ def test_lucida_state_restore_binds_capability_proposals_to_global_list(mutation
         LucidaState.from_dict(raw)
 
 
+@pytest.mark.parametrize("unsafe_value", [{"nested": {1, 2}}, float("nan")])
+def test_lucida_state_restore_rejects_non_json_capability_state(unsafe_value):
+    raw = LucidaOrchestrator().initial_state("session-001").to_dict()
+    raw["capabilities"][0]["state"]["unsafe"] = unsafe_value
+
+    with pytest.raises(LucidaContractError, match="JSON serializables"):
+        LucidaState.from_dict(raw)
+
+
 def test_fixture_contains_only_fictional_session_data():
     document = json.loads(FIXTURE.read_text(encoding="utf-8"))
     serialized = json.dumps(document)
