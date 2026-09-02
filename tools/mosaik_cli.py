@@ -164,7 +164,7 @@ def build_parser() -> argparse.ArgumentParser:
     imago_init.add_argument("--created-at")
     imago_event = imago_commands.add_parser("event", help="Registra un evento observado.")
     imago_event.add_argument("session")
-    imago_event.add_argument("--event-type", required=True, choices=("show_started", "cue_fired", "incident_detected", "recovery_started", "recovery_verified", "show_closed"))
+    imago_event.add_argument("--event-type", required=True, choices=("show_started", "cue_fired", "guard_window_requested", "incident_detected", "recovery_started", "recovery_verified", "show_closed"))
     imago_event.add_argument("--payload", default="{}")
     imago_event.add_argument("--recorded-at")
     imago_result = imago_commands.add_parser("result", help="Registra un resultado de propuesta.")

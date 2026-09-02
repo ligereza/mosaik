@@ -289,3 +289,50 @@ def test_instar_cue_plan_cli_writes_six_slot_plan(tmp_path, capsys):
     assert plan["plan_type"] == "InstarResolumeCuePlan"
     assert len(plan["profiles"][0]["slots"]) == 6
     assert "Position1" in capsys.readouterr().out
+
+
+def test_imago_guard_window_cli_records_proposal(tmp_path, capsys):
+    session_path = tmp_path / "imago.json"
+    assert main(
+        [
+            "imago-session",
+            "init",
+            "--output",
+            str(session_path),
+            "--session-id",
+            "show-cli-guard",
+            "--created-at",
+            "2026-01-10T22:00:00Z",
+        ]
+    ) == 0
+    capsys.readouterr()
+    assert main(
+        [
+            "imago-session",
+            "event",
+            str(session_path),
+            "--event-type",
+            "show_started",
+            "--recorded-at",
+            "2026-01-10T22:00:00Z",
+        ]
+    ) == 0
+    capsys.readouterr()
+    assert main(
+        [
+            "imago-session",
+            "event",
+            str(session_path),
+            "--event-type",
+            "guard_window_requested",
+            "--payload",
+            '{"duration_ms":5000,"base_clip_id":"clip-01","test_scope":"effect"}',
+            "--recorded-at",
+            "2026-01-10T22:01:00Z",
+        ]
+    ) == 0
+
+    session = json.loads(session_path.read_text(encoding="utf-8"))
+    assert session["events"][-1]["event_type"] == "guard_window_requested"
+    assert any(item["operation"] == "prepare_guard_window" for item in session["proposals"])
+    assert "status" in capsys.readouterr().out

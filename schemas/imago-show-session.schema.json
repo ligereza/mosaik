@@ -61,7 +61,7 @@
       "properties": {
         "event_id": { "type": "string" },
         "created_at": { "type": "string", "format": "date-time" },
-        "event_type": { "enum": ["show_started", "cue_fired", "incident_detected", "recovery_started", "recovery_verified", "show_closed"] },
+        "event_type": { "enum": ["show_started", "cue_fired", "guard_window_requested", "incident_detected", "recovery_started", "recovery_verified", "show_closed"] },
         "payload": { "type": "object" },
         "status_after": { "enum": ["prepared", "showing", "incident", "recovering", "closed"] },
         "checkpoint_id": { "type": "string" }

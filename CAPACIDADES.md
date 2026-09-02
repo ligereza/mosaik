@@ -31,6 +31,11 @@ pre-show    soundcheck   show
 - `IMAGO` es la capa de asistencia para operar el show con lo que ya fue
   probado y aprobado. Su salida sigue siendo proposal-only.
 
+IMAGO también puede registrar `guard_window_requested`: una ventana de
+resguardo temporal para probar un efecto o absorber un missclick manteniendo
+disponible la visual base. La duración debe ser positiva y no superar 60
+segundos; se crea sólo una propuesta reversible y no se modifica Resolume.
+
 ## INSTAR — preparación del material y del destino
 
 ### Preflight de media

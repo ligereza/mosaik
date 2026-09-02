@@ -15,6 +15,7 @@ SCHEMA_VERSION = "0.1"
 EVENT_TYPES = (
     "show_started",
     "cue_fired",
+    "guard_window_requested",
     "incident_detected",
     "recovery_started",
     "recovery_verified",
@@ -23,7 +24,7 @@ EVENT_TYPES = (
 RESULTS = ("accepted", "rejected", "review")
 _ALLOWED = {
     "prepared": {"show_started"},
-    "showing": {"cue_fired", "incident_detected", "show_closed"},
+    "showing": {"cue_fired", "guard_window_requested", "incident_detected", "show_closed"},
     "incident": {"recovery_started", "incident_detected"},
     "recovering": {"recovery_verified", "incident_detected"},
     "closed": set(),
@@ -31,6 +32,7 @@ _ALLOWED = {
 _STATUS_FOR = {
     "show_started": "showing",
     "cue_fired": "showing",
+    "guard_window_requested": "showing",
     "incident_detected": "incident",
     "recovery_started": "recovering",
     "recovery_verified": "showing",
@@ -38,6 +40,7 @@ _STATUS_FOR = {
 }
 _PROPOSAL_OPERATION = {
     "show_started": "observe_show",
+    "guard_window_requested": "prepare_guard_window",
     "incident_detected": "capture_incident",
     "recovery_started": "compare_checkpoint",
     "recovery_verified": "verify_recovery",
@@ -280,16 +283,24 @@ def _event_payload(payload: Mapping[str, Any] | None) -> dict[str, Any]:
         return {}
     if not isinstance(payload, Mapping):
         raise ImagoError("payload must be an object.")
-    allowed = ("cue_id", "clip_id", "layer", "category", "reason", "signal_status", "notes")
+    allowed = ("cue_id", "clip_id", "layer", "category", "reason", "signal_status", "notes", "duration_ms", "base_clip_id", "test_scope")
     result = {key: payload[key] for key in allowed if key in payload}
     if any(not isinstance(value, (str, int, float, bool)) and value is not None for value in result.values()):
         raise ImagoError("event payload values must be scalar or null.")
+    if "duration_ms" in result:
+        duration = result["duration_ms"]
+        if isinstance(duration, bool) or not isinstance(duration, (int, float)) or duration <= 0 or duration > 60000:
+            raise ImagoError("duration_ms must be greater than 0 and no more than 60000.")
+        result["duration_ms"] = round(float(duration), 3)
     return result
 
 
 def _proposal_reason(event_type: str, payload: Mapping[str, Any]) -> str:
     if event_type == "incident_detected":
         return f"Capture evidence for incident category: {payload.get('category', 'unclassified')}."
+    if event_type == "guard_window_requested":
+        duration = payload.get("duration_ms", 5000)
+        return f"Prepare a {duration:g} ms guard window for explicit operator approval; keep the base visual available during the test."
     reasons = {
         "show_started": "Record the live show start for later replay.",
         "recovery_started": "Compare the current observation with the last checkpoint.",
