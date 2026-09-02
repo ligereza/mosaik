@@ -28,6 +28,28 @@ _PROFILE_STATE_KEYS = frozenset(
         "profile_context_status",
     }
 )
+_PROFILE_STATUS_VALUES = frozenset({"valid", "invalid"})
+_PROFILE_STAGE_VALUES = frozenset({"INSTAR", "NAYADE", "IMAGO"})
+_PROFILE_COMPARISON_VALUES = frozenset({"stable", "changed", "invalid"})
+_PROFILE_CONTEXT_VALUES = frozenset({"current", "inherited"})
+_PROFILE_TEXT_FIELDS = {
+    "profile_status",
+    "profile_stage",
+    "profile_comparison_status",
+    "profile_context_status",
+}
+_PROFILE_NON_NEGATIVE_INT_FIELDS = {
+    "profile_unknown_count",
+    "profile_inferred_count",
+    "profile_changed_count",
+    "profile_confidence_drop_count",
+}
+_PROFILE_BOOLEAN_FIELDS = {
+    "processor_read_only",
+    "profile_recommendation_changed",
+    "profile_read_only_changed",
+    "profile_stage_changed",
+}
 
 
 def _bounded_profile_state(value: Any) -> dict[str, Any]:
@@ -35,7 +57,47 @@ def _bounded_profile_state(value: Any) -> dict[str, Any]:
 
     if not isinstance(value, dict):
         return {}
-    return {key: value[key] for key in value if key in _PROFILE_STATE_KEYS}
+    result: dict[str, Any] = {}
+    for key, item in value.items():
+        if key not in _PROFILE_STATE_KEYS:
+            continue
+        if key in _PROFILE_TEXT_FIELDS:
+            allowed = {
+                "profile_status": _PROFILE_STATUS_VALUES,
+                "profile_stage": _PROFILE_STAGE_VALUES,
+                "profile_comparison_status": _PROFILE_COMPARISON_VALUES,
+                "profile_context_status": _PROFILE_CONTEXT_VALUES,
+            }[key]
+            if isinstance(item, str) and item in allowed:
+                result[key] = item
+        elif key in _PROFILE_NON_NEGATIVE_INT_FIELDS:
+            if isinstance(item, int) and not isinstance(item, bool) and item >= 0:
+                result[key] = item
+        elif key == "profile_unknown_delta":
+            if isinstance(item, int) and not isinstance(item, bool):
+                result[key] = item
+        elif key == "profile_min_confidence":
+            if (
+                isinstance(item, (int, float))
+                and not isinstance(item, bool)
+                and 0 <= float(item) <= 1
+            ):
+                result[key] = item
+        elif key in _PROFILE_BOOLEAN_FIELDS and isinstance(item, bool):
+            result[key] = item
+    if result.get("profile_status") not in _PROFILE_STATUS_VALUES:
+        return {}
+    if result["profile_status"] == "valid":
+        required_summary = {
+            "profile_stage",
+            "profile_unknown_count",
+            "profile_inferred_count",
+            "profile_min_confidence",
+            "processor_read_only",
+        }
+        if not required_summary.issubset(result):
+            return {}
+    return result
 
 
 def _profile_state(payload: dict[str, Any]) -> dict[str, Any]:

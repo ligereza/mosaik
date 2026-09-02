@@ -270,6 +270,37 @@ def test_imago_inherits_bounded_soundcheck_context_without_raw_profile_values():
     assert "limited" not in json.dumps(overlay)
 
 
+def test_invalid_persisted_profile_context_is_removed_before_projection():
+    orchestrator = LucidaOrchestrator()
+    state = orchestrator.initial_state("session-001").to_dict()
+    state["vj_state"]["metadata"]["_lucida_profile_context"] = {
+        "profile_status": "valid",
+        "profile_stage": "limited",
+        "profile_changed_count": "raw-value",
+        "unexpected": "must-drop",
+    }
+
+    state = orchestrator.propose(
+        {
+            "event_id": "evt-invalid-context",
+            "timestamp": "2026-01-10T20:00:00Z",
+            "phase": "preparation",
+            "event_type": "soundcheck.started",
+            "payload": {},
+        },
+        state,
+    )
+
+    serialized_state = json.dumps(state.to_dict(), sort_keys=True)
+    overlay = orchestrator.read_overlay(state)
+
+    assert "limited" not in serialized_state
+    assert "raw-value" not in serialized_state
+    assert "must-drop" not in serialized_state
+    assert "limited" not in json.dumps(overlay)
+    assert all(item["state"]["profile_context_status"] is None for item in overlay["capabilities"])
+
+
 def test_nayade_projects_profile_drift_metrics():
     expected = _profile()
     observed = copy.deepcopy(expected)

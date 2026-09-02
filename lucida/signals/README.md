@@ -77,6 +77,8 @@ evento de show no repite el perfil; esa herencia se marca como `inherited` y no
 se considera una nueva medición.
 La propuesta también distingue esa herencia en su razón y evidencia para no
 presentar un dato antiguo como una observación del show actual.
+Al restaurar una sesión, la clave interna se somete a una allowlist de tipos y
+valores; el contexto inválido se elimina antes de volver a proyectarse.
 
 El schema de referencia es
 [`signal-profile.schema.json`](../../schemas/signal-profile.schema.json).

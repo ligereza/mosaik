@@ -10,6 +10,7 @@ from adapters.vj.contracts import VJEvent, VJResult, VJState
 
 from .capabilities import (
     _PROFILE_CONTEXT_KEY,
+    _bounded_profile_state,
     _profile_state,
     ImagoCapability,
     InstarCapability,
@@ -73,6 +74,12 @@ class LucidaOrchestrator:
         vj_metadata = dict(vj_state.metadata)
         if profile_state:
             vj_metadata[_PROFILE_CONTEXT_KEY] = profile_state
+        else:
+            inherited_context = _bounded_profile_state(vj_metadata.get(_PROFILE_CONTEXT_KEY))
+            if inherited_context:
+                vj_metadata[_PROFILE_CONTEXT_KEY] = inherited_context
+            else:
+                vj_metadata.pop(_PROFILE_CONTEXT_KEY, None)
         vj_state = replace(vj_state, metadata=vj_metadata)
         reports = tuple(
             capability.evaluate(parsed_event, vj_state) for capability in self._capabilities
