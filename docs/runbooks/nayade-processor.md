@@ -14,6 +14,10 @@ python tools/mosaik_cli.py nayade-processor discover --report Z:\MOSAIK\runs\nay
 python tools/mosaik_cli.py nayade-processor snapshot --device COM3 -o Z:\MOSAIK\runs\nayade\processor-snapshot.json
 python tools/mosaik_cli.py nayade-processor validate-case data\cases\soundcheck-2026-08-29-vc2.json
 python tools/mosaik_cli.py nayade-processor diagnose-case data\cases\soundcheck-2026-08-29-vc2.json
+python tools/mosaik_cli.py nayade-processor reconcile `
+  --processor-observation Z:\MOSAIK\runs\nayade\processor-observation.json `
+  --mapping Z:\MOSAIK\runs\nayade\mapping-plan.json `
+  --report Z:\MOSAIK\runs\nayade\reconciliation.json
 ```
 
 `discover` consulta el inventario USB/COM del sistema, pero no abre los puertos. Si no aparece nada, todavía puede existir un procesador controlable por Ethernet o por el software del fabricante.
@@ -24,6 +28,11 @@ python tools/mosaik_cli.py nayade-processor diagnose-case data\cases\soundcheck-
 secuencia temporal con el contrato `NayadeProcessorCase`. `diagnose-case` hace
 esta validación automáticamente antes de aplicar reglas de rango, gamma y
 negros.
+
+`reconcile` cruza sólo los documentos que se entreguen. Si encuentra entrada y
+salida con resoluciones distintas, lo marca como escalado observado/inferido;
+si encuentra rangos distintos, eleva una revisión de alto riesgo. No modifica
+el procesador y todas sus recomendaciones requieren aprobación explícita.
 
 ## Flujo de llegada al venue
 

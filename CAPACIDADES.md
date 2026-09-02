@@ -220,6 +220,11 @@ ejemplo:
 - negro por encima de blackout;
 - estado del rango del procesador no registrado.
 
+La reconciliación de cadena cruza perfiles de señal, observaciones del
+procesador, snapshots, módulos y Advanced Output. Calcula escalado, compara
+resolución/FPS/rango, estima pixel pitch cuando hay medidas físicas y separa
+conflictos de recomendaciones `proposal_only`.
+
 El diagnóstico separa hechos, hipótesis y acciones de verificación. No declara
 que gamma sea la causa de un negro levantado sin medir la cadena completa.
 
@@ -284,6 +289,7 @@ python tools/mosaik_cli.py nayade-processor catalog
 python tools/mosaik_cli.py nayade-processor discover --report artifacts\processor-discovery.json
 python tools/mosaik_cli.py nayade-processor validate-case data\cases\soundcheck-2026-08-29-vc2.json
 python tools/mosaik_cli.py nayade-processor diagnose-case data\cases\soundcheck-2026-08-29-vc2.json
+python tools/mosaik_cli.py nayade-processor reconcile --processor-observation artifacts\processor-observation.json --mapping artifacts\mapping-plan.json --report artifacts\reconciliation.json
 python tools/mosaik_cli.py vj-project instar artifacts\instar.json --event-id instar-001 --sequence 1 --mode projection
 python tools/mosaik_cli.py vj-project-replay artifacts\vj-project-manifest.json --report artifacts\vj-project-replay.json
 ```

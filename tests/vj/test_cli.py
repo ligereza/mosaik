@@ -116,3 +116,38 @@ def test_nayade_validate_case_cli_returns_a_safe_summary(capsys):
     output = json.loads(capsys.readouterr().out)
     assert output["valid"] is True
     assert output["safety"]["source_path_exposed"] is False
+
+
+def test_nayade_reconcile_cli_writes_a_bounded_report(tmp_path, capsys):
+    observation_path = tmp_path / "processor-observation.json"
+    report_path = tmp_path / "reconciliation.json"
+    observation_path.write_text(
+        json.dumps(
+            {
+                "model": "VX600",
+                "firmware": "1.3.0",
+                "transport": "manual",
+                "confidence": "medium",
+                "input_signal": {"resolution": "1920x1080", "fps": 60, "range": "full"},
+                "output_signal": {"resolution": "1280x720", "fps": 60},
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    exit_code = main(
+        [
+            "nayade-processor",
+            "reconcile",
+            "--processor-observation",
+            str(observation_path),
+            "--report",
+            str(report_path),
+        ]
+    )
+
+    assert exit_code == 0
+    output = json.loads(report_path.read_text(encoding="utf-8"))
+    assert output["status"] == "REVIEW"
+    assert output["safety"]["source_paths_exposed"] is False
+    assert "scaling" in capsys.readouterr().out

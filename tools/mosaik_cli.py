@@ -42,6 +42,11 @@ from mosaik.processors import (
     validate_processor_case,
     write_json as write_processor_json,
 )
+from mosaik.reconcile import (
+    load_reconciliation_document,
+    reconcile_signal_chain,
+    reconciliation_text_report,
+)
 from mosaik.resolume import (
     advanced_output_text_report,
     build_mapping_plan,
@@ -276,6 +281,13 @@ def build_parser() -> argparse.ArgumentParser:
     processor_validate_case = processor_commands.add_parser("validate-case", help="Valida el contrato de un caso NAYADE.")
     processor_validate_case.add_argument("case", help="Caso JSON de NAYADE.")
     processor_validate_case.add_argument("--report", help="Ruta opcional para guardar la validación JSON.")
+    processor_reconcile = processor_commands.add_parser("reconcile", help="Reconcilia evidencia de señal, procesador, módulo y mapping.")
+    processor_reconcile.add_argument("--signal-profile", help="Perfil JSON de señal.")
+    processor_reconcile.add_argument("--processor-observation", help="Observación JSON del procesador.")
+    processor_reconcile.add_argument("--processor-snapshot", help="Snapshot JSON de descubrimiento.")
+    processor_reconcile.add_argument("--module-profile", help="Perfil JSON del módulo LED.")
+    processor_reconcile.add_argument("--mapping", help="Mapa o plan JSON de Advanced Output.")
+    processor_reconcile.add_argument("--report", help="Ruta opcional para guardar la reconciliación JSON.")
     return parser
 
 
@@ -644,6 +656,24 @@ def main(argv: list[str] | None = None) -> int:
                     report_path = write_processor_json(report, args.report)
                     print(f"\nValidación JSON: {report_path}")
                 return 0
+            if args.processor_command == "reconcile":
+                documents = {
+                    name: load_reconciliation_document(path)
+                    for name, path in (
+                        ("signal_profile", args.signal_profile),
+                        ("processor_observation", args.processor_observation),
+                        ("processor_snapshot", args.processor_snapshot),
+                        ("module_profile", args.module_profile),
+                        ("mapping", args.mapping),
+                    )
+                    if path
+                }
+                report = reconcile_signal_chain(documents)
+                print(reconciliation_text_report(report))
+                if args.report:
+                    report_path = write_processor_json(report, args.report)
+                    print(f"\nReconciliación JSON: {report_path}")
+                return 1 if report["status"] == "FAIL" else 0
     except (MosaikError, ReplayError, VJProjectError) as exc:
         print(f"MOSAIK ERROR: {exc}", file=sys.stderr)
         return 2
