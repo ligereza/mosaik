@@ -150,6 +150,19 @@ def test_lucida_state_restore_rejects_pending_proposal_without_global_record():
         LucidaState.from_dict(raw)
 
 
+@pytest.mark.parametrize("mutation", ["duplicate", "missing"])
+def test_lucida_state_restore_requires_all_capabilities_once(mutation):
+    state = LucidaOrchestrator().initial_state("session-001")
+    raw = state.to_dict()
+    if mutation == "duplicate":
+        raw["capabilities"][1]["capability"] = "INSTAR"
+    else:
+        raw["capabilities"] = raw["capabilities"][:2]
+
+    with pytest.raises(LucidaContractError, match="capabilities"):
+        LucidaState.from_dict(raw)
+
+
 def test_fixture_contains_only_fictional_session_data():
     document = json.loads(FIXTURE.read_text(encoding="utf-8"))
     serialized = json.dumps(document)

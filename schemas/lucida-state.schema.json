@@ -24,6 +24,8 @@
     "pending_proposal_ids": { "type": "array", "items": { "type": "string" } },
     "capabilities": {
       "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
       "items": { "$ref": "urn:mosaik:lucida:capability-report" }
     },
     "proposals": {

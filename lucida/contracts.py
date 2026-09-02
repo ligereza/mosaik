@@ -124,6 +124,14 @@ class LucidaState:
         capabilities = tuple(
             CapabilityReport.from_dict(item) for item in value.get("capabilities", ())
         )
+        if "capabilities" in value:
+            capability_names = tuple(report.capability for report in capabilities)
+            if set(capability_names) != set(CAPABILITY_NAMES) or len(capability_names) != len(
+                CAPABILITY_NAMES
+            ):
+                raise LucidaContractError(
+                    "capabilities debe contener exactamente INSTAR, NAYADE e IMAGO una vez."
+                )
         proposals = tuple(VJProposal.from_dict(item) for item in value.get("proposals", ()))
         proposal_ids = tuple(proposal.proposal_id for proposal in proposals)
         if len(set(proposal_ids)) != len(proposal_ids):
