@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mosaik.tools/schemas/nayade-soundcheck-session.schema.json",
+  "title": "MOSAIK NayadeSoundcheckSession",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "session_type", "session_id", "name", "created_at", "updated_at", "read_only_source", "source", "composition", "seed", "targets", "planned_steps", "events", "limitations"],
+  "properties": {
+    "schema_version": { "const": "0.1" },
+    "session_type": { "const": "NayadeSoundcheckSession" },
+    "session_id": { "type": "string", "minLength": 1 },
+    "name": { "type": "string", "minLength": 1 },
+    "created_at": { "type": "string", "format": "date-time" },
+    "updated_at": { "type": "string", "format": "date-time" },
+    "read_only_source": { "const": true },
+    "source": { "type": "object" },
+    "composition": { "type": "object" },
+    "seed": { "type": "integer" },
+    "targets": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["slices", "input_groups"],
+      "properties": {
+        "slices": { "type": "array", "items": { "$ref": "#/$defs/slice" } },
+        "input_groups": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "planned_steps": { "type": "array", "items": { "$ref": "#/$defs/step" } },
+    "events": { "type": "array", "items": { "$ref": "#/$defs/event" } },
+    "limitations": { "type": "array", "items": { "type": "string" } }
+  },
+  "$defs": {
+    "slice": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["slice_id", "input_group_id"],
+      "properties": {
+        "slice_id": { "type": "string", "minLength": 1 },
+        "input_group_id": { "type": "string", "minLength": 1 }
+      }
+    },
+    "step": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["step_id", "operation", "scope", "targets", "parameters", "expected_checks", "result"],
+      "properties": {
+        "step_id": { "type": "string", "minLength": 1 },
+        "operation": { "enum": ["baseline", "flip_horizontal", "flip_vertical", "rotate_180", "pattern", "marquee"] },
+        "scope": { "type": "string", "minLength": 1 },
+        "targets": { "type": "array", "items": { "type": "string" } },
+        "parameters": { "type": "object" },
+        "expected_checks": { "type": "array", "items": { "type": "string" } },
+        "result": { "enum": ["planned", "running", "approved", "rejected", "review"] }
+      }
+    },
+    "event": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["event_id", "created_at", "operation", "scope", "targets", "parameters", "result", "notes", "planned_step_id"],
+      "properties": {
+        "event_id": { "type": "string", "minLength": 1 },
+        "created_at": { "type": "string", "format": "date-time" },
+        "operation": { "enum": ["baseline", "flip_horizontal", "flip_vertical", "rotate_180", "pattern", "marquee"] },
+        "scope": { "type": "string", "minLength": 1 },
+        "targets": { "type": "array", "items": { "type": "string" } },
+        "parameters": { "type": "object" },
+        "result": { "enum": ["planned", "running", "approved", "rejected", "review"] },
+        "notes": { "type": "string" },
+        "planned_step_id": { "type": ["string", "null"] }
+      }
+    }
+  }
+}

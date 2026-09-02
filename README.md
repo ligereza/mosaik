@@ -17,6 +17,7 @@ Set-ExecutionPolicy -Scope Process Bypass
 
 python .\tools\mosaik_cli.py diagnose "D:\VJ\Media\clip.mp4" --report ".\artifacts\clip-report.json"
 python .\tools\mosaik_cli.py dxv "D:\VJ\Media\clip.mp4" --fps 60
+python .\tools\mosaik_cli.py nayade-session init ".\artifacts\mapping-summary.json" --output ".\artifacts\nayade-session.json" --seed 4821
 ```
 
 Los scripts solo leen el estado del equipo y muestran advertencias; no cambian el plan de
@@ -44,6 +45,19 @@ artifacts/         Salidas locales; ignoradas por Git.
 - No versionar medios pesados ni datos que identifiquen innecesariamente al equipo.
 - Evitar cambios irreversibles antes de un show.
 - Registrar la fecha, el hardware, la versión de software y las condiciones de prueba.
+
+## NAYADE: soundcheck
+
+NAYADE crea una matriz determinista de pruebas por `input_group_id` y registra
+los resultados observados por el operador. Incluye baseline, flips, rotación,
+patrón y marquee para encontrar deformación, inversión, costuras y convivencia
+entre slices. Su contrato está en `schemas/nayade-soundcheck-session.schema.json`
+y el flujo operativo en `docs/runbooks/nayade-soundcheck.md`.
+
+La observación del procesador es pasiva: no abre puertos ni envía comandos.
+Identidad, firmware, señal, módulo, indoor/outdoor, pixel pitch, gamma y rango
+de color se mantienen separados y con incertidumbre explícita. El contrato de
+observación está en `schemas/nayade-processor-observation.schema.json`.
 
 ## Próximos incrementos
 
