@@ -27,6 +27,7 @@ from mosaik.imago import (
     write_session as write_imago_session,
 )
 from mosaik.html_report import write_html_report
+from mosaik.incidents import INCIDENT_CATEGORIES, build_incident_plan, incident_text_report, write_incident_plan
 from mosaik.instar import run_instar, text_report as instar_text_report, write_report
 from mosaik.manifest import write_manifest
 from mosaik.media import MosaikError
@@ -95,6 +96,14 @@ def build_parser() -> argparse.ArgumentParser:
         help="Comprueba el entorno portable sin controlar Resolume ni hardware.",
     )
     doctor.add_argument("--report", help="Ruta opcional para guardar el diagnóstico JSON.")
+
+    incident = commands.add_parser(
+        "incident-plan",
+        help="Genera un plan de evidencia y recuperación reversible para un incidente VJ.",
+    )
+    incident.add_argument("category", choices=INCIDENT_CATEGORIES)
+    incident.add_argument("--stage", choices=("preflight", "soundcheck", "show"), default="soundcheck")
+    incident.add_argument("--report", help="Ruta opcional para guardar el plan JSON.")
 
     instar = commands.add_parser("instar", help="Ejecuta el preflight de media de una carpeta.")
     instar.add_argument("media_root", help="Carpeta raíz con los videos del show.")
@@ -343,6 +352,14 @@ def main(argv: list[str] | None = None) -> int:
                 report_path = write_doctor_report(report, args.report)
                 print(f"\nDiagnóstico JSON: {report_path}")
             return 1 if report["overall_status"] == "FAIL" else 0
+
+        if args.command == "incident-plan":
+            plan = build_incident_plan(args.category, stage=args.stage)
+            print(incident_text_report(plan))
+            if args.report:
+                report_path = write_incident_plan(plan, args.report)
+                print(f"\nPlan JSON: {report_path}")
+            return 0
 
         if args.command == "instar":
             show_profile = load_show_profile(args.show_profile) if args.show_profile else None

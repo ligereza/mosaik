@@ -77,6 +77,17 @@ en `requirements.txt`; el backend NVIDIA sigue separado en `requirements-gpu.txt
 Los scripts solo leen el estado del equipo y muestran advertencias; no cambian el plan de
 energía, BIOS, controladores, archivos ni configuraciones de Resolume.
 
+Para un incidente durante soundcheck o show, se puede generar una guía sin
+modificar el showfile:
+
+```powershell
+& ".\tools\Invoke-MOSAIK.ps1" incident-plan gray_black_levels --stage soundcheck
+```
+
+El resultado separa evidencia, hipótesis y recuperación para flicker, tearing,
+frames dropped, media ausente, niveles de negro, geometría y pérdida de señal.
+No modifica el showfile, no ajusta el procesador y no ejecuta acciones.
+
 `validate_schema_graph.py` comprueba el registry local de contratos y sus referencias sin
 red. Para validar una instancia JSON concreta, agrega `--schema` y `--instance`.
 

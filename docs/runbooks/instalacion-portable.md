@@ -45,6 +45,17 @@ abrir Resolume ni tocar hardware:
 herramientas externas ausentes; `FAIL` requiere corregir el entorno antes de
 usar la función afectada.
 
+Para un incidente durante soundcheck o show, se puede generar una guía
+acotada sin modificar el showfile:
+
+```powershell
+& "C:\Ruta\MOSAIK\tools\Invoke-MOSAIK.ps1" incident-plan gray_black_levels --stage soundcheck
+& "C:\Ruta\MOSAIK\tools\Invoke-MOSAIK.ps1" incident-plan flicker --stage show --report "D:\VJ\Reports\flicker-plan.json"
+```
+
+El plan separa preguntas de evidencia, hipótesis y propuestas de recuperación.
+Todas las propuestas requieren aprobación explícita y son `proposal_only`.
+
 ## Límites de seguridad
 
 - La CLI sólo cambia archivos cuando el comando recibe explícitamente una ruta
