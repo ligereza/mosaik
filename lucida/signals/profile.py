@@ -116,6 +116,10 @@ class SignalFact:
             raise SignalProfileError(f"{field_name}.confidence must be a number.")
         if not math.isfinite(float(confidence)) or not 0 <= float(confidence) <= 1:
             raise SignalProfileError(f"{field_name}.confidence must be between 0 and 1.")
+        if origin == "unknown" and (raw["value"] != "unknown" or float(confidence) != 0):
+            raise SignalProfileError(
+                f"{field_name} with unknown origin must use value 'unknown' and confidence 0."
+            )
         source = raw.get("source")
         if source is not None:
             source = _text(source, f"{field_name}.source")

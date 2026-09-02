@@ -8,6 +8,7 @@ from jsonschema import Draft202012Validator
 from lucida import LucidaOrchestrator
 from lucida.replay.session import SessionReplay
 from lucida.signals import (
+    SignalFact,
     SignalProfileError,
     compare_signal_profiles,
     validate_signal_profile,
@@ -116,6 +117,27 @@ def test_signal_profile_rejects_unknown_fields_and_timezone_free_timestamp():
         validate_signal_profile(profile)
 
 
+def test_signal_fact_requires_canonical_unknown_semantics_but_keeps_inferred_source_optional():
+    canonical = {
+        "value": "unknown",
+        "origin": "unknown",
+        "confidence": 0,
+    }
+    assert SignalFact.from_dict(canonical).to_dict() == canonical
+
+    for malformed in (
+        {"value": "HDMI-1", "origin": "unknown", "confidence": 0},
+        {"value": "unknown", "origin": "unknown", "confidence": 0.2},
+    ):
+        with pytest.raises(SignalProfileError, match="unknown origin"):
+            SignalFact.from_dict(malformed)
+
+    inferred = SignalFact.from_dict(
+        {"value": "RGB", "origin": "inferred", "confidence": 0.6}
+    )
+    assert inferred.source is None
+
+
 def test_signal_profile_matches_public_schema():
     schema_path = Path(__file__).parents[2] / "schemas" / "signal-profile.schema.json"
     schema = json.loads(schema_path.read_text(encoding="utf-8"))
@@ -182,12 +204,14 @@ def test_compare_signal_profiles_reports_drift_without_raw_values():
     observed["source"]["range"]["value"] = "limited"
     observed["source"]["range"]["confidence"] = 0.4
     observed["house"]["input"]["origin"] = "unknown"
+    observed["house"]["input"]["value"] = "unknown"
+    observed["house"]["input"]["confidence"] = 0
 
     comparison = compare_signal_profiles(expected, observed)
 
     assert comparison["status"] == "changed"
-    assert comparison["changed_fields"] == ["source.range"]
-    assert comparison["confidence_drops"] == ["source.range"]
+    assert comparison["changed_fields"] == ["source.range", "house.input"]
+    assert comparison["confidence_drops"] == ["source.range", "house.input"]
     assert comparison["origin_changes"] == ["house.input"]
     assert comparison["source_changes"] == []
     assert comparison["processor_capability_changes"] == []

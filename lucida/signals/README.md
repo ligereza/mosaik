@@ -58,6 +58,13 @@ e `IMAGO`. Conserva cada dato como `declared`, `observed`, `inferred` o
 `unknown`, junto con su confianza y fuente. `validate_signal_profile()` sólo
 valida y devuelve una copia canónica; no identifica módulos, no infiere un
 procesador desde HDMI y no escribe en hardware.
+
+`unknown` tiene una representación explícita y no ambigua: `value` debe ser
+`"unknown"` y `confidence` debe ser `0`. Un dato concreto con confianza baja
+no es `unknown`; debe conservar su origen real (`declared`, `observed` o
+`inferred`) para que NAYADE pueda distinguir ausencia de información de una
+medición débil. `inferred` puede omitir `source` cuando la hipótesis proviene
+del cálculo local del adaptador; si existe una fuente, se conserva.
 `summarize_signal_profile()` expone a NAYADE únicamente métricas acotadas para
 el overlay: validez, etapa, conteos de desconocidos/inferidos, confianza mínima
 y modo read-only del procesador.
