@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 
 from lucida import LucidaOrchestrator
-from lucida.contracts import LucidaContractError, LucidaState
+from lucida.contracts import CapabilityReport, LucidaContractError, LucidaState
 from lucida.replay import replay_path
 
 
@@ -203,6 +203,30 @@ def test_lucida_state_restore_rejects_non_json_capability_state(unsafe_value):
 
     with pytest.raises(LucidaContractError, match="JSON serializables"):
         LucidaState.from_dict(raw)
+
+
+@pytest.mark.parametrize("mutation", ["missing", "extra"])
+def test_lucida_state_restore_requires_schema_fields_exactly(mutation):
+    raw = LucidaOrchestrator().initial_state("session-001").to_dict()
+    if mutation == "missing":
+        del raw["capabilities"]
+    else:
+        raw["unexpected"] = True
+
+    with pytest.raises(LucidaContractError, match="campos no soportados o faltantes"):
+        LucidaState.from_dict(raw)
+
+
+@pytest.mark.parametrize("mutation", ["missing", "extra"])
+def test_capability_report_restore_requires_schema_fields_exactly(mutation):
+    raw = LucidaOrchestrator().initial_state("session-001").to_dict()["capabilities"][0]
+    if mutation == "missing":
+        del raw["unknowns"]
+    else:
+        raw["unexpected"] = True
+
+    with pytest.raises(LucidaContractError, match="campos no soportados o faltantes"):
+        CapabilityReport.from_dict(raw)
 
 
 def test_fixture_contains_only_fictional_session_data():

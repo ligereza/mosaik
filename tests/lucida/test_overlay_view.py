@@ -235,7 +235,7 @@ def test_orchestrator_diff_redacts_internal_metadata_and_payload_state():
 def test_orchestrator_diff_rejects_invalid_state_through_existing_contracts():
     orchestrator, state = _state()
 
-    with pytest.raises(LucidaContractError, match="session_id"):
+    with pytest.raises(LucidaContractError, match="campos no soportados o faltantes"):
         orchestrator.diff_overlay_view({}, state)
 
     invalid_current = state.to_dict()

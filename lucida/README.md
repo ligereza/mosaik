@@ -88,6 +88,10 @@ The serialized integration state has its own registered contracts:
 Replay records reference the complete `LucidaState` contract instead of relying
 on a partial inline description.
 
+La restauración runtime exige esos mismos campos, versión y tipo de contrato:
+un snapshot parcial o con campos extra se rechaza antes de entrar al
+orquestador.
+
 `LucidaOrchestrator.read_overlay_cursor(state)` exposes only the session
 sequence, last event timestamp, last event id, and checkpoint id needed by an
 incremental consumer to identify the state revision. It excludes metadata and

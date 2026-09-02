@@ -17,6 +17,22 @@ from adapters.vj.contracts import VJProposal, VJState
 
 LUCIDA_SCHEMA_VERSION = "0.1"
 CAPABILITY_NAMES = ("INSTAR", "NAYADE", "IMAGO")
+CAPABILITY_REPORT_FIELDS = frozenset(
+    {"capability", "observed", "state", "proposals", "expected_results", "unknowns"}
+)
+LUCIDA_STATE_FIELDS = frozenset(
+    {
+        "contract_type",
+        "schema_version",
+        "session_id",
+        "overlay_status",
+        "vj_state",
+        "pending_proposal_ids",
+        "capabilities",
+        "proposals",
+        "metadata",
+    }
+)
 
 
 class LucidaContractError(ValueError):
@@ -46,6 +62,11 @@ def _mapping(value: Any, field_name: str) -> dict[str, Any]:
     return dict(value)
 
 
+def _exact_fields(value: Mapping[str, Any], expected: frozenset[str], field_name: str) -> None:
+    if set(value) != expected:
+        raise LucidaContractError(f"{field_name} contiene campos no soportados o faltantes.")
+
+
 def _json_mapping(value: Any, field_name: str) -> dict[str, Any]:
     result = _mapping(value, field_name)
     try:
@@ -58,8 +79,6 @@ def _json_mapping(value: Any, field_name: str) -> dict[str, Any]:
 
 
 def _texts(value: Any, field_name: str) -> tuple[str, ...]:
-    if value is None:
-        return ()
     if not isinstance(value, (list, tuple)) or not all(isinstance(item, str) for item in value):
         raise LucidaContractError(f"{field_name} debe ser una lista de textos.")
     return tuple(item.strip() for item in value if item.strip())
@@ -80,17 +99,18 @@ class CapabilityReport:
     def from_dict(cls, value: Mapping[str, Any]) -> "CapabilityReport":
         if not isinstance(value, Mapping):
             raise LucidaContractError("capability report debe ser un objeto.")
-        capability = _required_text(value.get("capability"), "capability")
+        _exact_fields(value, CAPABILITY_REPORT_FIELDS, "capability report")
+        capability = _required_text(value["capability"], "capability")
         if capability not in CAPABILITY_NAMES:
             raise LucidaContractError(f"capacidad desconocida: {capability}")
-        proposals = tuple(VJProposal.from_dict(item) for item in value.get("proposals", ()))
+        proposals = tuple(VJProposal.from_dict(item) for item in value["proposals"])
         return cls(
             capability=capability,
-            observed=_texts(value.get("observed"), "observed"),
-            state=_json_mapping(value.get("state"), "state"),
+            observed=_texts(value["observed"], "observed"),
+            state=_json_mapping(value["state"], "state"),
             proposals=proposals,
-            expected_results=_texts(value.get("expected_results"), "expected_results"),
-            unknowns=_texts(value.get("unknowns"), "unknowns"),
+            expected_results=_texts(value["expected_results"], "expected_results"),
+            unknowns=_texts(value["unknowns"], "unknowns"),
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -119,32 +139,34 @@ class LucidaState:
     def from_dict(cls, value: Mapping[str, Any]) -> "LucidaState":
         if not isinstance(value, Mapping):
             raise LucidaContractError("lucida_state debe ser un objeto.")
-        session_id = _required_text(value.get("session_id"), "session_id")
-        raw_vj_state = value.get("vj_state")
+        _exact_fields(value, LUCIDA_STATE_FIELDS, "lucida_state")
+        if value["contract_type"] != "LucidaState":
+            raise LucidaContractError("contract_type de lucida_state no es valido.")
+        if value["schema_version"] != LUCIDA_SCHEMA_VERSION:
+            raise LucidaContractError("schema_version de lucida_state no es compatible.")
+        session_id = _required_text(value["session_id"], "session_id")
+        raw_vj_state = value["vj_state"]
         if not isinstance(raw_vj_state, Mapping):
             raise LucidaContractError("lucida_state necesita vj_state.")
         vj_state = VJState.from_dict(raw_vj_state)
         if vj_state.session_id != session_id:
             raise LucidaContractError("session_id no coincide con vj_state.session_id.")
-        raw_pending = value.get("pending_proposal_ids")
-        if raw_pending is not None:
-            pending_proposal_ids = _texts(raw_pending, "pending_proposal_ids")
-            if pending_proposal_ids != vj_state.pending_proposal_ids:
-                raise LucidaContractError(
-                    "pending_proposal_ids no coincide con vj_state.pending_proposal_ids."
-                )
+        pending_proposal_ids = _texts(value["pending_proposal_ids"], "pending_proposal_ids")
+        if pending_proposal_ids != vj_state.pending_proposal_ids:
+            raise LucidaContractError(
+                "pending_proposal_ids no coincide con vj_state.pending_proposal_ids."
+            )
         capabilities = tuple(
-            CapabilityReport.from_dict(item) for item in value.get("capabilities", ())
+            CapabilityReport.from_dict(item) for item in value["capabilities"]
         )
-        if "capabilities" in value:
-            capability_names = tuple(report.capability for report in capabilities)
-            if set(capability_names) != set(CAPABILITY_NAMES) or len(capability_names) != len(
-                CAPABILITY_NAMES
-            ):
-                raise LucidaContractError(
-                    "capabilities debe contener exactamente INSTAR, NAYADE e IMAGO una vez."
-                )
-        proposals = tuple(VJProposal.from_dict(item) for item in value.get("proposals", ()))
+        capability_names = tuple(report.capability for report in capabilities)
+        if set(capability_names) != set(CAPABILITY_NAMES) or len(capability_names) != len(
+            CAPABILITY_NAMES
+        ):
+            raise LucidaContractError(
+                "capabilities debe contener exactamente INSTAR, NAYADE e IMAGO una vez."
+            )
+        proposals = tuple(VJProposal.from_dict(item) for item in value["proposals"])
         proposal_ids = tuple(proposal.proposal_id for proposal in proposals)
         if len(set(proposal_ids)) != len(proposal_ids):
             raise LucidaContractError("proposals no puede contener proposal_id duplicados.")
@@ -170,8 +192,8 @@ class LucidaState:
             vj_state=vj_state,
             capabilities=capabilities,
             proposals=proposals,
-            overlay_status=_required_text(value.get("overlay_status", "ready"), "overlay_status"),
-            metadata=_json_mapping(value.get("metadata"), "metadata"),
+            overlay_status=_required_text(value["overlay_status"], "overlay_status"),
+            metadata=_json_mapping(value["metadata"], "metadata"),
         )
 
     def to_dict(self) -> dict[str, Any]:
