@@ -50,6 +50,10 @@ produce el mismo resultado. Las propuestas siempre contienen
 `requires_explicit_approval=true`, `reversible=true` y
 `execution_mode=proposal_only`.
 
+La restauración de propuestas también respeta el schema publicado: exige los
+campos obligatorios y rechaza propiedades extra antes de registrar una
+propuesta.
+
 ## Extensión
 
 Los adaptadores concretos de medios, cues, DXV, Art-Net/DMX/sACN, LED

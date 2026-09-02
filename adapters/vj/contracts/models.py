@@ -9,6 +9,20 @@ from typing import Any, Mapping
 
 PHASES = ("preflight", "preparation", "show", "incident", "recovery", "closure")
 RESULT_STATUSES = ("observed", "accepted", "rejected", "executed", "skipped", "failed")
+PROPOSAL_REQUIRED_FIELDS = frozenset(
+    {
+        "proposal_id",
+        "event_id",
+        "phase",
+        "operation",
+        "reason",
+        "risk",
+        "requires_explicit_approval",
+        "reversible",
+        "execution_mode",
+    }
+)
+PROPOSAL_ALLOWED_FIELDS = PROPOSAL_REQUIRED_FIELDS | {"evidence"}
 
 
 class ContractError(ValueError):
@@ -48,6 +62,14 @@ def _mapping(value: Any, field_name: str) -> dict[str, Any]:
     if not isinstance(value, Mapping):
         raise ContractError(f"{field_name} debe ser un objeto.")
     return dict(value)
+
+
+def _schema_fields(
+    value: Mapping[str, Any], required: frozenset[str], allowed: frozenset[str], field_name: str
+) -> None:
+    keys = set(value)
+    if not required.issubset(keys) or not keys.issubset(allowed):
+        raise ContractError(f"{field_name} contiene campos no soportados o faltantes.")
 
 
 def _tuple_text(value: Any, field_name: str) -> tuple[str, ...]:
@@ -111,22 +133,23 @@ class VJProposal:
     def from_dict(cls, value: Mapping[str, Any]) -> "VJProposal":
         if not isinstance(value, Mapping):
             raise ContractError("proposal debe ser un objeto.")
-        phase = _required_text(value.get("phase"), "phase")
+        _schema_fields(value, PROPOSAL_REQUIRED_FIELDS, PROPOSAL_ALLOWED_FIELDS, "proposal")
+        phase = _required_text(value["phase"], "phase")
         if phase not in PHASES:
             raise ContractError(f"phase desconocida: {phase}")
-        if value.get("requires_explicit_approval", True) is not True:
+        if value["requires_explicit_approval"] is not True:
             raise ContractError("Every VJ proposal must require explicit approval.")
-        if value.get("reversible", True) is not True:
+        if value["reversible"] is not True:
             raise ContractError("Toda propuesta VJ debe ser recuperable/reversible.")
-        if value.get("execution_mode", "proposal_only") != "proposal_only":
+        if value["execution_mode"] != "proposal_only":
             raise ContractError("El adaptador VJ no ejecuta acciones directamente.")
         return cls(
-            proposal_id=_required_text(value.get("proposal_id"), "proposal_id"),
-            event_id=_required_text(value.get("event_id"), "event_id"),
+            proposal_id=_required_text(value["proposal_id"], "proposal_id"),
+            event_id=_required_text(value["event_id"], "event_id"),
             phase=phase,
-            operation=_required_text(value.get("operation"), "operation"),
-            reason=_required_text(value.get("reason"), "reason"),
-            risk=_required_text(value.get("risk", "low"), "risk"),
+            operation=_required_text(value["operation"], "operation"),
+            reason=_required_text(value["reason"], "reason"),
+            risk=_required_text(value["risk"], "risk"),
             evidence=_tuple_text(value.get("evidence"), "evidence"),
         )
 

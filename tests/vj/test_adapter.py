@@ -5,7 +5,7 @@ import pytest
 
 from adapters.vj import VJAdapter
 from adapters.vj.adapter import VJAdapterError
-from adapters.vj.contracts import VJEvent, VJState
+from adapters.vj.contracts import VJEvent, VJProposal, VJState
 from adapters.vj.contracts.models import ContractError
 from adapters.vj.replay import replay_fixture, replay_path
 
@@ -112,6 +112,26 @@ def test_state_restore_keeps_valid_sequence_without_coercion():
     state = VJState.from_dict({"session_id": "session-001", "sequence": 3})
 
     assert state.sequence == 3
+
+
+def test_proposal_restore_rejects_schema_extra_and_missing_required_fields():
+    proposal = {
+        "proposal_id": "proposal-001",
+        "event_id": "event-001",
+        "phase": "preflight",
+        "operation": "review",
+        "reason": "Check the signal.",
+        "risk": "low",
+        "requires_explicit_approval": True,
+        "reversible": True,
+        "execution_mode": "proposal_only",
+    }
+
+    with pytest.raises(ContractError, match="campos no soportados o faltantes"):
+        VJProposal.from_dict({**proposal, "unexpected": True})
+
+    with pytest.raises(ContractError, match="campos no soportados o faltantes"):
+        VJProposal.from_dict({key: value for key, value in proposal.items() if key != "risk"})
 
 
 @pytest.mark.parametrize(
