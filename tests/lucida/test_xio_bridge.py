@@ -122,6 +122,22 @@ def test_validate_xio_consume_result_rejects_invalid_overlay_digest():
         validate_xio_consume_result(result)
 
 
+def test_validate_xio_consume_result_rejects_signal_identity_tampering():
+    result = XioEventConsumer("session-001").consume(_application_event()).to_dict()
+    result["signal"]["event_id"] = "evt-other"
+
+    with pytest.raises(XioSchemaError, match="signal identity"):
+        validate_xio_consume_result(result)
+
+
+def test_validate_xio_consume_result_rejects_provenance_session_tampering():
+    result = XioEventConsumer("session-001").consume(_application_event()).to_dict()
+    result["vj_event"]["payload"]["xio_provenance"]["session_id"] = "session-other"
+
+    with pytest.raises(XioSchemaError, match="provenance"):
+        validate_xio_consume_result(result)
+
+
 def test_xio_consumer_exposes_bounded_overlay_and_revision_cursor():
     consumer = XioEventConsumer("session-001")
     raw = _application_event()
