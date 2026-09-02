@@ -34,6 +34,7 @@
     "seed": { "type": "integer" },
     "catalog": { "type": ["object", "null"] },
     "adaptation": { "type": ["object", "null"] },
+    "protocol": { "type": ["object", "null"] },
     "assets": { "type": "array" },
     "targets": {
       "type": "object",

@@ -235,6 +235,10 @@ primarios, geometría y movimiento, y eleva resolución/escalado cuando aparecen
 conflictos de cadena o mapping. Cada paso explica qué observar y qué registrar;
 el resultado es `plan_only`, sin patrones emitidos ni cambios de hardware.
 
+Ese protocolo puede adjuntarse a `nayade-session init` mediante `--protocol`.
+NAYADE valida el contrato y registra los checks de cadena antes de su matriz de
+experimentos visuales, sin fusionar sus responsabilidades ni ejecutar acciones.
+
 El diagnóstico separa hechos, hipótesis y acciones de verificación. No declara
 que gamma sea la causa de un negro levantado sin medir la cadena completa.
 

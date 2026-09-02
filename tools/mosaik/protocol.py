@@ -8,13 +8,18 @@ procesadores; la ejecución permanece explícita y fuera de este componente.
 from __future__ import annotations
 
 from collections.abc import Mapping
+import json
+from pathlib import Path
 from typing import Any
+
+from jsonschema import Draft202012Validator
 
 from .media import MosaikError
 
 
 PROTOCOL_SCHEMA_VERSION = "0.1"
 PROTOCOL_TYPE = "NayadeSoundcheckProtocol"
+PROTOCOL_SCHEMA_PATH = Path(__file__).resolve().parents[2] / "schemas" / "nayade-soundcheck-protocol.schema.json"
 
 
 _STEP_DEFINITIONS: tuple[dict[str, Any], ...] = (
@@ -238,6 +243,22 @@ def build_soundcheck_protocol(
     }
 
 
+def validate_soundcheck_protocol_document(document: Mapping[str, Any]) -> dict[str, Any]:
+    """Validate a protocol before it is attached to a mutable session."""
+
+    if not isinstance(document, Mapping):
+        raise MosaikError("El protocolo NAYADE debe ser un objeto.")
+    try:
+        schema = json.loads(PROTOCOL_SCHEMA_PATH.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        raise MosaikError("No se pudo leer el schema del protocolo NAYADE.") from exc
+    errors = sorted(Draft202012Validator(schema).iter_errors(document), key=lambda error: list(error.path))
+    if errors:
+        location = ".".join(str(item) for item in errors[0].path) or "root"
+        raise MosaikError(f"Protocolo NAYADE inválido en {location}: {errors[0].message}")
+    return dict(document)
+
+
 def protocol_text_report(report: Mapping[str, Any]) -> str:
     """Render a compact operator-facing protocol without paths."""
 
@@ -256,4 +277,42 @@ def protocol_text_report(report: Mapping[str, Any]) -> str:
     return "\n".join(lines)
 
 
-__all__ = ["build_soundcheck_protocol", "protocol_text_report"]
+def protocol_session_steps(
+    report: Mapping[str, Any],
+    *,
+    targets: list[str] | None = None,
+) -> list[dict[str, Any]]:
+    """Adapt a protocol into NAYADE session steps without executing it."""
+
+    report = validate_soundcheck_protocol_document(report)
+    session_targets = list(targets or ["all-input-groups"])
+    steps: list[dict[str, Any]] = []
+    for index, protocol_step in enumerate(report.get("steps") or [], start=1):
+        if not isinstance(protocol_step, Mapping):
+            raise MosaikError("Cada paso del protocolo NAYADE debe ser un objeto.")
+        step_id = str(protocol_step.get("step_id") or f"check-{index:03d}")
+        steps.append({
+            "step_id": f"processor-{step_id}",
+            "operation": "processor_check",
+            "scope": str(protocol_step.get("scope") or "chain"),
+            "targets": session_targets,
+            "parameters": {
+                "protocol_step_id": step_id,
+                "pattern": protocol_step.get("pattern"),
+                "title": protocol_step.get("title"),
+                "priority": protocol_step.get("priority"),
+                "triggered_by": list(protocol_step.get("triggered_by") or []),
+                "execution_mode": "plan_only",
+            },
+            "expected_checks": list(protocol_step.get("record_fields") or []),
+            "result": "planned",
+        })
+    return steps
+
+
+__all__ = [
+    "build_soundcheck_protocol",
+    "protocol_session_steps",
+    "protocol_text_report",
+    "validate_soundcheck_protocol_document",
+]

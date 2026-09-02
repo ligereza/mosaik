@@ -248,6 +248,10 @@ def build_parser() -> argparse.ArgumentParser:
         "--adaptation-plan",
         help="Plan INSTAR de previews/DXV target-specific que se incorporará a la matriz de soundcheck.",
     )
+    session_init.add_argument(
+        "--protocol",
+        help="Protocolo NAYADE de procesador que se incorporará como checks planificados antes de la matriz visual.",
+    )
 
     session_record = session_commands.add_parser("record", help="Registra el resultado de una prueba del soundcheck.")
     session_record.add_argument("session", help="Archivo JSON de sesión NAYADE.")
@@ -587,6 +591,7 @@ def main(argv: list[str] | None = None) -> int:
                     seed=args.seed,
                     catalog_path=args.catalog,
                     adaptation_plan_path=args.adaptation_plan,
+                    protocol_path=args.protocol,
                 )
                 print(nayade_text_report(session_document))
                 print(f"\nSesión JSON: {Path(args.output).expanduser().resolve()}")

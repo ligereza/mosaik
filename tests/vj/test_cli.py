@@ -6,6 +6,7 @@ TOOLS_ROOT = Path(__file__).resolve().parents[2] / "tools"
 sys.path.insert(0, str(TOOLS_ROOT))
 
 from mosaik_cli import main
+from mosaik.protocol import build_soundcheck_protocol
 
 
 FIXTURE = (
@@ -185,3 +186,38 @@ def test_nayade_protocol_cli_writes_operator_plan(tmp_path, capsys):
     assert output["status"] == "REVIEW"
     assert any(step["pattern"] == "pluge_near_black" for step in output["steps"])
     assert "range_mismatch" in capsys.readouterr().out
+
+
+def test_nayade_session_cli_attaches_protocol_before_visual_matrix(tmp_path, capsys):
+    source_path = tmp_path / "testcard.json"
+    protocol_path = tmp_path / "protocol.json"
+    session_path = tmp_path / "session.json"
+    source_path.write_text(
+        json.dumps(
+            {
+                "testcard_type": "InstarResolumeGeometryTestCard",
+                "composition": {"width": 1280, "height": 720},
+                "slices_detail": [{"slice_id": "slice-a", "input_group_id": "group-a", "bounds": {"width": 1280, "height": 720}}],
+            }
+        ),
+        encoding="utf-8",
+    )
+    protocol_path.write_text(json.dumps(build_soundcheck_protocol()), encoding="utf-8")
+
+    exit_code = main(
+        [
+            "nayade-session",
+            "init",
+            str(source_path),
+            "--output",
+            str(session_path),
+            "--protocol",
+            str(protocol_path),
+        ]
+    )
+
+    assert exit_code == 0
+    session = json.loads(session_path.read_text(encoding="utf-8"))
+    assert session["planned_steps"][0]["operation"] == "processor_check"
+    assert any(step["operation"] == "baseline" for step in session["planned_steps"])
+    assert "Pasos planificados" in capsys.readouterr().out

@@ -14,7 +14,8 @@ python .\tools\mosaik_cli.py nayade-session init `
   --output "Z:\MOSAIK\runs\plox-nayade-soundcheck.json" `
   --name "PLOX — Soundcheck Mapping" `
   --seed 4821 `
-  --adaptation-plan "Z:\MOSAIK\runs\plox-instar-adaptation-dxv-v1.json"
+  --adaptation-plan "Z:\MOSAIK\runs\plox-instar-adaptation-dxv-v1.json" `
+  --protocol "Z:\MOSAIK\runs\plox-soundcheck-protocol.json"
 ~~~
 
 La sesión crea una matriz corta y determinista:
@@ -27,10 +28,21 @@ La sesión crea una matriz corta y determinista:
 - marquee en el eje de la superficie.
 - variantes target-specific generadas por INSTAR, cuando se entrega
   `--adaptation-plan`.
+- checks de cadena del procesador, cuando se entrega `--protocol`.
 
 La semilla permite repetir variaciones futuras. Los pasos comienzan como
 `planned`; INSTAR y NAYADE no inventan si una transformación funcionó en la
 pantalla real.
+
+El protocolo se adapta como pasos `processor_check` al comienzo de la sesión.
+Esto conserva la diferencia entre comprobar la cadena —blackout, PLUGE,
+grises, geometría y estabilidad— y experimentar con las visuales —flip,
+pattern, marquee o adaptaciones target-specific—. Ambos resultados pueden
+registrarse en el mismo archivo, pero ninguna de las dos capas envía comandos
+automáticos al procesador.
+
+El contrato del protocolo se valida antes de incorporarlo a la sesión. Si está
+incompleto, NAYADE detiene la creación para no registrar una matriz ambigua.
 
 ## Registrar un resultado
 

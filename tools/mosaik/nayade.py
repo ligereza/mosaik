@@ -187,6 +187,7 @@ def create_session(
     seed: int | None = None,
     catalog_path: str | Path | None = None,
     adaptation_plan_path: str | Path | None = None,
+    protocol_path: str | Path | None = None,
 ) -> dict[str, Any]:
     """Crea una sesión NAYADE sin alterar el informe fuente."""
 
@@ -223,6 +224,20 @@ def create_session(
                 for item in adaptations
             ],
         }
+    protocol = None
+    protocol_steps: list[dict[str, Any]] = []
+    if protocol_path is not None:
+        from .protocol import protocol_session_steps
+
+        protocol_file, protocol_document = _load_json(protocol_path)
+        protocol_steps = protocol_session_steps(protocol_document, targets=_group_order(slices))
+        protocol = {
+            "path": str(protocol_file),
+            "status": protocol_document.get("status"),
+            "evidence_ids": list(protocol_document.get("evidence_ids") or []),
+            "source_documents": list(protocol_document.get("source_documents") or []),
+            "step_count": len(protocol_steps),
+        }
     mapping_hash = _mapping_hash(document, slices)
     session_seed = seed if seed is not None else int(mapping_hash[:8], 16)
     output = Path(output_path).expanduser().resolve()
@@ -245,6 +260,7 @@ def create_session(
         "seed": session_seed,
         "catalog": catalog,
         "adaptation": adaptation,
+        "protocol": protocol,
         "assets": [
             {
                 "asset_id": asset.get("asset_id"),
@@ -259,7 +275,7 @@ def create_session(
             "slices": slices,
             "input_groups": _group_order(slices),
         },
-        "planned_steps": build_experiment_matrix(slices, assets, adaptations),
+        "planned_steps": protocol_steps + build_experiment_matrix(slices, assets, adaptations),
         "events": [],
         "limitations": [
             "La sesión registra decisiones y parámetros, pero todavía no envía órdenes a Resolume.",
