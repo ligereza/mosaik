@@ -4,12 +4,12 @@ from pathlib import Path
 import pytest
 
 from adapters.vj.contracts import VJEvent
+from lucida.replay import public_replay_fixture
 from lucida.replay.session import (
     DuplicateReplayIdError,
     OutOfOrderReplayError,
     SequenceGapError,
     SessionReplay,
-    public_replay_fixture,
     replay_fixture,
 )
 
@@ -92,6 +92,7 @@ def test_public_report_omits_payload_arguments_metadata_and_free_form_notes():
             "external_side_effects": False,
         }
     )
+    replay.record_audit({"audit_id": "audit-private", "mode": "secret-mode"})
 
     public = replay.public_report()
     record = public["records"][0]
@@ -105,6 +106,7 @@ def test_public_report_omits_payload_arguments_metadata_and_free_form_notes():
     assert "secret_profile_value" not in serialized
     assert "secret-argument" not in serialized
     assert "do-not-share" not in serialized
+    assert "secret-mode" not in serialized
     assert public["safety"] == {
         "replay_only": True,
         "proposal_only": True,

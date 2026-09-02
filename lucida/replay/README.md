@@ -46,6 +46,8 @@ fases, timestamps, conteos, estados redacted, propuestas resumidas y estados
 de resultados, pero omite payloads, argumentos de señal, metadata, notas y
 evidencia libre. `report()` sigue siendo la representación interna completa
 necesaria para reproducir la sesión.
+En los receipts públicos, `mode` sólo se conserva como `proposal_only`; otros
+textos de host se descartan.
 Para el flujo basado en fixtures también se puede usar
 `lucida.replay.public_replay_fixture(...)`; reutiliza exactamente el mismo
 motor y sólo cambia la proyección de salida.

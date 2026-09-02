@@ -229,6 +229,9 @@ def _public_audit(entry: Mapping[str, Any]) -> dict[str, Any]:
         elif field == "external_side_effects":
             if isinstance(value, bool):
                 result[field] = value
+        elif field == "mode":
+            if value == "proposal_only":
+                result[field] = value
         elif isinstance(value, str):
             result[field] = value
     return result
