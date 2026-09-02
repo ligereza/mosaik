@@ -102,13 +102,13 @@
         "schema_version": "0.1",
         "session_type": "ImagoShowSession",
         "session_id": "show-001",
-        "updated_at": "2026-09-02T20:10:00Z",
+        "updated_at": "2026-09-02T20:11:00Z",
         "read_only": true,
         "commands_sent": false,
         "profile": {"profile_id": "profile-001"},
         "status": "showing",
-        "sequence": 1,
-        "last_event_id": "event-001",
+        "sequence": 2,
+        "last_event_id": "event-guard",
         "checkpoint_id": "checkpoint-event-001",
         "open_incidents": [],
         "pending_proposal_ids": [],
@@ -119,6 +119,12 @@
             "event_type": "show_started",
             "status_after": "showing",
             "payload": {},
+            "checkpoint_id": "checkpoint-event-001"
+          },
+          {
+            "event_type": "guard_window_requested",
+            "status_after": "showing",
+            "payload": {"duration_ms": 5000, "base_clip_id": "clip-base-01", "test_scope": "effect"},
             "checkpoint_id": "checkpoint-event-001"
           }
         ],

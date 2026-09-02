@@ -38,6 +38,8 @@ def test_plugin_bridge_replay_covers_the_three_stage_flow_without_actions():
         "irreversible_actions_executed": False,
         "proposal_count": 0,
     }
+    first_imago = report["transitions"][2]["event"]["payload"]["show"]
+    assert first_imago["events"]["types"]["guard_window_requested"] == 1
 
 
 def test_plugin_bridge_replay_is_deterministic_and_contains_no_private_paths():
