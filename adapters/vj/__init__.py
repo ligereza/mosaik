@@ -25,6 +25,13 @@ from .imago_input import (
     build_imago_event,
     project_imago_show_input,
 )
+from .project import (
+    PROJECT_STAGES,
+    VJProjectError,
+    build_stage_event,
+    load_project_document,
+    project_stage_document,
+)
 from .show_input import (
     ShowInputError,
     ShowInputProjection,
@@ -54,6 +61,11 @@ __all__ = [
     "ImagoInputProjector",
     "build_imago_event",
     "project_imago_show_input",
+    "PROJECT_STAGES",
+    "VJProjectError",
+    "build_stage_event",
+    "load_project_document",
+    "project_stage_document",
     "ShowInputError",
     "ShowInputProjection",
     "ShowInputProjector",

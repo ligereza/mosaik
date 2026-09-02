@@ -12,6 +12,7 @@ _REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 if str(_REPOSITORY_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPOSITORY_ROOT))
 
+from adapters.vj import VJProjectError, build_stage_event, load_project_document, project_stage_document
 from adapters.vj.replay import ReplayError, replay_plugin_bridge_path
 from mosaik.adapt import run_adaptation, text_report as adapt_text_report, write_adaptation_plan
 from mosaik.diagnose import diagnose_file, text_report
@@ -117,6 +118,19 @@ def build_parser() -> argparse.ArgumentParser:
     )
     vj_replay.add_argument("fixture", help="Fixture JSON de replay de puentes VJ.")
     vj_replay.add_argument("--report", help="Ruta opcional para guardar el reporte JSON.")
+
+    vj_project = commands.add_parser(
+        "vj-project",
+        help="Convierte un reporte de etapa en un evento o proyeccion VJ segura.",
+    )
+    vj_project.add_argument("stage", choices=("instar", "nayade", "imago"))
+    vj_project.add_argument("input", help="Reporte JSON de la etapa.")
+    vj_project.add_argument("--event-id", required=True, help="Identificador estable del evento.")
+    vj_project.add_argument("--sequence", required=True, type=int, help="Secuencia explicita del productor.")
+    vj_project.add_argument("--mode", choices=("event", "projection"), default="event")
+    vj_project.add_argument("--previous", help="Proyeccion VJ anterior para validar el orden de fases.")
+    vj_project.add_argument("--processor-observation", help="Observacion JSON solo para la etapa nayade.")
+    vj_project.add_argument("--output", help="Ruta opcional para guardar el resultado JSON.")
 
     imago = commands.add_parser("imago-session", help="Registra observaciones proposal-only del show.")
     imago_commands = imago.add_subparsers(dest="imago_command", required=True)
@@ -365,6 +379,41 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"\nReporte VJ replay: {report_path}")
             return 0 if report["status"] == "PASS" else 1
 
+        if args.command == "vj-project":
+            document = load_project_document(args.input)
+            previous = load_project_document(args.previous) if args.previous else None
+            processor_observation = (
+                load_project_document(args.processor_observation)
+                if args.processor_observation
+                else None
+            )
+            if args.mode == "projection":
+                result = project_stage_document(
+                    args.stage,
+                    document,
+                    event_id=args.event_id,
+                    sequence=args.sequence,
+                    previous=previous,
+                    processor_observation=processor_observation,
+                )
+            else:
+                if previous is not None:
+                    raise VJProjectError("--previous requires --mode projection.")
+                result = build_stage_event(
+                    args.stage,
+                    document,
+                    event_id=args.event_id,
+                    sequence=args.sequence,
+                    processor_observation=processor_observation,
+                )
+            print(json.dumps(result, ensure_ascii=False, indent=2))
+            if args.output:
+                output_path = Path(args.output).expanduser().resolve()
+                output_path.parent.mkdir(parents=True, exist_ok=True)
+                output_path.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+                print(f"\nResultado VJ project: {output_path}")
+            return 0
+
         if args.command == "imago-session":
             if args.imago_command == "init":
                 session = build_show_session(
@@ -567,7 +616,7 @@ def main(argv: list[str] | None = None) -> int:
                     report_path = write_processor_json(report, args.report)
                     print(f"\nDiagnóstico JSON: {report_path}")
                 return 0
-    except (MosaikError, ReplayError) as exc:
+    except (MosaikError, ReplayError, VJProjectError) as exc:
         print(f"MOSAIK ERROR: {exc}", file=sys.stderr)
         return 2
     return 1

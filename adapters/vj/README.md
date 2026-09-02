@@ -121,6 +121,11 @@ incident, recovery, and closure. It requires strictly increasing producer
 sequences, rejects duplicate event identifiers, and reports no external side
 effects. The fixture is synthetic and contains no media or machine paths.
 
+For real JSON reports, `vj-project` in `tools/mosaik_cli.py` exposes the same
+bridges without requiring Python imports. Use `--mode event` to emit the
+canonical event or `--mode projection` to emit the bounded show-input view;
+`--previous` enables phase-order validation.
+
 ## Extensión
 
 Los adaptadores concretos de medios, cues, DXV, Art-Net/DMX/sACN, LED

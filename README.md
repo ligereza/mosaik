@@ -27,6 +27,7 @@ python .\tools\mosaik_cli.py nayade-processor catalog
 python .\tools\mosaik_cli.py nayade-processor discover --report ".\artifacts\processor-discovery.json"
 python .\tools\validate_schema_graph.py
 python .\tools\mosaik_cli.py vj-replay ".\adapters\vj\replay\fixtures\plugin-bridges-fictional.json" --report ".\artifacts\vj-replay.json"
+python .\tools\mosaik_cli.py vj-project instar ".\artifacts\instar.json" --event-id instar-001 --sequence 1 --mode projection --output ".\artifacts\instar-input.json"
 ```
 
 ## Dependencias
@@ -187,6 +188,11 @@ La arquitectura de esta integración está documentada en
 IMAGO`, incluyendo show, incidente, recuperación y cierre. Sólo procesa el
 fixture indicado, no abre transportes y no ejecuta propuestas ni cambios en el
 hardware.
+
+`vj-project` convierte un reporte JSON real de `instar`, `nayade` o `imago` en
+un evento canonico o en una proyeccion acotada. La secuencia la entrega el
+operador/orquestador y `--previous` permite rechazar saltos de fase. El modo
+`projection` no copia rutas privadas ni ejecuta acciones.
 
 ### NAYADE y procesadores LED
 
