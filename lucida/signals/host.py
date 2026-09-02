@@ -104,7 +104,12 @@ def _safe_xio_details(value: Any) -> tuple[int | None, str | None, str | None, s
         )
     if not isinstance(value, Mapping):
         return None, None, None, None, {}
-    sequence = value.get("sequence") if isinstance(value.get("sequence"), int) else None
+    raw_sequence = value.get("sequence")
+    sequence = (
+        raw_sequence
+        if isinstance(raw_sequence, int) and not isinstance(raw_sequence, bool)
+        else None
+    )
     timestamp = value.get("source_timestamp") if isinstance(value.get("source_timestamp"), str) else None
     source = value.get("source_app") if isinstance(value.get("source_app"), str) else None
     event_id = value.get("event_id") if isinstance(value.get("event_id"), str) else None

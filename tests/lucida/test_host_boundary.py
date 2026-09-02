@@ -160,3 +160,30 @@ def test_host_boundary_rejects_non_vj_xio_without_phase_or_replay_mutation():
     assert first.overlay["session_id"] == "fictional-xio-session-001"
     assert first.overlay["safety"]["external_side_effects"] is False
     assert not hasattr(boundary, "execute")
+
+
+def test_host_boundary_normalizes_boolean_xio_sequence_without_mutation():
+    boundary = HostSignalBoundary("fictional-xio-session-001")
+    raw = {
+        "event_id": "evt-invalid-sequence",
+        "source_app": "XIO",
+        "event_type": "preflight.completed",
+        "channel": "instar",
+        "payload": {"phase": "preflight"},
+        "source_timestamp": "2026-01-10T20:00:00Z",
+        "received_timestamp": "2026-01-10T20:00:01Z",
+        "session_id": "fictional-xio-session-001",
+        "peer_id": "peer-001",
+        "sequence": True,
+        "raw_hash": "sha256:invalid-sequence",
+        "provenance": {"producer": "test"},
+    }
+    initial_report = boundary.report()
+
+    result = boundary.receive_xio(raw)
+
+    assert result.status == "rejected"
+    assert result.sequence is None
+    assert "sequence must be a positive integer" in result.reason
+    assert boundary.report() == initial_report
+    assert boundary.state.records == ()
