@@ -1,10 +1,10 @@
 objective: Progress the remaining plugin branches without mixing their responsibilities.
-snapshot: INSTAR is already functional; NAYADE and IMAGO point to the baseline.
+snapshot: INSTAR and NAYADE are published; IMAGO now has a focused proposal-only observer.
 alternatives:
-  - path: Merge the full INSTAR branch into every plugin branch.
-    risk: Duplicates unrelated capabilities and obscures ownership.
-  - path: Build focused branch-specific contracts from the baseline.
-    benefit: Keeps NAYADE and IMAGO independently reviewable and preserves future reuse.
-selected_action: build focused branch-specific contracts.
-decision_delta: NAYADE receives only soundcheck and passive processor work in this milestone.
-verification_signal: Branch-local pytest suite, full suite, clean diff, and pushed commit.
+  - path: Merge LUCIDA or the full INSTAR branch into IMAGO.
+    risk: Couples the host-neutral layer and unrelated preflight logic to the live observer.
+  - path: Keep IMAGO focused on event state, proposals, checkpoints, and results.
+    benefit: Preserves a clear future boundary for a host adapter.
+selected_action: publish the focused IMAGO branch.
+decision_delta: No host integration is needed to validate the show lifecycle contract.
+verification_signal: Focused and complete pytest suites, CLI help, clean diff, and pushed branch.

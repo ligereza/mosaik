@@ -152,6 +152,14 @@ La decisión de herramientas adoptadas y pendientes está en
 - Evitar cambios irreversibles antes de un show.
 - Registrar la fecha, el hardware, la versión de software y las condiciones de prueba.
 
+## IMAGO: show
+
+IMAGO observa el show en vivo, registra cues e incidentes, mantiene checkpoints
+y publica propuestas reversibles para recovery y cierre. No ejecuta acciones en
+Resolume, DMX ni procesadores. El contrato esta en
+`schemas/imago-show-session.schema.json` y el flujo en
+`docs/runbooks/imago-show.md`.
+
 ## Próximos incrementos
 
 1. Validar `INSTAR Media Preflight` con clips sintéticos y casos reales.
