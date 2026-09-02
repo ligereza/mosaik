@@ -9,6 +9,38 @@ from adapters.vj.contracts import VJEvent, VJProposal, VJState
 from .contracts import CapabilityReport
 
 
+def _profile_state(payload: dict[str, Any]) -> dict[str, Any]:
+    """Project optional profile facts into bounded capability metrics."""
+
+    from .signals.profile import SignalProfileError, compare_signal_profiles, summarize_signal_profile
+
+    state: dict[str, Any] = {}
+    profile = payload.get("signal_profile")
+    if profile is not None:
+        try:
+            state.update(summarize_signal_profile(profile))
+        except SignalProfileError:
+            state["profile_status"] = "invalid"
+    baseline = payload.get("baseline_signal_profile")
+    if baseline is not None and profile is not None:
+        try:
+            comparison = compare_signal_profiles(baseline, profile)
+        except SignalProfileError:
+            state["profile_comparison_status"] = "invalid"
+        else:
+            state.update(
+                {
+                    "profile_comparison_status": comparison["status"],
+                    "profile_changed_count": len(comparison["changed_fields"]),
+                    "profile_confidence_drop_count": len(comparison["confidence_drops"]),
+                    "profile_unknown_delta": comparison["unknown_delta"],
+                    "profile_recommendation_changed": comparison["recommendation_changed"],
+                    "profile_read_only_changed": comparison["read_only_changed"],
+                }
+            )
+    return state
+
+
 class _BaseCapability:
     name = ""
     phases: tuple[str, ...] = ()
@@ -86,39 +118,11 @@ class NayadeCapability(_BaseCapability):
     expected = "The operator confirms signal, geometry, and color without writing to the processor."
 
     def _state(self, payload: dict[str, Any]) -> dict[str, Any]:
-        from .signals.profile import (
-            SignalProfileError,
-            compare_signal_profiles,
-            summarize_signal_profile,
-        )
-
         state = {
             "signal_status": payload.get("signal_status", payload.get("status", "unknown")),
             "processor_status": payload.get("processor_status", "unknown"),
         }
-        profile = payload.get("signal_profile")
-        if profile is not None:
-            try:
-                state.update(summarize_signal_profile(profile))
-            except SignalProfileError:
-                state["profile_status"] = "invalid"
-        baseline = payload.get("baseline_signal_profile")
-        if baseline is not None and profile is not None:
-            try:
-                comparison = compare_signal_profiles(baseline, profile)
-            except SignalProfileError:
-                state["profile_comparison_status"] = "invalid"
-            else:
-                state.update(
-                    {
-                        "profile_comparison_status": comparison["status"],
-                        "profile_changed_count": len(comparison["changed_fields"]),
-                        "profile_confidence_drop_count": len(comparison["confidence_drops"]),
-                        "profile_unknown_delta": comparison["unknown_delta"],
-                        "profile_recommendation_changed": comparison["recommendation_changed"],
-                        "profile_read_only_changed": comparison["read_only_changed"],
-                    }
-                )
+        state.update(_profile_state(payload))
         return state
 
 
@@ -134,4 +138,5 @@ class ImagoCapability(_BaseCapability):
         return {
             "show_mode": payload.get("mode", "unknown"),
             "incident_category": payload.get("category", "none"),
+            **_profile_state(payload),
         }

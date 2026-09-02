@@ -218,3 +218,42 @@ def test_nayade_projects_profile_drift_metrics():
     assert nayade["state"]["profile_changed_count"] == 1
     assert nayade["state"]["profile_confidence_drop_count"] == 0
     assert nayade["state"]["profile_unknown_delta"] == 0
+
+
+def test_imago_preserves_profile_drift_metrics_for_show():
+    expected = _profile()
+    observed = copy.deepcopy(expected)
+    observed["source"]["range"]["value"] = "limited"
+    state = LucidaOrchestrator().initial_state("session-001")
+    state = LucidaOrchestrator().propose(
+        {
+            "event_id": "evt-preparation",
+            "timestamp": "2026-01-10T21:00:00Z",
+            "phase": "preparation",
+            "event_type": "phase.completed",
+            "payload": {"status": "pass"},
+        },
+        state,
+    )
+    state = LucidaOrchestrator().propose(
+        {
+            "event_id": "evt-show-profile-drift",
+            "timestamp": "2026-01-10T22:00:00Z",
+            "phase": "show",
+            "event_type": "show.profile.observe",
+            "payload": {
+                "mode": "improvised",
+                "signal_profile": observed,
+                "baseline_signal_profile": expected,
+            },
+        },
+        state,
+    )
+
+    overlay = LucidaOrchestrator().read_overlay(state)
+    imago = next(item for item in overlay["capabilities"] if item["capability"] == "IMAGO")
+
+    assert imago["state"]["profile_status"] == "valid"
+    assert imago["state"]["profile_comparison_status"] == "changed"
+    assert imago["state"]["profile_changed_count"] == 1
+    assert "limited" not in json.dumps(overlay)

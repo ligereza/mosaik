@@ -40,6 +40,7 @@ la capacidad correspondiente a la fase crea una propuesta para ese evento.
 - normalizador de `SignalProfile` para conservar hechos, origen, confianza y
   evidencia sin inferir ni controlar hardware.
 - comparación segura de perfiles para detectar drift entre soundcheck y show
+  y conservar sus métricas al entrar en IMAGO.
   sin emitir correcciones.
 
 ## Implementado pero no verificado contra sistemas reales

@@ -64,6 +64,9 @@ y modo read-only del procesador.
 `compare_signal_profiles()` permite contrastar un baseline con una observación y
 reporta sólo drift, cambios de origen, caídas de confianza y deltas de datos
 desconocidos; nunca devuelve los valores crudos.
+La misma proyección acotada se conserva cuando el flujo pasa de NAYADE a IMAGO,
+por lo que una deriva observada durante el show sigue siendo visible sin
+convertirse en una corrección automática.
 
 El schema de referencia es
 [`signal-profile.schema.json`](../../schemas/signal-profile.schema.json).
