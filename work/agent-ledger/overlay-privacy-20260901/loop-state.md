@@ -9,4 +9,5 @@
 - Correction: derive active capabilities from internal reports and align the test with its fixture session.
 - Failure resolved: the first run exposed legacy `proposals` lookups in signal replay and a stale fixture session assertion; both were corrected.
 - Evidence: affected suite `50 passed`; complete suite `106 passed`; `git diff --check` clean; overlay contracts parse; new code and ledger content pass ASCII.
-- Next: commit and push the privacy migration to `origin/LUCIDA`, then verify the remote tip.
+- Published: commit `d227147` pushed to `origin/LUCIDA`; working tree is clean and no persistent test process was found.
+- Closure: every current LUCIDA overlay output uses the bounded projection. Further extension should be tied to a concrete host or transport contract.
