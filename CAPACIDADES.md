@@ -17,7 +17,8 @@ soundcheck y show en procesos reproducibles, medibles y seguros.
 | Procesadores LED | Base segura implementada | Descubrimiento pasivo USB/COM, snapshots y catálogo; el control activo depende del modelo confirmado |
 | Integración Resolume | Lectura y generación de derivados | Lectura de composiciones, Advanced Output, cues y generación de planes; no modifica showfiles |
 | Interfaz visual | No implementada | La prioridad actual es el núcleo, los contratos y los flujos verificables |
-| CLI portable | Implementado en primera versión | Launcher Windows y bootstrap opcional; no altera showfiles ni hardware |
+| CLI portable | Implementado | Launcher Windows, bootstrap opcional y diagnóstico `doctor`; no altera showfiles ni hardware |
+| Incidentes VJ | Implementado en primera versión | Planes de evidencia, hipótesis y recuperación reversible compartidos por las tres etapas |
 
 ## Flujo MOSAIK
 
@@ -35,6 +36,34 @@ IMAGO también puede registrar `guard_window_requested`: una ventana de
 resguardo temporal para probar un efecto o absorber un missclick manteniendo
 disponible la visual base. La duración debe ser positiva y no superar 60
 segundos; se crea sólo una propuesta reversible y no se modifica Resolume.
+
+## Capacidades transversales
+
+### Diagnóstico portable
+
+`doctor` comprueba la copia local antes de un show: estructura del repositorio,
+versión de Python, módulos base, FFmpeg/FFprobe y módulos GPU opcionales. Su
+salida distingue bloqueos (`FAIL`) de capacidades no instaladas (`WARN`) y
+genera un JSON auditable. No abre Resolume, no modifica archivos de show y no
+envía comandos a procesadores.
+
+### Planes de incidentes
+
+`incident-plan` convierte un síntoma en una secuencia segura de investigación.
+Las categorías actuales son:
+
+- `flicker`;
+- `tearing`;
+- `frames_dropped`;
+- `lost_media`;
+- `gray_black_levels`;
+- `geometry_scaling`;
+- `signal_loss`.
+
+Cada plan contiene preguntas de evidencia, hipótesis sin confirmar,
+propuestas `proposal_only` y una lista de recuperación. En particular, el caso
+de negro gris orienta a comparar PLUGE, rampa de grises, fuente de referencia
+y snapshot de procesador antes de tocar niveles o gamma.
 
 ## INSTAR — preparación del material y del destino
 
@@ -322,6 +351,8 @@ python tools/mosaik_cli.py nayade-processor reconcile --processor-observation ar
 python tools/mosaik_cli.py nayade-processor protocol --reconciliation artifacts\reconciliation.json --mapping artifacts\mapping-plan.json --report artifacts\soundcheck-protocol.json
 python tools/mosaik_cli.py nayade-processor probe-output --report artifacts\output-probe.json
 python tools/mosaik_cli.py nayade-session report artifacts\soundcheck.json --report artifacts\soundcheck-status.json
+python tools/mosaik_cli.py doctor --report artifacts\doctor.json
+python tools/mosaik_cli.py incident-plan gray_black_levels --stage soundcheck --report artifacts\incident-plan.json
 python tools/mosaik_cli.py vj-project instar artifacts\instar.json --event-id instar-001 --sequence 1 --mode projection
 python tools/mosaik_cli.py vj-project-replay artifacts\vj-project-manifest.json --report artifacts\vj-project-replay.json
 ```
