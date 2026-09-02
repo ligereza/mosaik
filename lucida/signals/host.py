@@ -310,6 +310,11 @@ class HostSignalBoundary:
     def report(self) -> dict[str, Any]:
         return self._replay.report()
 
+    def public_report(self) -> dict[str, Any]:
+        """Return the common redacted replay contract for this host boundary."""
+
+        return self._replay.public_report()
+
     def _accepted(
         self,
         signal: SignalEnvelope,

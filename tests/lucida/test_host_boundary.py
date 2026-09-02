@@ -1,4 +1,5 @@
 from lucida.replay.session import SignalEnvelope
+from lucida.replay import validate_public_report
 from lucida.signals.host import HostResult, HostSignalBoundary
 from lucida.signals.xio_bridge import ApplicationEvent, parse_application_event
 
@@ -30,6 +31,26 @@ def test_host_boundary_returns_accepted_result_without_execution():
     assert result.proposal_ids
     assert result.mode == "proposal_only"
     assert not hasattr(boundary, "execute")
+
+
+def test_host_boundary_public_report_uses_redacted_common_contract():
+    boundary = HostSignalBoundary("session-001")
+    result = boundary.receive(
+        _signal(),
+        provenance={"transport": "offline", "private_token": "must-not-share"},
+    )
+
+    public = boundary.public_report()
+    validated = validate_public_report(public)
+    serialized = str(public)
+
+    assert validated == public
+    assert public["session_id"] == "session-001"
+    assert public["event_count"] == 1
+    assert result.provenance["private_token"] == "must-not-share"
+    assert "private_token" not in serialized
+    assert "arguments" not in public["records"][0]["signal"]
+    assert "payload" not in public["records"][0]["event"]
 
 
 def test_host_boundary_classifies_unknown_transport_without_event():

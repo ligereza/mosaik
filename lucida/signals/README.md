@@ -98,6 +98,12 @@ válido es `proposal_only`. `ProposalDecisionRecorder` puede recibir un sink
 inyectado —por ejemplo `SessionReplay.record_audit`— para anexar el receipt al
 audit log sin mutar `VJProposal` ni convertirlo en una acción.
 
+`HostSignalBoundary.public_report()` y `XioEventConsumer.public_report()` exponen
+el mismo reporte público acotado de `SessionReplay`. Ambos eliminan payloads,
+argumentos de señal, metadata y provenance antes de compartir la sesión; los
+campos técnicos adicionales que aparecen en los reportes internos de XIO no se
+propagan al contrato público.
+
 ## Errores de frontera
 
 - `EnvelopeValidationError`: envelope o argumento inválido.

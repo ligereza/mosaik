@@ -3,6 +3,7 @@ from pathlib import Path
 
 import pytest
 
+from lucida.replay import validate_public_report
 from lucida.replay.session import DuplicateReplayIdError, OutOfOrderReplayError, SequenceGapError
 from lucida.signals.xio_bridge import (
     XioClockError,
@@ -95,6 +96,26 @@ def test_consumer_delivers_event_and_results_to_session_replay():
     assert received.overlay_update["cursor"]["sequence"] == 1
     assert received.overlay_update["view_digest"]
     assert received.to_dict()["overlay_update"] == received.overlay_update
+
+
+def test_xio_consumer_public_report_uses_redacted_common_contract():
+    consumer = XioEventConsumer("session-001")
+    raw = _application_event()
+    raw["payload"]["private_token"] = "must-not-share"
+    raw["provenance"]["private_token"] = "must-not-share"
+    consumer.consume(raw)
+
+    public = consumer.public_report()
+    validated = validate_public_report(public)
+    serialized = json.dumps(public, sort_keys=True)
+
+    assert validated == public
+    assert public["session_id"] == "session-001"
+    assert public["event_count"] == 1
+    assert "private_token" not in serialized
+    assert "payload" not in public["records"][0]["event"]
+    assert "arguments" not in public["records"][0]["signal"]
+    assert public["safety"]["external_side_effects"] is False
 
 
 def test_validate_xio_consume_result_accepts_generated_roundtrip():

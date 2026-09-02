@@ -507,6 +507,11 @@ class XioEventConsumer:
         report["source_app"] = "XIO"
         return report
 
+    def public_report(self) -> dict[str, Any]:
+        """Return the common redacted replay contract for this XIO consumer."""
+
+        return self._replay.public_report()
+
     @staticmethod
     def _phase_for(event: ApplicationEvent) -> str:
         candidate = event.payload.get("phase")
