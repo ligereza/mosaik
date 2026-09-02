@@ -177,6 +177,14 @@ class OscBridgeState:
             raise EnvelopeValidationError(
                 "received_count must be a non-negative integer."
             )
+        if any(previous >= current for previous, current in zip(raw_seen, raw_seen[1:])):
+            raise EnvelopeValidationError(
+                "seen_sequences must be strictly increasing."
+            )
+        if bool(raw_seen) != (last_sequence is not None):
+            raise EnvelopeValidationError(
+                "last_sequence must be present exactly when seen_sequences is non-empty."
+            )
         return cls(
             lucida_state=LucidaState.from_dict(raw_state),
             last_sequence=last_sequence,

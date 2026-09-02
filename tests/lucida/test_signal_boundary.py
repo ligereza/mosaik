@@ -68,6 +68,19 @@ def test_bridge_state_rejects_ambiguous_received_count(received_count):
         OscBridgeState.from_dict(state)
 
 
+@pytest.mark.parametrize(
+    ("seen_sequences", "last_sequence"),
+    [([2, 1], 1), ([1, 1], 1), ([1], None), ([], 1)],
+)
+def test_bridge_state_rejects_inconsistent_sequence_history(seen_sequences, last_sequence):
+    state = OscResolumeBoundary().initial_state("session-001").to_dict()
+    state["seen_sequences"] = seen_sequences
+    state["last_sequence"] = last_sequence
+
+    with pytest.raises(EnvelopeValidationError, match="sequence"):
+        OscBridgeState.from_dict(state)
+
+
 def test_sequence_out_of_order_is_rejected():
     boundary = OscResolumeBoundary()
     state = boundary.initial_state("session-001")
