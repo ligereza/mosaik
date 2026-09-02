@@ -1,6 +1,6 @@
 # ADR-003: Validacion estricta de secuencia al restaurar VJState
 
-**Estado:** Proposed  
+**Estado:** Accepted
 **Fecha:** 2026-09-01  
 **Alcance:** contrato compartido `adapters.vj`  
 
@@ -16,11 +16,10 @@ por ejemplo `true` o un texto numerico. Tambien deja que errores de tipo aparezc
 como errores de conversion en vez de un `ContractError` explicito. Un snapshot
 alterado podria entrar al adaptador con una secuencia distinta de la declarada.
 
-## Decision propuesta
+## Decision
 
-En una proxima modificacion del nucleo compartido, validar `sequence` como entero
-no negativo y excluir booleanos antes de construir `VJState`. No se debe usar
-`int(...)` para normalizar snapshots recibidos.
+Validar `sequence` como entero no negativo y excluir booleanos antes de construir
+`VJState`. No se debe usar `int(...)` para normalizar snapshots recibidos.
 
 La correccion debe incluir regresiones para booleanos, negativos, texto numerico
 y un roundtrip valido. Cualquier cambio debe conservar la compatibilidad del
@@ -31,11 +30,11 @@ estado restaurado.
 
 - Los snapshots invalidos fallaran de forma determinista en el contrato comun.
 - `LUCIDA` podra confiar en que la secuencia restaurada tiene el tipo esperado.
-- La propuesta queda separada de esta rama para no modificar el nucleo sin una
-  decision explicita sobre su compatibilidad.
+- El cambio queda cubierto por regresiones y mantiene la compatibilidad de los
+  snapshots validos y de los fixtures existentes.
 
 ## Estado actual
 
-`LUCIDA` no implementa este cambio. La frontera OSC ya rechaza de forma estricta
-`received_count`, y la regresion correspondiente esta cubierta en
-`tests/lucida/test_signal_boundary.py`.
+La validacion fue implementada en `adapters/vj/contracts/models.py` y queda
+cubierta por `tests/vj/test_adapter.py`. La frontera OSC tambien rechaza de
+forma estricta `received_count` y su historial de secuencias.

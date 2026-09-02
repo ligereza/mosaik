@@ -1,8 +1,8 @@
 # Autonomous loop state
 
 - objective: audit LUCIDA boundaries without silently changing shared core contracts
-- hito: document strict VJState sequence validation as a proposed core ADR
-- status: ADR written; no core code changed
+- hito: implement strict VJState sequence validation after confirming the incompatibility
+- status: focused verification passed; full verification pending
 - branch: LUCIDA
 - safety: documentation-only architectural proposal
-- next: verify repository and publish the ADR
+- next: run full suite and schema checks, then publish the core fix and accepted ADR

@@ -5,7 +5,8 @@ import pytest
 
 from adapters.vj import VJAdapter
 from adapters.vj.adapter import VJAdapterError
-from adapters.vj.contracts import VJEvent
+from adapters.vj.contracts import VJEvent, VJState
+from adapters.vj.contracts.models import ContractError
 from adapters.vj.replay import replay_fixture, replay_path
 
 
@@ -99,6 +100,18 @@ def test_result_must_reference_a_pending_proposal():
                 "status": "accepted",
             },
         )
+
+
+@pytest.mark.parametrize("sequence", [True, "3", -1])
+def test_state_restore_rejects_ambiguous_or_negative_sequence(sequence):
+    with pytest.raises(ContractError, match="sequence"):
+        VJState.from_dict({"session_id": "session-001", "sequence": sequence})
+
+
+def test_state_restore_keeps_valid_sequence_without_coercion():
+    state = VJState.from_dict({"session_id": "session-001", "sequence": 3})
+
+    assert state.sequence == 3
 
 
 def test_incident_proposal_only_captures_evidence():

@@ -192,11 +192,14 @@ class VJState:
         if phase not in PHASES:
             raise ContractError(f"phase desconocida: {phase}")
         results = tuple(VJResult.from_dict(item) for item in value.get("results", ()))
+        sequence = value.get("sequence", 0)
+        if isinstance(sequence, bool) or not isinstance(sequence, int) or sequence < 0:
+            raise ContractError("sequence debe ser un entero no negativo.")
         return cls(
             session_id=_required_text(value.get("session_id"), "session_id"),
             phase=phase,
             status=_required_text(value.get("status", "created"), "status"),
-            sequence=int(value.get("sequence", 0)),
+            sequence=sequence,
             last_event_id=value.get("last_event_id"),
             last_timestamp=value.get("last_timestamp"),
             checkpoint_id=value.get("checkpoint_id"),
