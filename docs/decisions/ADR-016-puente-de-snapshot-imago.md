@@ -35,6 +35,8 @@ zona horaria. El puente exige `read_only=true` y `commands_sent=false`.
   la evidencia detallada conservada por IMAGO.
 - Los cambios de fase siguen siendo validados por el contrato comun y no se
   convierten en acciones automáticas.
+- Los eventos observacionales sin tipo de ciclo conocido derivan su status de
+  la fase, para que un snapshot de cierre no quede como `active`.
 - No se ejecutan cues, Resolume, DMX, sockets ni comandos de procesadores.
 
 ## Alternativas descartadas

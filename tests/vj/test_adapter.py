@@ -86,6 +86,25 @@ def test_out_of_order_event_is_rejected():
         )
 
 
+def test_observational_event_falls_back_to_phase_status():
+    adapter = VJAdapter()
+    state = VJState(session_id="session-001", phase="show", status="showing")
+
+    state, proposals = adapter.process(
+        {
+            "event_id": "evt-001",
+            "timestamp": "2026-01-10T20:00:00Z",
+            "phase": "closure",
+            "event_type": "snapshot.observed",
+            "payload": {},
+        },
+        state,
+    )
+
+    assert state.status == "closed"
+    assert proposals == ()
+
+
 def test_result_must_reference_a_pending_proposal():
     adapter = VJAdapter()
     state = adapter.initial_state("session-001")

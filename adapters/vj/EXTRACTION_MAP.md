@@ -12,6 +12,7 @@ Esta rama conserva la identidad VJ y no implementa un core nuevo.
 | --- | --- | --- |
 | Workflow por etapas | `adapters/vj/adapter.py` | Transiciones `preflight`, `preparation`, `show`, `incident`, `recovery`, `closure` |
 | Eventos | `adapters/vj/contracts/models.py` | `VJEvent` con timestamp, fase, tipo, payload y fuente |
+| Estado observacional | `adapters/vj/adapter.py` | Eventos sin tipo de ciclo conocido derivan status desde la fase |
 | Estados | `adapters/vj/contracts/models.py` | `VJState` con secuencia, checkpoint, incidentes y resultados |
 | Propuestas | `adapters/vj/contracts/models.py` y `adapter.py` | `VJProposal`, siempre explícita, reversible y solo propuesta |
 | Checkpoints | `adapter.py` | Identificador determinista por evento relevante |
@@ -24,6 +25,7 @@ Esta rama conserva la identidad VJ y no implementa un core nuevo.
 | INSTAR report bridge | `adapters/vj/instar_input.py` | Resumen seguro de preflight convertido a evento VJ, sin rutas privadas |
 | NAYADE session bridge | `adapters/vj/nayade_input.py` | Resumen seguro de soundcheck y observacion pasiva convertido a evento VJ |
 | IMAGO show bridge | `adapters/vj/imago_input.py` | Snapshot seguro de show, incidentes, recuperacion y propuestas convertido a evento VJ |
+| Plugin bridge replay | `adapters/vj/replay/plugin_bridges.py` | Replay sintetico de las tres etapas con secuencias y efectos externos verificables |
 
 ## Adaptador VJ que entra en la capa de interfaz
 

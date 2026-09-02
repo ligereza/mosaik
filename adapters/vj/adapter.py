@@ -115,7 +115,17 @@ class VJAdapter:
             "recovery.verified": "recovered",
             "show.closed": "closed",
         }
-        return statuses.get(event.event_type, "active")
+        if event.event_type in statuses:
+            return statuses[event.event_type]
+        phase_statuses = {
+            "preflight": "ready",
+            "preparation": "ready",
+            "show": "showing",
+            "incident": "incident",
+            "recovery": "recovering",
+            "closure": "closed",
+        }
+        return phase_statuses.get(event.phase, "active")
 
     @staticmethod
     def _proposal(event: VJEvent, operation: str, reason: str, risk: str, evidence: tuple[str, ...] = ()) -> VJProposal:

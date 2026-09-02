@@ -113,6 +113,14 @@ Every proposal must still declare explicit approval, reversibility, and
 state for replay and downstream review, but never executes a cue, Resolume
 operation, recovery action, DMX message, or processor command.
 
+## Plugin bridge replay
+
+`replay_plugin_bridge_path()` replays a fictional cross-plugin sequence through
+the shared state machine: INSTAR preflight, NAYADE soundcheck, and IMAGO show,
+incident, recovery, and closure. It requires strictly increasing producer
+sequences, rejects duplicate event identifiers, and reports no external side
+effects. The fixture is synthetic and contains no media or machine paths.
+
 ## Extensión
 
 Los adaptadores concretos de medios, cues, DXV, Art-Net/DMX/sACN, LED
