@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:lucida:signals:session-replay-record",
+  "title": "Session Replay Record",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract_type",
+    "schema_version",
+    "event",
+    "signal",
+    "proposals",
+    "results",
+    "state_after",
+    "audit"
+  ],
+  "properties": {
+    "contract_type": { "const": "SessionReplayRecord" },
+    "schema_version": { "const": "0.1" },
+    "event": { "$ref": "../../../adapters/vj/contracts/event.schema.json" },
+    "signal": { "$ref": "signal-envelope.schema.json" },
+    "proposals": {
+      "type": "array",
+      "items": { "$ref": "../../../adapters/vj/contracts/proposal.schema.json" }
+    },
+    "results": {
+      "type": "array",
+      "items": { "$ref": "../../../adapters/vj/contracts/result.schema.json" }
+    },
+    "state_after": {
+      "type": "object",
+      "required": ["contract_type", "schema_version", "session_id", "vj_state"],
+      "properties": {
+        "contract_type": { "const": "LucidaState" },
+        "schema_version": { "const": "0.1" },
+        "session_id": { "type": "string", "minLength": 1 },
+        "vj_state": { "$ref": "../../../adapters/vj/contracts/state.schema.json" }
+      }
+    },
+    "audit": { "type": "object" }
+  }
+}

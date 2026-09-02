@@ -181,7 +181,22 @@ def test_xio_consume_result_schema_references_the_atomic_overlay_contract():
     assert schema["additionalProperties"] is False
     assert set(schema["required"]) == set(result)
     assert schema["properties"]["application_event"]["$ref"] == "application-event.schema.json"
+    assert schema["properties"]["vj_event"]["$ref"] == "../../../adapters/vj/contracts/event.schema.json"
+    assert schema["properties"]["signal"]["$ref"] == "signal-envelope.schema.json"
+    assert schema["properties"]["record"]["$ref"] == "session-replay-record.schema.json"
     assert schema["properties"]["overlay_update"]["$ref"] == "../../overlay/contracts/overlay-update.schema.json"
+
+
+def test_xio_result_schema_references_resolve_to_local_contracts():
+    contracts_dir = Path(__file__).parents[2] / "lucida" / "signals" / "contracts"
+    schema = json.loads(
+        (contracts_dir / "xio-consume-result.schema.json").read_text(encoding="utf-8")
+    )
+
+    for property_schema in schema["properties"].values():
+        reference = property_schema.get("$ref")
+        if reference and not reference.startswith("http"):
+            assert (contracts_dir / reference).resolve().exists(), reference
 
 
 def test_incomplete_application_event_is_rejected():
