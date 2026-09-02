@@ -1,6 +1,7 @@
 """Data contracts for the VJ adapter."""
 
 from .models import (
+    ALLOWED_NEXT_PHASES,
     PHASES,
     RESULT_STATUSES,
     VJEvent,
@@ -11,6 +12,7 @@ from .models import (
 
 __all__ = [
     "PHASES",
+    "ALLOWED_NEXT_PHASES",
     "RESULT_STATUSES",
     "VJEvent",
     "VJProposal",

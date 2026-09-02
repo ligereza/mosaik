@@ -10,22 +10,12 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any, Mapping
 
-from .contracts import VJEvent, VJProposal, VJResult, VJState
+from .contracts import ALLOWED_NEXT_PHASES, VJEvent, VJProposal, VJResult, VJState
 from .contracts.models import ContractError
 
 
 class VJAdapterError(ContractError):
     """Raised when a VJ event cannot be applied to the current state."""
-
-
-_ALLOWED_NEXT_PHASES = {
-    "preflight": {"preflight", "preparation"},
-    "preparation": {"preparation", "show"},
-    "show": {"show", "incident", "closure"},
-    "incident": {"incident", "recovery"},
-    "recovery": {"recovery", "show", "closure"},
-    "closure": {"closure"},
-}
 
 
 class VJAdapter:
@@ -110,7 +100,7 @@ class VJAdapter:
             event_time = datetime.fromisoformat(event.timestamp.replace("Z", "+00:00"))
             if event_time < current_time:
                 raise VJAdapterError("Los eventos deben llegar en orden temporal.")
-        if event.phase not in _ALLOWED_NEXT_PHASES[state.phase]:
+        if event.phase not in ALLOWED_NEXT_PHASES[state.phase]:
             raise VJAdapterError(f"Transition not allowed: {state.phase} -> {event.phase}")
         if state.status == "closed":
             raise VJAdapterError("Events cannot be processed after closure.")

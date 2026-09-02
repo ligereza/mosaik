@@ -7,7 +7,7 @@ from datetime import datetime
 import re
 from typing import Any, Mapping
 
-from .contracts import PHASES, VJEvent
+from .contracts import ALLOWED_NEXT_PHASES, PHASES, VJEvent
 from .contracts.models import ContractError
 
 
@@ -181,6 +181,11 @@ class ShowInputProjector:
             if sequence <= previous_projection.sequence or parsed_timestamp < previous_timestamp:
                 raise StaleShowInputError(
                     f"stale show input sequence {sequence} after {previous_projection.sequence}."
+                )
+            if parsed_event.phase not in ALLOWED_NEXT_PHASES[previous_projection.show_phase]:
+                raise ShowInputError(
+                    "show phase transition not allowed: "
+                    f"{previous_projection.show_phase} -> {parsed_event.phase}."
                 )
         return projection
 

@@ -20,7 +20,8 @@ provenance. It accepts the existing transport labels `osc`, `artnet`, `sacn`,
 `timecode`, `xio`, and `unknown`; protocol parsing remains outside this task.
 
 The projector rejects non-monotonic sequence or source timestamp input,
-canonicalizes provenance, and performs no state mutation, network I/O, host
+reuses the shared VJ phase transition contract, canonicalizes provenance, and
+performs no state mutation, network I/O, host
 action, proposal execution, overlay rendering, or generic reducer work.
 `adapters.vj.replay.show_input` reuses the existing fixture loader for a
 deterministic synthetic replay. `validate_show_input()` validates a received

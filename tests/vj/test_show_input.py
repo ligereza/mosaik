@@ -129,6 +129,19 @@ def test_stale_sequence_and_timestamp_are_rejected():
         projector.project(older_timestamp, current)
 
 
+def test_phase_order_reuses_vj_transition_contract():
+    projector = ShowInputProjector()
+    current = projector.project(_event(1))
+    closure = _event(2)
+    closure["phase"] = "closure"
+    closure["event_type"] = "show.closed"
+    projector.project(closure, current)
+
+    invalid = _event(3)
+    with pytest.raises(ShowInputError, match="show phase transition not allowed"):
+        projector.project(invalid, projector.project(closure, current))
+
+
 def test_stale_check_rejects_malformed_previous_projection():
     previous = ShowInputProjector().project(_event(1)).to_dict()
     previous["provenance"]["private"] = "must-reject"

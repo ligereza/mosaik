@@ -9,6 +9,14 @@ from typing import Any, Mapping
 
 PHASES = ("preflight", "preparation", "show", "incident", "recovery", "closure")
 RESULT_STATUSES = ("observed", "accepted", "rejected", "executed", "skipped", "failed")
+ALLOWED_NEXT_PHASES = {
+    "preflight": frozenset({"preflight", "preparation"}),
+    "preparation": frozenset({"preparation", "show"}),
+    "show": frozenset({"show", "incident", "closure"}),
+    "incident": frozenset({"incident", "recovery"}),
+    "recovery": frozenset({"recovery", "show", "closure"}),
+    "closure": frozenset({"closure"}),
+}
 PROPOSAL_REQUIRED_FIELDS = frozenset(
     {
         "proposal_id",
