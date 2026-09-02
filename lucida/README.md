@@ -105,7 +105,8 @@ fails without a partial update. Its contract is
 [`overlay-update.schema.json`](overlay/contracts/overlay-update.schema.json).
 
 `replay_overlay_json(source)` and `replay_overlay_path(path)` consume the
-strict `LucidaOverlayReplay` envelope, apply snapshots and deltas through
+strict `LucidaOverlayReplay` envelope, apply snapshots, deltas, and atomic
+updates through
 `OverlayConsumer`, and return a deterministic `LucidaOverlayReplayReport`.
 The replay is local and read-only; malformed records, unsafe deltas, stale
 cursors, and sequence gaps fail explicitly. The fictional fixture is
@@ -114,6 +115,8 @@ and its input contract is
 [`overlay-replay.schema.json`](overlay/contracts/overlay-replay.schema.json).
 The deterministic output contract is
 [`overlay-replay-report.schema.json`](overlay/contracts/overlay-replay-report.schema.json).
+The atomic update path is exercised by
+[`overlay-atomic-update-fictional.json`](overlay/fixtures/overlay-atomic-update-fictional.json).
 
 ## Replay y dry-run
 

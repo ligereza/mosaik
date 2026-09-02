@@ -11,6 +11,7 @@
     "record_count",
     "snapshot_count",
     "delta_count",
+    "update_count",
     "applied_delta_count",
     "operations",
     "final_view",
@@ -25,6 +26,7 @@
     "record_count": { "type": "integer", "minimum": 1 },
     "snapshot_count": { "type": "integer", "minimum": 1 },
     "delta_count": { "type": "integer", "minimum": 0 },
+    "update_count": { "type": "integer", "minimum": 0 },
     "applied_delta_count": { "type": "integer", "minimum": 0 },
     "operations": {
       "type": "array",
@@ -34,7 +36,7 @@
         "required": ["index", "kind", "sequence", "change_count", "last_operation"],
         "properties": {
           "index": { "type": "integer", "minimum": 0 },
-          "kind": { "enum": ["snapshot", "delta"] },
+          "kind": { "enum": ["snapshot", "delta", "update"] },
           "sequence": { "type": "integer", "minimum": 0 },
           "change_count": { "type": "integer", "minimum": 0, "maximum": 7 },
           "last_operation": {

@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 from typing import Any, Mapping
 
-from .overlay import OVERLAY_VIEW_SCHEMA_VERSION
+from .overlay import OVERLAY_VIEW_SCHEMA_VERSION, validate_overlay_update
 from .overlay_consumer import OverlayConsumer, OverlayConsumerError
 
 
@@ -43,13 +43,14 @@ def replay_overlay_path(path: str | Path) -> dict[str, Any]:
 
 
 def replay_overlay_records(envelope: Mapping[str, Any]) -> dict[str, Any]:
-    """Replay a strict snapshot/delta envelope into a deterministic safe report."""
+    """Replay snapshot, delta, and atomic update records safely."""
 
     records = _validated_envelope(envelope)
     consumer = OverlayConsumer()
     operations: list[dict[str, Any]] = []
     snapshot_count = 0
     delta_count = 0
+    update_count = 0
 
     for index, record in enumerate(records):
         kind = record.get("kind")
@@ -66,12 +67,18 @@ def replay_overlay_records(envelope: Mapping[str, Any]) -> dict[str, Any]:
                 )
                 snapshot_count += 1
                 change_count = 0
-            else:
+            elif kind == "delta":
                 if not consumer.state.initialized:
                     raise OverlayReplayError("the first replay record must be a snapshot.")
                 consumer.apply_delta(record["changes"], record["cursor"])
                 delta_count += 1
                 change_count = len(record["changes"])
+            else:
+                if not consumer.state.initialized:
+                    raise OverlayReplayError("the first replay record must be a snapshot.")
+                consumer.apply_update(record["update"])
+                update_count += 1
+                change_count = len(record["update"]["changes"])
         except OverlayReplayError:
             raise
         except (OverlayConsumerError, KeyError, TypeError, ValueError) as exc:
@@ -96,6 +103,7 @@ def replay_overlay_records(envelope: Mapping[str, Any]) -> dict[str, Any]:
         "record_count": len(records),
         "snapshot_count": snapshot_count,
         "delta_count": delta_count,
+        "update_count": update_count,
         "applied_delta_count": consumer.state.applied_delta_count,
         "operations": operations,
         "final_view": consumer.view,
@@ -137,6 +145,13 @@ def _validated_envelope(envelope: Mapping[str, Any]) -> list[Mapping[str, Any]]:
                 raise OverlayReplayError(f"delta record {index} has unsupported fields.")
             if not isinstance(record.get("changes"), list):
                 raise OverlayReplayError(f"delta record {index} changes must be a list.")
+        elif kind == "update":
+            if set(record) != {"kind", "update"}:
+                raise OverlayReplayError(f"update record {index} has unsupported fields.")
+            try:
+                validate_overlay_update(record["update"])
+            except ValueError as exc:
+                raise OverlayReplayError(f"update record {index} is invalid: {exc}") from exc
         else:
             raise OverlayReplayError(f"record {index} kind is invalid.")
     return records

@@ -57,6 +57,15 @@
               },
               "cursor": { "$ref": "overlay-cursor.schema.json" }
             }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["kind", "update"],
+            "properties": {
+              "kind": { "const": "update" },
+              "update": { "$ref": "overlay-update.schema.json" }
+            }
           }
         ]
       }

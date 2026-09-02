@@ -12,6 +12,7 @@ from lucida import (
     OverlayConsumerGapError,
     OverlayConsumerNotInitializedError,
     OverlayConsumerStaleError,
+    OverlayReplayError,
     OverlayUpdateError,
     build_overlay_cursor,
     build_overlay_update,
@@ -454,6 +455,58 @@ def test_overlay_json_replay_rejects_malformed_or_unsafe_streams():
         replay_overlay_json(unsafe)
 
 
+def test_overlay_json_replay_consumes_atomic_update_fixture_and_cursor_revision():
+    fixture_path = (
+        Path(__file__).parents[2]
+        / "lucida"
+        / "overlay"
+        / "fixtures"
+        / "overlay-atomic-update-fictional.json"
+    )
+    first = replay_overlay_path(fixture_path)
+    second = replay_overlay_json(fixture_path.read_text(encoding="utf-8"))
+
+    assert first == second
+    assert first["record_count"] == 2
+    assert first["snapshot_count"] == 1
+    assert first["delta_count"] == 0
+    assert first["update_count"] == 1
+    assert first["applied_delta_count"] == 1
+    assert first["operations"][-1]["kind"] == "update"
+    assert first["final_view"]["status"] == "ready"
+    assert first["final_view"]["overlay_status"] == "observing"
+    assert first["final_cursor"]["sequence"] == 1
+    assert first["safety"]["automatic_actions"] is False
+
+
+def test_overlay_json_replay_rejects_altered_atomic_payload_without_partial_report():
+    fixture_path = (
+        Path(__file__).parents[2]
+        / "lucida"
+        / "overlay"
+        / "fixtures"
+        / "overlay-atomic-update-fictional.json"
+    )
+    envelope = json.loads(fixture_path.read_text(encoding="utf-8"))
+
+    altered_view = json.loads(json.dumps(envelope, sort_keys=True))
+    altered_view["records"][1]["update"]["view"]["payload"] = {
+        "execute": "must-not-run"
+    }
+    with pytest.raises(OverlayReplayError, match="unsupported fields"):
+        replay_overlay_json(altered_view)
+
+    altered_changes = json.loads(json.dumps(envelope, sort_keys=True))
+    altered_changes["records"][1]["update"]["changes"][0]["after"] = "tampered"
+    with pytest.raises(OverlayReplayError, match="does not match"):
+        replay_overlay_json(altered_changes)
+
+    altered_cursor = json.loads(json.dumps(envelope, sort_keys=True))
+    altered_cursor["records"][1]["update"]["cursor"]["sequence"] = 2
+    with pytest.raises(OverlayReplayError, match="skips"):
+        replay_overlay_json(altered_cursor)
+
+
 def test_overlay_replay_schema_is_strict_and_references_safe_contracts():
     contracts_dir = Path(__file__).parents[2] / "lucida" / "overlay" / "contracts"
     schema = json.loads(
@@ -466,6 +519,7 @@ def test_overlay_replay_schema_is_strict_and_references_safe_contracts():
     assert variants[0]["properties"]["view"]["$ref"] == "overlay-view.schema.json"
     assert variants[0]["properties"]["cursor"]["$ref"] == "overlay-cursor.schema.json"
     assert variants[1]["properties"]["cursor"]["$ref"] == "overlay-cursor.schema.json"
+    assert variants[2]["properties"]["update"]["$ref"] == "overlay-update.schema.json"
 
 
 def test_overlay_replay_report_schema_matches_the_deterministic_output():
@@ -482,6 +536,7 @@ def test_overlay_replay_report_schema_matches_the_deterministic_output():
     assert schema["properties"]["final_cursor"]["$ref"] == "overlay-cursor.schema.json"
     assert schema["properties"]["checkpoint"]["$ref"] == "overlay-consumer-checkpoint.schema.json"
     assert report["safety"]["replay_only"] is True
+    assert report["update_count"] == 0
 
 
 def test_atomic_overlay_update_binds_view_changes_and_cursor_for_consumers():
