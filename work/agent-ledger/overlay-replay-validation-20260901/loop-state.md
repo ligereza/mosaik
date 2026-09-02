@@ -7,4 +7,5 @@
 - Milestone: public `validate_overlay_replay` added and snapshot/session checks strengthened.
 - Evidence: focused overlay suite `31 passed`.
 - Evidence: focused overlay suite `31 passed`; complete suite `107 passed`; `git diff --check` clean; overlay contracts parse; new code and ledger content pass ASCII.
-- Next: commit and push to `origin/LUCIDA`, then verify the remote tip.
+- Published: commit `98d7ee0` pushed to `origin/LUCIDA`; working tree clean; no LUCIDA test process remains active.
+- Closure: hosts can now preflight replay envelopes before applying them. Further extension should be tied to a concrete ingest or host requirement.
