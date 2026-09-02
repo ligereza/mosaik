@@ -67,6 +67,9 @@ desconocidos; nunca devuelve los valores crudos.
 La misma proyección acotada se conserva cuando el flujo pasa de NAYADE a IMAGO,
 por lo que una deriva observada durante el show sigue siendo visible sin
 convertirse en una corrección automática.
+Cuando existe drift, las propuestas de ambas etapas lo indican mediante un
+conteo acotado y la evidencia `profile-drift`; no incluyen los valores que
+cambiaron.
 
 El schema de referencia es
 [`signal-profile.schema.json`](../../schemas/signal-profile.schema.json).

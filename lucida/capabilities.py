@@ -47,6 +47,7 @@ class _BaseCapability:
     operation = ""
     risk = "low"
     expected = ""
+    profile_aware = False
 
     def supports(self, event: VJEvent) -> bool:
         return event.phase in self.phases
@@ -69,7 +70,7 @@ class _BaseCapability:
             operation=self.operation,
             reason=self._reason(event),
             risk=self.risk,
-            evidence=("lucida", self.name.lower(), "offline-observation"),
+            evidence=self._evidence(event),
         )
         return CapabilityReport(
             capability=self.name,
@@ -84,7 +85,21 @@ class _BaseCapability:
         return (f"{self.name} observed {event.event_type} in phase {event.phase}.",)
 
     def _reason(self, event: VJEvent) -> str:
+        profile_state = _profile_state(event.payload) if self.profile_aware else {}
+        if profile_state.get("profile_comparison_status") == "changed":
+            changed_count = profile_state.get("profile_changed_count", 0)
+            return (
+                f"Suggest a {self.name} review because the signal profile differs "
+                f"from its baseline in {changed_count} bounded field(s)."
+            )
         return f"Suggest a {self.name} review based on event {event.event_id}."
+
+    def _evidence(self, event: VJEvent) -> tuple[str, ...]:
+        evidence = ["lucida", self.name.lower(), "offline-observation"]
+        profile_state = _profile_state(event.payload) if self.profile_aware else {}
+        if profile_state.get("profile_comparison_status") == "changed":
+            evidence.append("profile-drift")
+        return tuple(evidence)
 
     def _state(self, payload: dict[str, Any]) -> dict[str, Any]:
         return {"payload_status": payload.get("status", "unknown")}
@@ -116,6 +131,7 @@ class NayadeCapability(_BaseCapability):
     operation = "review-soundcheck-signal"
     risk = "medium"
     expected = "The operator confirms signal, geometry, and color without writing to the processor."
+    profile_aware = True
 
     def _state(self, payload: dict[str, Any]) -> dict[str, Any]:
         state = {
@@ -133,6 +149,7 @@ class ImagoCapability(_BaseCapability):
     phases = ("show", "incident", "recovery", "closure")
     operation = "review-live-visual-state"
     expected = "El operador confirma la propuesta o registra el resultado observado."
+    profile_aware = True
 
     def _state(self, payload: dict[str, Any]) -> dict[str, Any]:
         return {

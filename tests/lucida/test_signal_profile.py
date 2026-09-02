@@ -218,6 +218,10 @@ def test_nayade_projects_profile_drift_metrics():
     assert nayade["state"]["profile_changed_count"] == 1
     assert nayade["state"]["profile_confidence_drop_count"] == 0
     assert nayade["state"]["profile_unknown_delta"] == 0
+    proposal = next(item for item in state.proposals if item.proposal_id == "lucida-nayade-evt-profile-drift")
+    assert "1 bounded field(s)" in proposal.reason
+    assert "profile-drift" in proposal.evidence
+    assert "limited" not in json.dumps(proposal.to_dict())
 
 
 def test_imago_preserves_profile_drift_metrics_for_show():
@@ -257,3 +261,7 @@ def test_imago_preserves_profile_drift_metrics_for_show():
     assert imago["state"]["profile_comparison_status"] == "changed"
     assert imago["state"]["profile_changed_count"] == 1
     assert "limited" not in json.dumps(overlay)
+    proposal = next(item for item in state.proposals if item.proposal_id == "lucida-imago-evt-show-profile-drift")
+    assert "1 bounded field(s)" in proposal.reason
+    assert "profile-drift" in proposal.evidence
+    assert "limited" not in json.dumps(proposal.to_dict())
