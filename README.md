@@ -25,6 +25,7 @@ python .\tools\mosaik_cli.py nayade-session init ".\artifacts\venue-geometry-tes
 python .\tools\mosaik_cli.py nayade-session init ".\artifacts\venue-geometry-testcard.json" --output ".\artifacts\venue-soundcheck-with-protocol.json" --protocol ".\artifacts\soundcheck-protocol.json"
 python .\tools\mosaik_cli.py nayade-session report ".\artifacts\venue-soundcheck-with-protocol.json" --report ".\artifacts\soundcheck-status.json"
 python .\tools\mosaik_cli.py resolume-cues "D:\VJ\Shows\show.avc" --report ".\artifacts\cues.json"
+python .\tools\mosaik_cli.py instar-cue-plan ".\artifacts\clip-profile.json" --report ".\artifacts\cue-plan.json"
 python .\tools\mosaik_cli.py nayade-processor catalog
 python .\tools\mosaik_cli.py nayade-processor discover --report ".\artifacts\processor-discovery.json"
 python .\tools\mosaik_cli.py nayade-processor validate-case ".\data\cases\soundcheck-2026-08-29-vc2.json"

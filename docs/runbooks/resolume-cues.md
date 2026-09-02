@@ -12,6 +12,15 @@ python .\tools\mosaik_cli.py resolume-cues "C:\ruta\show.avc" `
   --report ".\artifacts\resolume-cues.json"
 ```
 
+Si primero se analizaron los clips con INSTAR, el mapa de candidatos puede
+organizarse en los seis slots de Resolume sin editar el showfile:
+
+```powershell
+python .\tools\mosaik_cli.py instar-cue-plan `
+  ".\artifacts\clip-profile.json" `
+  --report ".\artifacts\cue-plan.json"
+```
+
 El resultado es un `ResolumeCueMap` con:
 
 - clip, nombre, capa y columna;
@@ -32,6 +41,10 @@ añadirá después con revisión humana o con el análisis de NAYADE.
 Los CUES son posiciones dentro del clip. No son una ventana de seguridad, no
 reemplazan la transición de capa y no modifican el movimiento de un efecto.
 El futuro gap de preparación deberá implementarse como una capa STAGE separada.
+
+El plan asigna `Position1` a `Position6` sólo como propuesta revisable. Un
+loop usa dos posiciones (`in` y `out`) y una ventana de strobe conserva su
+inicio; ninguna de estas sugerencias activa un efecto por sí sola.
 
 ## Seguridad
 

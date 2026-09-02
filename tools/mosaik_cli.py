@@ -56,6 +56,7 @@ from mosaik.reconcile import (
     reconciliation_text_report,
 )
 from mosaik.protocol import build_soundcheck_protocol, protocol_text_report
+from mosaik.cue_plan import build_cue_plan, cue_plan_text_report, write_cue_plan
 from mosaik.resolume import (
     advanced_output_text_report,
     build_mapping_plan,
@@ -192,6 +193,13 @@ def build_parser() -> argparse.ArgumentParser:
     )
     cues.add_argument("composition", help="Archivo .avc de Resolume.")
     cues.add_argument("--report", help="Ruta opcional para guardar el mapa JSON de cues.")
+
+    cue_plan = commands.add_parser(
+        "instar-cue-plan",
+        help="Organiza candidatos CUE de uno o más perfiles INSTAR en seis slots revisables.",
+    )
+    cue_plan.add_argument("profiles", nargs="+", help="Perfiles ClipProfile JSON generados por INSTAR.")
+    cue_plan.add_argument("--report", help="Ruta opcional para guardar el plan JSON.")
 
     mapping = commands.add_parser(
         "instar-map",
@@ -539,6 +547,15 @@ def main(argv: list[str] | None = None) -> int:
             if args.report:
                 report_path = write_cue_map(cue_map, args.report)
                 print(f"\nMapa JSON: {report_path}")
+            return 0
+
+        if args.command == "instar-cue-plan":
+            profiles = [load_project_document(path) for path in args.profiles]
+            plan = build_cue_plan(profiles)
+            print(cue_plan_text_report(plan))
+            if args.report:
+                report_path = write_cue_plan(plan, args.report)
+                print(f"\nPlan JSON: {report_path}")
             return 0
 
         if args.command in {"instar-map", "resolume-output"}:

@@ -258,3 +258,34 @@ def test_nayade_session_report_cli_writes_bounded_status(tmp_path, capsys):
     assert report["next_step"]["pattern"] == "pluge_near_black"
     assert "private" not in report_path.read_text(encoding="utf-8")
     assert "riesgos: 1" in capsys.readouterr().out
+
+
+def test_instar_cue_plan_cli_writes_six_slot_plan(tmp_path, capsys):
+    profile_path = tmp_path / "clip-profile.json"
+    report_path = tmp_path / "cue-plan.json"
+    profile_path.write_text(
+        json.dumps(
+            {
+                "profile_type": "ClipProfile",
+                "profile_id": "clip-cli-001",
+                "source": {"filename": "visual.mp4"},
+                "technical": {"video": {"duration_seconds": 8}},
+                "events": {
+                    "cue_suggestions": {
+                        "cues": [
+                            {"id": "change-01", "role": "change", "style": "clean", "position_s": 1.5, "confidence": 0.8}
+                        ]
+                    }
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    exit_code = main(["instar-cue-plan", str(profile_path), "--report", str(report_path)])
+
+    assert exit_code == 0
+    plan = json.loads(report_path.read_text(encoding="utf-8"))
+    assert plan["plan_type"] == "InstarResolumeCuePlan"
+    assert len(plan["profiles"][0]["slots"]) == 6
+    assert "Position1" in capsys.readouterr().out

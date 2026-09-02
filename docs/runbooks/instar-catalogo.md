@@ -58,6 +58,22 @@ Las posiciones se expresan en segundos y milisegundos para facilitar una
 futura asociación con los seis slots de CUE de Resolume. INSTAR no escribe
 estos puntos en el `.avc`, no cambia el transporte y no activa efectos.
 
+Para convertir los candidatos de uno o más `ClipProfile` en una disposición
+revisable de los seis slots:
+
+```powershell
+python .\tools\mosaik_cli.py instar-cue-plan `
+  ".\artifacts\clip-profile.json" `
+  --report ".\artifacts\cue-plan.json"
+```
+
+La política reserva `Position1` para el mejor cambio limpio, `Position2` para
+impacto, `Position3` para el inicio de una ventana de strobe, `Position4` y
+`Position5` para los extremos del mejor loop, y `Position6` para el candidato
+restante con mayor confianza. Un slot sin evidencia queda vacío y los CUES
+sobrantes se conservan como `unassigned_candidates`. El resultado es un plan
+`review_required`; el `.avc` permanece intacto.
+
 El perfil `visual.behavior` es el contrato que consume NAYADE. Separa señales
 espaciales medidas en GPU de inferencias débiles basadas en nombre, movimiento
 y continuidad. Incluye `pattern.horizontal`, `pattern.vertical`,

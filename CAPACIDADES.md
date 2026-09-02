@@ -305,6 +305,7 @@ python tools/mosaik_cli.py instar "D:\VJ\Media" --report artifacts\instar.json
 python tools/mosaik_cli.py instar "D:\VJ\Media" --deep --gpu
 python tools/mosaik_cli.py dxv "D:\VJ\Media\clip.mp4" --fps 60
 python tools/mosaik_cli.py resolume-cues "D:\VJ\Shows\show.avc" --report artifacts\cues.json
+python tools/mosaik_cli.py instar-cue-plan artifacts\clip-profile.json --report artifacts\cue-plan.json
 python tools/mosaik_cli.py instar-map "D:\VJ\Shows\advanced-output.xml" --report artifacts\mapping.json
 python tools/mosaik_cli.py instar-testcard "D:\VJ\Shows\advanced-output.xml" --output artifacts\testcard.mp4
 python tools/mosaik_cli.py nayade-session init artifacts\testcard.json --output artifacts\soundcheck.json
