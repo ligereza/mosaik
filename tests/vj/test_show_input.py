@@ -9,6 +9,7 @@ from adapters.vj import (
     ShowInputError,
     ShowInputProjector,
     StaleShowInputError,
+    project_osc_show_input,
     validate_show_input,
 )
 from adapters.vj.replay import replay_show_input_path
@@ -55,6 +56,34 @@ def test_projection_reuses_osc_normalization_and_exposes_only_bounded_metadata()
     assert projection["provenance"] == {"source": "osc:fixture", "transport": "osc"}
     assert "address" not in json.dumps(projection)
     assert "arguments" not in json.dumps(projection)
+
+
+def test_project_osc_helper_reuses_existing_boundary_without_transport():
+    projection = project_osc_show_input(
+        {
+            "address": "/composition/1/layer/1/clip/1/connect",
+            "arguments": [1],
+            "timestamp": "2026-09-02T22:00:00Z",
+            "sequence": 3,
+            "source": "fixture",
+        }
+    )
+
+    assert projection["show_state"] == "showing"
+    assert projection["provenance"] == {"source": "osc:fixture", "transport": "osc"}
+
+
+def test_project_osc_helper_wraps_invalid_boundary_input():
+    with pytest.raises(ShowInputError, match="OSC input invalid"):
+        ShowInputProjector().project_osc(
+            {
+                "address": "/not-a-supported-route",
+                "arguments": [],
+                "timestamp": "2026-09-02T22:00:00Z",
+                "sequence": 1,
+                "source": "fixture",
+            }
+        )
 
 
 def test_synthetic_replay_is_deterministic_and_preserves_phase_and_order():

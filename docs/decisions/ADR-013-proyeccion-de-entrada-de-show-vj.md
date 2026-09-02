@@ -25,6 +25,8 @@ action, proposal execution, overlay rendering, or generic reducer work.
 `adapters.vj.replay.show_input` reuses the existing fixture loader for a
 deterministic synthetic replay. `validate_show_input()` validates a received
 projection without constructing or running the generic reducer.
+`project_osc_show_input()` composes the existing OSC normalizer with the same
+projection and wraps invalid OSC boundary input without opening transport.
 
 ## Options considered
 

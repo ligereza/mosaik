@@ -62,6 +62,8 @@ metadata a future LUCIDA reducer needs: `show_state`, `show_phase`, an optional
 Existing `OscResolumeBoundary.normalize()` can provide the event; `artnet`,
 `sacn`, and `timecode` are accepted as transport labels without opening a
 socket or implementing a protocol parser here.
+`project_osc_show_input()` is the convenience path that calls the existing OSC
+normalizer and then applies the same bounded projection.
 
 The projector rejects stale sequence or timestamp input and never mutates a
 `VJState`, creates a host action, or executes a `VJProposal`. Its replay helper

@@ -184,6 +184,21 @@ class ShowInputProjector:
                 )
         return projection
 
+    def project_osc(
+        self,
+        envelope: Any,
+        previous: ShowInputProjection | Mapping[str, Any] | None = None,
+    ) -> ShowInputProjection:
+        """Normalize one existing OSC envelope and project it without opening a socket."""
+
+        from lucida.signals import OscResolumeBoundary
+
+        try:
+            event = OscResolumeBoundary().normalize(envelope)
+        except ValueError as exc:
+            raise ShowInputError(f"OSC input invalid: {exc}") from exc
+        return self.project(event, previous)
+
     @staticmethod
     def _from_projection_dict(value: Mapping[str, Any]) -> ShowInputProjection:
         if not isinstance(value, Mapping):
@@ -253,6 +268,15 @@ def project_show_input(
     """Return one safe show input projection for a reducer or replay."""
 
     return ShowInputProjector().project(event, previous).to_dict()
+
+
+def project_osc_show_input(
+    envelope: Any,
+    previous: ShowInputProjection | Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Normalize and project one existing OSC envelope for a future reducer."""
+
+    return ShowInputProjector().project_osc(envelope, previous).to_dict()
 
 
 def validate_show_input(value: Mapping[str, Any]) -> dict[str, Any]:
