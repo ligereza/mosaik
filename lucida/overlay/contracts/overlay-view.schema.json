@@ -53,7 +53,13 @@
               "media_status": { "type": ["string", "number", "boolean", "null"] },
               "signal_status": { "type": ["string", "number", "boolean", "null"] },
               "show_status": { "type": ["string", "number", "boolean", "null"] },
-              "recovery_status": { "type": ["string", "number", "boolean", "null"] }
+              "recovery_status": { "type": ["string", "number", "boolean", "null"] },
+              "profile_status": { "type": ["string", "null"] },
+              "profile_stage": { "type": ["string", "null"] },
+              "profile_unknown_count": { "type": ["integer", "null"], "minimum": 0 },
+              "profile_inferred_count": { "type": ["integer", "null"], "minimum": 0 },
+              "profile_min_confidence": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+              "processor_read_only": { "type": ["boolean", "null"] }
             }
           },
           "observed_count": { "type": "integer", "minimum": 0 },

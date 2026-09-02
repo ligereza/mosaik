@@ -58,6 +58,9 @@ e `IMAGO`. Conserva cada dato como `declared`, `observed`, `inferred` o
 `unknown`, junto con su confianza y fuente. `validate_signal_profile()` sólo
 valida y devuelve una copia canónica; no identifica módulos, no infiere un
 procesador desde HDMI y no escribe en hardware.
+`summarize_signal_profile()` expone a NAYADE únicamente métricas acotadas para
+el overlay: validez, etapa, conteos de desconocidos/inferidos, confianza mínima
+y modo read-only del procesador.
 
 El schema de referencia es
 [`signal-profile.schema.json`](../../schemas/signal-profile.schema.json).

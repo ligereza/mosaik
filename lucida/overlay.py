@@ -91,6 +91,12 @@ _SAFE_STATE_KEYS = (
     "signal_status",
     "show_status",
     "recovery_status",
+    "profile_status",
+    "profile_stage",
+    "profile_unknown_count",
+    "profile_inferred_count",
+    "profile_min_confidence",
+    "processor_read_only",
 )
 
 

@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 from jsonschema import Draft202012Validator
 
+from lucida import LucidaOrchestrator
 from lucida.signals import SignalProfileError, validate_signal_profile
 
 
@@ -118,3 +119,53 @@ def test_signal_profile_matches_public_schema():
     errors = list(Draft202012Validator(schema).iter_errors(instance))
 
     assert errors == []
+
+
+def test_nayade_projects_only_safe_signal_profile_metrics():
+    state = LucidaOrchestrator().initial_state("session-001")
+    state = LucidaOrchestrator().propose(
+        {
+            "event_id": "evt-soundcheck",
+            "timestamp": "2026-01-10T20:00:00Z",
+            "phase": "preparation",
+            "event_type": "soundcheck.profile",
+            "payload": {
+                "signal_status": "stable",
+                "processor_status": "observed",
+                "signal_profile": _profile(),
+            },
+        },
+        state,
+    )
+
+    overlay = LucidaOrchestrator().read_overlay(state)
+    nayade = next(item for item in overlay["capabilities"] if item["capability"] == "NAYADE")
+
+    assert nayade["state"]["profile_status"] == "valid"
+    assert nayade["state"]["profile_stage"] == "NAYADE"
+    assert nayade["state"]["profile_unknown_count"] == 2
+    assert nayade["state"]["profile_inferred_count"] == 0
+    assert nayade["state"]["profile_min_confidence"] == 0.0
+    assert nayade["state"]["processor_read_only"] is True
+    assert "1920x1080" not in json.dumps(overlay)
+
+
+def test_nayade_marks_malformed_signal_profile_without_failing_the_event():
+    profile = _profile()
+    del profile["source"]["fps"]
+    state = LucidaOrchestrator().initial_state("session-001")
+    state = LucidaOrchestrator().propose(
+        {
+            "event_id": "evt-invalid-profile",
+            "timestamp": "2026-01-10T20:00:00Z",
+            "phase": "preparation",
+            "event_type": "soundcheck.profile",
+            "payload": {"signal_profile": profile},
+        },
+        state,
+    )
+
+    overlay = LucidaOrchestrator().read_overlay(state)
+    nayade = next(item for item in overlay["capabilities"] if item["capability"] == "NAYADE")
+
+    assert nayade["state"]["profile_status"] == "invalid"

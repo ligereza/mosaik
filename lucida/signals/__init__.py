@@ -17,6 +17,7 @@ from .profile import (
     SignalFact,
     SignalProfile,
     SignalProfileError,
+    summarize_signal_profile,
     validate_signal_profile,
 )
 
@@ -57,6 +58,7 @@ __all__ = [
     "SignalFact",
     "SignalProfile",
     "SignalProfileError",
+    "summarize_signal_profile",
     "validate_signal_profile",
     "ApplicationEvent",
     "XioClockError",

@@ -86,10 +86,19 @@ class NayadeCapability(_BaseCapability):
     expected = "The operator confirms signal, geometry, and color without writing to the processor."
 
     def _state(self, payload: dict[str, Any]) -> dict[str, Any]:
-        return {
+        from .signals.profile import SignalProfileError, summarize_signal_profile
+
+        state = {
             "signal_status": payload.get("signal_status", payload.get("status", "unknown")),
             "processor_status": payload.get("processor_status", "unknown"),
         }
+        profile = payload.get("signal_profile")
+        if profile is not None:
+            try:
+                state.update(summarize_signal_profile(profile))
+            except SignalProfileError:
+                state["profile_status"] = "invalid"
+        return state
 
 
 class ImagoCapability(_BaseCapability):

@@ -274,8 +274,29 @@ class SignalProfile:
             result["evidence"] = [item.to_dict() for item in self.evidence]
         return result
 
+    def safe_summary(self) -> dict[str, Any]:
+        """Return bounded metrics suitable for a read-only capability overlay."""
+
+        facts = [*self.source.values(), *self.capture.values(), *self.house.values()]
+        facts.extend((self.processor["vendor"], self.processor["model"]))
+        return {
+            "profile_status": "valid",
+            "profile_stage": self.stage,
+            "profile_unknown_count": sum(fact.origin == "unknown" for fact in facts),
+            "profile_inferred_count": sum(fact.origin == "inferred" for fact in facts),
+            "profile_min_confidence": min(fact.confidence for fact in facts),
+            "processor_read_only": self.processor["read_only"],
+        }
+
 
 def validate_signal_profile(value: Mapping[str, Any]) -> dict[str, Any]:
     """Validate and return a detached canonical signal profile mapping."""
 
     return SignalProfile.from_dict(value).to_dict()
+
+
+def summarize_signal_profile(value: SignalProfile | Mapping[str, Any]) -> dict[str, Any]:
+    """Validate a profile and return only safe metrics for capability state."""
+
+    profile = value if isinstance(value, SignalProfile) else SignalProfile.from_dict(value)
+    return profile.safe_summary()
