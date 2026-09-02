@@ -24,6 +24,7 @@ _XIO_EXPORTS = {
     "convert_application_event",
     "consume_application_event",
     "parse_application_event",
+    "validate_xio_consume_result",
 }
 
 
@@ -55,6 +56,7 @@ __all__ = [
     "convert_application_event",
     "consume_application_event",
     "parse_application_event",
+    "validate_xio_consume_result",
     "replay_fixture",
     "replay_path",
 ]

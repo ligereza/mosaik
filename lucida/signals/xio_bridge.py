@@ -16,6 +16,7 @@ from .xio import (
     XioSchemaError,
     replay_fixture,
     replay_path,
+    validate_xio_consume_result,
 )
 
 
@@ -54,4 +55,5 @@ __all__ = [
     "parse_application_event",
     "replay_fixture",
     "replay_path",
+    "validate_xio_consume_result",
 ]

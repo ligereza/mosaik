@@ -44,6 +44,9 @@ LUCIDA sin copiar payload ni provenance de XIO al overlay.
 El resultado serializable está descrito por
 [`xio-consume-result.schema.json`](contracts/xio-consume-result.schema.json),
 que referencia el contrato común de `overlay_update`.
+`validate_xio_consume_result()` permite validar ese resultado en runtime antes
+de aceptarlo, comprobando también la identidad y secuencia entre XIO, replay,
+signal y overlay.
 
 ## Host result receipt
 

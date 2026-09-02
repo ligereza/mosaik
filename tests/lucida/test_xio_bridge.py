@@ -11,6 +11,7 @@ from lucida.signals.xio_bridge import (
     convert_application_event,
     parse_application_event,
     replay_path,
+    validate_xio_consume_result,
 )
 
 
@@ -94,6 +95,31 @@ def test_consumer_delivers_event_and_results_to_session_replay():
     assert received.overlay_update["cursor"]["sequence"] == 1
     assert received.overlay_update["view_digest"]
     assert received.to_dict()["overlay_update"] == received.overlay_update
+
+
+def test_validate_xio_consume_result_accepts_generated_roundtrip():
+    result = XioEventConsumer("session-001").consume(_application_event()).to_dict()
+
+    validated = validate_xio_consume_result(result)
+
+    assert validated == result
+    assert validated is not result
+
+
+def test_validate_xio_consume_result_rejects_cross_contract_sequence_tampering():
+    result = XioEventConsumer("session-001").consume(_application_event()).to_dict()
+    result["overlay_update"]["cursor"]["sequence"] = 2
+
+    with pytest.raises(XioSchemaError, match="overlay_update position"):
+        validate_xio_consume_result(result)
+
+
+def test_validate_xio_consume_result_rejects_invalid_overlay_digest():
+    result = XioEventConsumer("session-001").consume(_application_event()).to_dict()
+    result["overlay_update"]["view_digest"] = "0" * 64
+
+    with pytest.raises(XioSchemaError, match="view_digest"):
+        validate_xio_consume_result(result)
 
 
 def test_xio_consumer_exposes_bounded_overlay_and_revision_cursor():
