@@ -87,6 +87,9 @@ def test_build_nayade_event_whitelists_session_and_processor_evidence():
     assert soundcheck["slice_count"] == 2
     assert soundcheck["input_group_count"] == 1
     assert soundcheck["event_results"] == {"approved": 1}
+    assert soundcheck["readiness"]["status"] == "REVIEW"
+    assert soundcheck["readiness"]["risk_steps"] == [{"step_id": "step-002", "status": "review"}]
+    assert soundcheck["readiness"]["next_step"]["step_id"] == "step-002"
     assert soundcheck["processor"]["model"] == "VX600"
     assert soundcheck["processor"]["module_profile"]["pixel_pitch_mm"] == 2.6
     serialized = json.dumps(event.to_dict())

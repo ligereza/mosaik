@@ -23,7 +23,7 @@ Esta rama conserva la identidad VJ y no implementa un core nuevo.
 | Replay de sesión | `adapters/vj/replay/engine.py` | Replay determinista sin efectos externos |
 | Show input projection | `adapters/vj/show_input.py` | Proyección acotada de fase, estado, preview, secuencia y provenance |
 | INSTAR report bridge | `adapters/vj/instar_input.py` | Resumen seguro de preflight convertido a evento VJ, sin rutas privadas |
-| NAYADE session bridge | `adapters/vj/nayade_input.py` | Resumen seguro de soundcheck y observacion pasiva convertido a evento VJ |
+| NAYADE session bridge | `adapters/vj/nayade_input.py` | Resumen seguro de soundcheck, readiness y observacion pasiva convertido a evento VJ |
 | IMAGO show bridge | `adapters/vj/imago_input.py` | Snapshot seguro de show, incidentes, recuperacion y propuestas convertido a evento VJ |
 | Plugin bridge replay | `adapters/vj/replay/plugin_bridges.py` | Replay sintetico de las tres etapas con secuencias y efectos externos verificables |
 

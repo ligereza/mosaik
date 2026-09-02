@@ -148,6 +148,72 @@ def _result_counts(values: list[Mapping[str, Any]]) -> dict[str, int]:
     return counts
 
 
+def _readiness_summary(planned_steps: list[Mapping[str, Any]]) -> dict[str, Any]:
+    """Project only the bounded readiness cursor needed by downstream stages."""
+
+    actionable_results = {"planned", "running", "review", "rejected"}
+    risks: list[dict[str, str]] = []
+    pending = [step for step in planned_steps if step.get("result") == "planned"]
+    pending_required = [
+        step for step in pending
+        if isinstance(step.get("parameters"), Mapping)
+        and step["parameters"].get("priority") == "required"
+    ]
+    for index, step in enumerate(planned_steps):
+        result = _ascii_text(step.get("result", "unknown"), f"planned_steps[{index}].result")
+        if result in {"running", "review", "rejected"}:
+            step_id = _identifier(step.get("step_id"), f"planned_steps[{index}].step_id")
+            risks.append({"step_id": step_id, "status": result})
+
+    if any(item["status"] == "rejected" for item in risks):
+        status = "BLOCKED"
+    elif risks or pending_required:
+        status = "REVIEW"
+    elif pending:
+        status = "INCOMPLETE"
+    else:
+        status = "READY"
+
+    next_step = None
+    for index, step in enumerate(planned_steps):
+        result = _ascii_text(step.get("result", "unknown"), f"planned_steps[{index}].result")
+        if result not in actionable_results:
+            continue
+        step_id = _identifier(step.get("step_id"), f"planned_steps[{index}].step_id")
+        operation = _ascii_text(step.get("operation", "unknown"), f"planned_steps[{index}].operation")
+        scope = _ascii_text(step.get("scope", "unknown"), f"planned_steps[{index}].scope")
+        parameters = step.get("parameters") or {}
+        if not isinstance(parameters, Mapping):
+            raise NayadeInputError(f"planned_steps[{index}].parameters must be an object.")
+        pattern = parameters.get("pattern")
+        if pattern is not None:
+            pattern = _identifier(pattern, f"planned_steps[{index}].parameters.pattern")
+        priority = _ascii_text(parameters.get("priority", "unclassified"), f"planned_steps[{index}].parameters.priority")
+        checks = step.get("expected_checks", [])
+        if not isinstance(checks, list):
+            raise NayadeInputError(f"planned_steps[{index}].expected_checks must be a list.")
+        next_step = {
+            "step_id": step_id,
+            "operation": operation,
+            "scope": scope,
+            "pattern": pattern,
+            "priority": priority,
+            "expected_checks": [
+                _identifier(value, f"planned_steps[{index}].expected_checks") for value in checks[:12]
+            ],
+            "result": result,
+        }
+        break
+    return {
+        "status": status,
+        "pending_count": len(pending),
+        "pending_required_count": len(pending_required),
+        "risk_count": len(risks),
+        "risk_steps": risks,
+        "next_step": next_step,
+    }
+
+
 def _session_payload(session: Mapping[str, Any], processor_observation: Any) -> dict[str, Any]:
     planned_steps = session.get("planned_steps")
     events = session.get("events")
@@ -211,6 +277,7 @@ def _session_payload(session: Mapping[str, Any], processor_observation: Any) -> 
         "event_count": len(events),
         "event_results": _result_counts([item for item in events]),
         "events": event_summary,
+        "readiness": _readiness_summary([item for item in planned_steps]),
         "processor": _processor_summary(processor_observation),
     }
 

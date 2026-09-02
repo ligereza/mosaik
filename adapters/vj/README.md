@@ -91,7 +91,7 @@ FFmpeg, Resolume, or any transport.
 
 `build_nayade_event()` converts a NAYADE session into a `preparation` event.
 It keeps counts and bounded summaries for slices, input groups, planned steps,
-operator results, signal facts, and the passive processor observation. A
+operator results, readiness, signal facts, and the passive processor observation. A
 processor observation must explicitly declare `read_only=true` and
 `commands_sent=false`; USB, serial, Ethernet, HDMI, and manual are recorded as
 facts only. Private source fields, notes, evidence text, and arbitrary payloads
