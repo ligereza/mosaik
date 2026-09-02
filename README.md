@@ -17,10 +17,14 @@ Set-ExecutionPolicy -Scope Process Bypass
 
 python .\tools\mosaik_cli.py diagnose "D:\VJ\Media\clip.mp4" --report ".\artifacts\clip-report.json"
 python .\tools\mosaik_cli.py dxv "D:\VJ\Media\clip.mp4" --fps 60
+python .\tools\validate_schema_graph.py
 ```
 
 Los scripts solo leen el estado del equipo y muestran advertencias; no cambian el plan de
 energía, BIOS, controladores, archivos ni configuraciones de Resolume.
+
+`validate_schema_graph.py` comprueba el registry local de contratos y sus referencias sin
+red. Para validar una instancia JSON concreta, agrega `--schema` y `--instance`.
 
 ## Estructura
 
