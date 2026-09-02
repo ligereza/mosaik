@@ -28,6 +28,7 @@ python .\tools\mosaik_cli.py nayade-processor discover --report ".\artifacts\pro
 python .\tools\validate_schema_graph.py
 python .\tools\mosaik_cli.py vj-replay ".\adapters\vj\replay\fixtures\plugin-bridges-fictional.json" --report ".\artifacts\vj-replay.json"
 python .\tools\mosaik_cli.py vj-project instar ".\artifacts\instar.json" --event-id instar-001 --sequence 1 --mode projection --output ".\artifacts\instar-input.json"
+python .\tools\mosaik_cli.py vj-project-replay ".\artifacts\vj-project-manifest.json" --report ".\artifacts\vj-project-replay.json"
 ```
 
 ## Dependencias
@@ -193,6 +194,10 @@ hardware.
 un evento canonico o en una proyeccion acotada. La secuencia la entrega el
 operador/orquestador y `--previous` permite rechazar saltos de fase. El modo
 `projection` no copia rutas privadas ni ejecuta acciones.
+
+`vj-project-replay` encadena un manifest con rutas de reportes de las tres
+etapas y devuelve un replay determinista. Las rutas se usan sólo como entrada
+y no se incluyen en el reporte generado.
 
 ### NAYADE y procesadores LED
 

@@ -126,6 +126,11 @@ bridges without requiring Python imports. Use `--mode event` to emit the
 canonical event or `--mode projection` to emit the bounded show-input view;
 `--previous` enables phase-order validation.
 
+For a complete session assembled from real report files, use
+`vj-project-replay` with a manifest containing `stage`, `event_id`, `sequence`,
+`input`, and the optional `processor_observation` path for NAYADE. Relative
+paths are resolved from the manifest directory and never appear in the output.
+
 ## Extensión
 
 Los adaptadores concretos de medios, cues, DXV, Art-Net/DMX/sACN, LED
