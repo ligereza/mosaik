@@ -6,5 +6,6 @@
 - Scope: schema reference resolution and tests only; no transport, host, GUI, GPU, or automatic actions.
 - Observed issue: relative refs under URN `$id` values failed with `jsonschema` before instance validation.
 - Method change: normalize the XIO graph and its overlay-update dependency to registered URN IDs.
-- Evidence pending: focused tests, registry validation, full suite, commit, push, and process check.
-- Next action: run tests and validate a generated XIO result with all referenced schemas registered by `$id`.
+- Evidence: focused suite `49 passed`; complete suite `116 passed`; generated XIO result returned `jsonschema-valid` with a local `$id` registry; `git diff --check` clean.
+- Published: commit `291fd67` pushed to `origin/LUCIDA`; process check pending closure.
+- Closure: XIO schema references are now registry-resolvable and do not require network or path-based resolution during a show.
