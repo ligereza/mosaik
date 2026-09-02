@@ -168,11 +168,20 @@ class OscBridgeState:
         raw_metadata = value.get("metadata")
         if raw_metadata is not None and not isinstance(raw_metadata, Mapping):
             raise EnvelopeValidationError("metadata must be an object.")
+        received_count = value.get("received_count", 0)
+        if (
+            isinstance(received_count, bool)
+            or not isinstance(received_count, int)
+            or received_count < 0
+        ):
+            raise EnvelopeValidationError(
+                "received_count must be a non-negative integer."
+            )
         return cls(
             lucida_state=LucidaState.from_dict(raw_state),
             last_sequence=last_sequence,
             seen_sequences=tuple(raw_seen),
-            received_count=int(value.get("received_count", 0)),
+            received_count=received_count,
             metadata=dict(raw_metadata or {}),
         )
 

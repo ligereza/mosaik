@@ -6,6 +6,7 @@ import pytest
 from lucida.signals import (
     DuplicateEnvelopeError,
     EnvelopeValidationError,
+    OscBridgeState,
     OscEnvelope,
     OscResolumeBoundary,
     SequenceOrderError,
@@ -56,6 +57,15 @@ def test_unknown_address_is_rejected():
 def test_invalid_arguments_are_rejected():
     with pytest.raises(EnvelopeValidationError, match="unsupported type"):
         OscEnvelope.from_dict({**_envelope(1), "arguments": [{"not": "scalar"}]})
+
+
+@pytest.mark.parametrize("received_count", [True, -1, "1"])
+def test_bridge_state_rejects_ambiguous_received_count(received_count):
+    state = OscResolumeBoundary().initial_state("session-001").to_dict()
+    state["received_count"] = received_count
+
+    with pytest.raises(EnvelopeValidationError, match="received_count"):
+        OscBridgeState.from_dict(state)
 
 
 def test_sequence_out_of_order_is_rejected():
