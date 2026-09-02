@@ -25,6 +25,7 @@ _PROFILE_FIELDS = ("profile_id", "venue_id", "signal_profile_id", "mapping_profi
 _EVENT_TYPES = {
     "show_started",
     "cue_fired",
+    "guard_window_requested",
     "incident_detected",
     "recovery_started",
     "recovery_verified",

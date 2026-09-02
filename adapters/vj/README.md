@@ -106,7 +106,7 @@ processor, mapping, or show.
 phase follows the observed session status: preparation, show, incident,
 recovery, or closure. It preserves only bounded counts and summaries for
 checkpoints, incidents, proposals, results, profile identifiers, and event
-types. Event payloads, notes, reasons, and unknown text are intentionally not
+types, including `guard_window_requested`. Event payloads, notes, reasons, and unknown text are intentionally not
 copied.
 Every proposal must still declare explicit approval, reversibility, and
 `proposal_only`; otherwise the bridge rejects the snapshot. The bridge records

@@ -141,6 +141,24 @@ def test_imago_projection_reaches_show_input_and_preserves_phase_order():
     }
 
 
+def test_imago_bridge_preserves_guard_window_event_type_as_bounded_summary():
+    session = _session()
+    session["events"].append(
+        {
+            "event_id": "event-003",
+            "created_at": "2026-09-02T22:16:00Z",
+            "event_type": "guard_window_requested",
+            "payload": {"duration_ms": 5000, "base_clip_id": "clip-01"},
+            "status_after": "showing",
+            "checkpoint_id": "checkpoint-event-003",
+        }
+    )
+
+    event = build_imago_event(session, event_id="imago-guard-001", sequence=6)
+
+    assert event.payload["show"]["events"]["types"]["guard_window_requested"] == 1
+
+
 def test_imago_event_can_be_consumed_after_soundcheck_without_action():
     adapter = VJAdapter()
     state = adapter.initial_state("session-001")
