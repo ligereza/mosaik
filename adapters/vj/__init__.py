@@ -7,6 +7,12 @@ itself.
 
 from .adapter import VJAdapter, VJAdapterError
 from .contracts import VJEvent, VJResult, VJState, VJProposal
+from .instar_input import (
+    InstarInputError,
+    InstarInputProjector,
+    build_instar_event,
+    project_instar_show_input,
+)
 from .show_input import (
     ShowInputError,
     ShowInputProjection,
@@ -24,6 +30,10 @@ __all__ = [
     "VJResult",
     "VJState",
     "VJProposal",
+    "InstarInputError",
+    "InstarInputProjector",
+    "build_instar_event",
+    "project_instar_show_input",
     "ShowInputError",
     "ShowInputProjection",
     "ShowInputProjector",

@@ -75,6 +75,18 @@ reducer or replay consumer.
 The kill test patches socket and subprocess entry points and confirms that
 projection does not open transport or spawn a process.
 
+## INSTAR report bridge
+
+`build_instar_event()` converts one INSTAR report into a canonical preflight
+event that can be consumed by `VJAdapter`. It keeps only bounded technical
+summaries: asset identifiers, status, codec, dimensions, FPS, alpha, loop
+status, and cue count. Local roots, filenames, error text, and arbitrary report
+fields are not copied into the event.
+`project_instar_show_input()` sends the same event through the existing bounded
+show-input projection. The caller supplies the event sequence; a report cannot
+silently invent ordering. This bridge is read-only and does not invoke INSTAR,
+FFmpeg, Resolume, or any transport.
+
 ## Extensión
 
 Los adaptadores concretos de medios, cues, DXV, Art-Net/DMX/sACN, LED
