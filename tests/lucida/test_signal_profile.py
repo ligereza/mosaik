@@ -6,6 +6,7 @@ import pytest
 from jsonschema import Draft202012Validator
 
 from lucida import LucidaOrchestrator
+from lucida.replay.session import SessionReplay
 from lucida.signals import (
     SignalProfileError,
     compare_signal_profiles,
@@ -299,6 +300,63 @@ def test_invalid_persisted_profile_context_is_removed_before_projection():
     assert "must-drop" not in serialized_state
     assert "limited" not in json.dumps(overlay)
     assert all(item["state"]["profile_context_status"] is None for item in overlay["capabilities"])
+
+
+def test_replay_preserves_inherited_profile_context_across_show_boundary():
+    expected = _profile()
+    observed = copy.deepcopy(expected)
+    observed["source"]["range"]["value"] = "limited"
+    replay = SessionReplay("session-001")
+
+    replay.append(
+        {
+            "event_id": "evt-replay-soundcheck",
+            "timestamp": "2026-01-10T20:00:00Z",
+            "phase": "preparation",
+            "event_type": "soundcheck.profile.compare",
+            "payload": {
+                "signal_profile": observed,
+                "baseline_signal_profile": expected,
+            },
+        },
+        {
+            "envelope_id": "sig-replay-soundcheck",
+            "event_id": "evt-replay-soundcheck",
+            "timestamp": "2026-01-10T20:00:00Z",
+            "sequence": 1,
+            "source": "test",
+            "address": "/lucida/nayade/soundcheck",
+            "arguments": ["changed"],
+            "transport": "osc",
+        },
+    )
+    record = replay.append(
+        {
+            "event_id": "evt-replay-show",
+            "timestamp": "2026-01-10T22:00:00Z",
+            "phase": "show",
+            "event_type": "show.started",
+            "payload": {"mode": "improvised"},
+        },
+        {
+            "envelope_id": "sig-replay-show",
+            "event_id": "evt-replay-show",
+            "timestamp": "2026-01-10T22:00:00Z",
+            "sequence": 2,
+            "source": "test",
+            "address": "/lucida/imago/show",
+            "arguments": ["started"],
+            "transport": "osc",
+        },
+    )
+
+    imago = next(item for item in record.state_after.capabilities if item.capability == "IMAGO")
+    serialized_state = json.dumps(record.state_after.to_dict(), sort_keys=True)
+
+    assert imago.state["profile_context_status"] == "inherited"
+    assert imago.state["profile_comparison_status"] == "changed"
+    assert "limited" not in serialized_state
+    assert "limited" in json.dumps(replay.state.records[0].event.to_dict(), sort_keys=True)
 
 
 def test_nayade_projects_profile_drift_metrics():
