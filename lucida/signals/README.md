@@ -70,6 +70,8 @@ convertirse en una corrección automática.
 Cuando existe drift, las propuestas de ambas etapas lo indican mediante un
 conteo acotado y la evidencia `profile-drift`; no incluyen los valores que
 cambiaron.
+El conteo incluye diferencias de hechos, origen, confianza, recomendación,
+modo read-only y etapa; el overlay sólo expone el total y banderas booleanas.
 
 El schema de referencia es
 [`signal-profile.schema.json`](../../schemas/signal-profile.schema.json).

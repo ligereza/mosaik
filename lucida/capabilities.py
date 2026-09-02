@@ -28,14 +28,28 @@ def _profile_state(payload: dict[str, Any]) -> dict[str, Any]:
         except SignalProfileError:
             state["profile_comparison_status"] = "invalid"
         else:
+            affected_fact_paths = {
+                *comparison["changed_fields"],
+                *comparison["origin_changes"],
+                *comparison["confidence_drops"],
+            }
+            bounded_change_count = len(affected_fact_paths) + sum(
+                bool(comparison[field_name])
+                for field_name in (
+                    "recommendation_changed",
+                    "read_only_changed",
+                    "stage_changed",
+                )
+            )
             state.update(
                 {
                     "profile_comparison_status": comparison["status"],
-                    "profile_changed_count": len(comparison["changed_fields"]),
+                    "profile_changed_count": bounded_change_count,
                     "profile_confidence_drop_count": len(comparison["confidence_drops"]),
                     "profile_unknown_delta": comparison["unknown_delta"],
                     "profile_recommendation_changed": comparison["recommendation_changed"],
                     "profile_read_only_changed": comparison["read_only_changed"],
+                    "profile_stage_changed": comparison["stage_changed"],
                 }
             )
     return state

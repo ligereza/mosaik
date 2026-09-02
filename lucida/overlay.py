@@ -103,6 +103,7 @@ _SAFE_STATE_KEYS = (
     "profile_unknown_delta",
     "profile_recommendation_changed",
     "profile_read_only_changed",
+    "profile_stage_changed",
 )
 
 

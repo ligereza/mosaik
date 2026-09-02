@@ -65,7 +65,8 @@
               "profile_confidence_drop_count": { "type": ["integer", "null"], "minimum": 0 },
               "profile_unknown_delta": { "type": ["integer", "null"] },
               "profile_recommendation_changed": { "type": ["boolean", "null"] },
-              "profile_read_only_changed": { "type": ["boolean", "null"] }
+              "profile_read_only_changed": { "type": ["boolean", "null"] },
+              "profile_stage_changed": { "type": ["boolean", "null"] }
             }
           },
           "observed_count": { "type": "integer", "minimum": 0 },

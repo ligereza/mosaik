@@ -192,6 +192,39 @@ def test_compare_signal_profiles_reports_drift_without_raw_values():
     assert "limited" not in json.dumps(comparison)
 
 
+def test_profile_drift_count_includes_non_value_changes():
+    expected = _profile()
+    observed = copy.deepcopy(expected)
+    observed["stage"] = "IMAGO"
+    observed["recommendation"]["deflicker"] = True
+    observed["processor"]["read_only"] = False
+
+    state = LucidaOrchestrator().initial_state("session-001")
+    state = LucidaOrchestrator().propose(
+        {
+            "event_id": "evt-profile-flags",
+            "timestamp": "2026-01-10T20:00:00Z",
+            "phase": "preparation",
+            "event_type": "soundcheck.profile.compare",
+            "payload": {
+                "signal_profile": observed,
+                "baseline_signal_profile": expected,
+            },
+        },
+        state,
+    )
+
+    overlay = LucidaOrchestrator().read_overlay(state)
+    nayade = next(item for item in overlay["capabilities"] if item["capability"] == "NAYADE")
+    proposal = next(item for item in state.proposals if item.proposal_id == "lucida-nayade-evt-profile-flags")
+
+    assert nayade["state"]["profile_comparison_status"] == "changed"
+    assert nayade["state"]["profile_changed_count"] == 3
+    assert nayade["state"]["profile_stage_changed"] is True
+    assert "3 bounded field(s)" in proposal.reason
+    assert "limited" not in json.dumps(overlay)
+
+
 def test_nayade_projects_profile_drift_metrics():
     expected = _profile()
     observed = copy.deepcopy(expected)
