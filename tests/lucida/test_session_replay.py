@@ -9,6 +9,7 @@ from lucida.replay.session import (
     OutOfOrderReplayError,
     SequenceGapError,
     SessionReplay,
+    public_replay_fixture,
     replay_fixture,
 )
 
@@ -114,6 +115,21 @@ def test_public_report_omits_payload_arguments_metadata_and_free_form_notes():
     }
     assert record["state_after"]["mode"] == "read_only"
     assert all("reason" not in proposal for proposal in record["proposals"])
+
+
+def test_public_fixture_wrapper_uses_the_same_replay_engine():
+    fixture = json.loads(FIXTURE.read_text(encoding="utf-8"))
+
+    public = public_replay_fixture(fixture)
+    internal = replay_fixture(fixture)
+
+    assert public["contract_type"] == "LucidaPublicSessionReplayReport"
+    assert public["event_count"] == internal["event_count"]
+    assert public["signal_count"] == internal["signal_count"]
+    assert public["proposal_count"] == internal["proposal_count"]
+    assert public["result_count"] == internal["result_count"]
+    assert public["safety"]["raw_payloads_included"] is False
+    assert public_replay_fixture(fixture) == public
 
 
 def test_sequence_gap_is_rejected_without_mutating_replay():

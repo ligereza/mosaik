@@ -9,6 +9,7 @@ from .session import (
     SessionReplay,
     SessionReplayError,
     SignalEnvelope,
+    public_replay_fixture,
 )
 
 __all__ = [
@@ -21,6 +22,7 @@ __all__ = [
     "SessionReplayError",
     "SignalEnvelope",
     "load_fixture",
+    "public_replay_fixture",
     "replay_fixture",
     "replay_path",
 ]

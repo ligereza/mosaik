@@ -450,7 +450,7 @@ class SessionReplay:
             raise OutOfOrderReplayError(f"Timestamp out of order: {event.event_id}.")
 
 
-def replay_fixture(fixture: Mapping[str, Any]) -> dict[str, Any]:
+def _replay_from_fixture(fixture: Mapping[str, Any]) -> SessionReplay:
     if not isinstance(fixture, Mapping):
         raise SessionReplayError("Session replay fixture must be an object.")
     session_id = fixture.get("session_id")
@@ -472,4 +472,16 @@ def replay_fixture(fixture: Mapping[str, Any]) -> dict[str, Any]:
         if not isinstance(raw_results, list):
             raise SessionReplayError("Replay entry results must be a list.")
         replay.append(raw_event, raw_signal, tuple(raw_results))
-    return replay.report()
+    return replay
+
+
+def replay_fixture(fixture: Mapping[str, Any]) -> dict[str, Any]:
+    """Build the complete internal report for a replay fixture."""
+
+    return _replay_from_fixture(fixture).report()
+
+
+def public_replay_fixture(fixture: Mapping[str, Any]) -> dict[str, Any]:
+    """Build the redacted shareable report for a replay fixture."""
+
+    return _replay_from_fixture(fixture).public_report()

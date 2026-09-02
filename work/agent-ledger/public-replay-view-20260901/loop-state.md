@@ -7,4 +7,4 @@
 - Done: `SessionReplay.public_report()` now exposes an allowlisted shareable view while preserving the complete internal replay.
 - Evidence: replay/privacy suite `55 passed`; full suite `136 passed`; public fixture validation `valid` with 6 records; schema graph `21` schemas, `21` registered ids, `19` references; `git diff --check` passed; no active repository test processes.
 - Published implementation commit: `07757f6` (`feat: add redacted public replay report`).
-- Next action: publish the ledger closure and perform a final clean-tree and remote check.
+- Next action: integrate the public fixture wrapper, re-run verification, and publish the closure.
