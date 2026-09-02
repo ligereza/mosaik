@@ -7,5 +7,6 @@
 - Done: valid and invalid profiles can produce bounded NAYADE state; raw profile values remain outside the public overlay.
 - Compatibility note: profile imports are deferred inside NAYADE evaluation to avoid a package initialization cycle with signal boundaries.
 - Compatibility note: profile-only overlay metrics allow null when the capability has no profile, matching the existing bounded-state projection.
-- Evidence pending: focused tests, full suite, schema validation, commit, push, and process check.
-- Next action: verify overlay contract compatibility and publish if all checks pass.
+- Evidence: focused NAYADE/profile/schema tests `12 passed`; complete suite `128 passed`; schema registry reports 20 schemas, 20 IDs, and 18 refs; CLI and overlay contract validation pass; `git diff --check` clean.
+- Published: commit `d284a00` pushed to `origin/LUCIDA`; process check pending closure.
+- Closure: NAYADE now consumes optional SignalProfile input and exposes only bounded, typed metrics in the read-only overlay; malformed profiles are marked invalid without stopping the event.
