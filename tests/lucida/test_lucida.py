@@ -1,7 +1,10 @@
 import json
 from pathlib import Path
 
+import pytest
+
 from lucida import LucidaOrchestrator
+from lucida.contracts import LucidaContractError, LucidaState
 from lucida.replay import replay_path
 
 
@@ -107,6 +110,44 @@ def test_register_result_only_records_external_outcome():
     assert next_state.vj_state.results[-1].result_id == "res-001"
     assert proposal_id not in next_state.vj_state.pending_proposal_ids
     assert not hasattr(orchestrator, "execute")
+
+
+def test_lucida_state_restore_rejects_divergent_pending_projection():
+    orchestrator = LucidaOrchestrator()
+    state = orchestrator.propose(
+        {
+            "event_id": "evt-preflight",
+            "timestamp": "2026-01-10T20:00:00Z",
+            "phase": "preflight",
+            "event_type": "phase.completed",
+            "payload": {},
+        },
+        orchestrator.initial_state("session-001"),
+    )
+    raw = state.to_dict()
+    raw["pending_proposal_ids"] = []
+
+    with pytest.raises(LucidaContractError, match="pending_proposal_ids"):
+        LucidaState.from_dict(raw)
+
+
+def test_lucida_state_restore_rejects_pending_proposal_without_global_record():
+    orchestrator = LucidaOrchestrator()
+    state = orchestrator.propose(
+        {
+            "event_id": "evt-preflight",
+            "timestamp": "2026-01-10T20:00:00Z",
+            "phase": "preflight",
+            "event_type": "phase.completed",
+            "payload": {},
+        },
+        orchestrator.initial_state("session-001"),
+    )
+    raw = state.to_dict()
+    raw["proposals"] = []
+
+    with pytest.raises(LucidaContractError, match="propuesta pendiente"):
+        LucidaState.from_dict(raw)
 
 
 def test_fixture_contains_only_fictional_session_data():

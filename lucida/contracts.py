@@ -114,10 +114,24 @@ class LucidaState:
         vj_state = VJState.from_dict(raw_vj_state)
         if vj_state.session_id != session_id:
             raise LucidaContractError("session_id no coincide con vj_state.session_id.")
+        raw_pending = value.get("pending_proposal_ids")
+        if raw_pending is not None:
+            pending_proposal_ids = _texts(raw_pending, "pending_proposal_ids")
+            if pending_proposal_ids != vj_state.pending_proposal_ids:
+                raise LucidaContractError(
+                    "pending_proposal_ids no coincide con vj_state.pending_proposal_ids."
+                )
         capabilities = tuple(
             CapabilityReport.from_dict(item) for item in value.get("capabilities", ())
         )
         proposals = tuple(VJProposal.from_dict(item) for item in value.get("proposals", ()))
+        proposal_ids = tuple(proposal.proposal_id for proposal in proposals)
+        if len(set(proposal_ids)) != len(proposal_ids):
+            raise LucidaContractError("proposals no puede contener proposal_id duplicados.")
+        if any(item not in proposal_ids for item in vj_state.pending_proposal_ids):
+            raise LucidaContractError(
+                "cada propuesta pendiente debe existir en proposals."
+            )
         return cls(
             session_id=session_id,
             vj_state=vj_state,
