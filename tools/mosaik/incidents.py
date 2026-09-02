@@ -17,6 +17,7 @@ INCIDENT_CATEGORIES = (
     "geometry_scaling",
     "signal_loss",
 )
+INCIDENT_STAGES = ("preflight", "soundcheck", "show")
 
 _CATALOG: dict[str, dict[str, Any]] = {
     "flicker": {
@@ -168,8 +169,8 @@ def build_incident_plan(category: str, *, stage: str = "soundcheck") -> dict[str
     normalized = category.strip().lower() if isinstance(category, str) else ""
     if normalized not in INCIDENT_CATEGORIES:
         raise ValueError(f"category must be one of: {', '.join(INCIDENT_CATEGORIES)}")
-    if not isinstance(stage, str) or not stage.strip():
-        raise ValueError("stage must be non-empty text")
+    if not isinstance(stage, str) or stage.strip().lower() not in INCIDENT_STAGES:
+        raise ValueError(f"stage must be one of: {', '.join(INCIDENT_STAGES)}")
     definition = _CATALOG[normalized]
     hypotheses = [
         {"id": identifier, "statement": statement, "status": "possible"}
@@ -242,4 +243,4 @@ def write_incident_plan(plan: Mapping[str, Any], path: str | Path) -> Path:
     return output
 
 
-__all__ = ["INCIDENT_CATEGORIES", "build_incident_plan", "incident_text_report", "write_incident_plan"]
+__all__ = ["INCIDENT_CATEGORIES", "INCIDENT_STAGES", "build_incident_plan", "incident_text_report", "write_incident_plan"]

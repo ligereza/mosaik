@@ -7,6 +7,7 @@ sys.path.insert(0, str(TOOLS_ROOT))
 
 from mosaik.incidents import build_incident_plan, incident_text_report
 from mosaik_cli import main
+from jsonschema import Draft202012Validator
 
 
 def test_gray_black_plan_separates_evidence_hypotheses_and_proposals():
@@ -32,3 +33,13 @@ def test_incident_plan_cli_writes_reversible_json(tmp_path, capsys):
     assert saved["stage"] == "show"
     assert saved["safety"]["automatic_execution"] is False
     assert "MOSAIK INCIDENT PLAN" in capsys.readouterr().out
+
+
+def test_every_incident_category_matches_the_published_schema():
+    schema_path = Path(__file__).resolve().parents[2] / "schemas" / "mosaik-incident-plan.schema.json"
+    schema = json.loads(schema_path.read_text(encoding="utf-8"))
+    validator = Draft202012Validator(schema)
+
+    for category in ("flicker", "tearing", "frames_dropped", "lost_media", "gray_black_levels", "geometry_scaling", "signal_loss"):
+        plan = build_incident_plan(category)
+        assert list(validator.iter_errors(plan)) == []
