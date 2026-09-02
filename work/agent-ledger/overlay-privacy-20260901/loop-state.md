@@ -10,4 +10,6 @@
 - Failure resolved: the first run exposed legacy `proposals` lookups in signal replay and a stale fixture session assertion; both were corrected.
 - Evidence: affected suite `50 passed`; complete suite `106 passed`; `git diff --check` clean; overlay contracts parse; new code and ledger content pass ASCII.
 - Published: commit `d227147` pushed to `origin/LUCIDA`; working tree is clean and no persistent test process was found.
-- Closure: every current LUCIDA overlay output uses the bounded projection. Further extension should be tied to a concrete host or transport contract.
+- Evidence: focused boundary suite `50 passed`; complete suite `106 passed`; `git diff --check` clean; overlay contracts parse; new code and ledger content pass ASCII.
+- Published: commit `d227147` pushed to `origin/LUCIDA`; working tree clean; no persistent test process found.
+- Closure: every current LUCIDA overlay output uses the bounded projection. Explicit state/replay APIs remain separate from overlay presentation.
