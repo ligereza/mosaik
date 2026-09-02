@@ -13,7 +13,7 @@ if str(_REPOSITORY_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPOSITORY_ROOT))
 
 from adapters.vj import VJProjectError, build_stage_event, load_project_document, project_stage_document
-from adapters.vj.replay import ReplayError, replay_plugin_bridge_path
+from adapters.vj.replay import ReplayError, replay_plugin_bridge_path, replay_project_manifest_path
 from mosaik.adapt import run_adaptation, text_report as adapt_text_report, write_adaptation_plan
 from mosaik.diagnose import diagnose_file, text_report
 from mosaik.dxv import convert_to_dxv
@@ -118,6 +118,13 @@ def build_parser() -> argparse.ArgumentParser:
     )
     vj_replay.add_argument("fixture", help="Fixture JSON de replay de puentes VJ.")
     vj_replay.add_argument("--report", help="Ruta opcional para guardar el reporte JSON.")
+
+    vj_project_replay = commands.add_parser(
+        "vj-project-replay",
+        help="Reproduce un manifest JSON con reportes de INSTAR, NAYADE e IMAGO.",
+    )
+    vj_project_replay.add_argument("manifest", help="Manifest JSON de la sesion VJ.")
+    vj_project_replay.add_argument("--report", help="Ruta opcional para guardar el reporte JSON.")
 
     vj_project = commands.add_parser(
         "vj-project",
@@ -377,6 +384,16 @@ def main(argv: list[str] | None = None) -> int:
                 report_path.parent.mkdir(parents=True, exist_ok=True)
                 report_path.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
                 print(f"\nReporte VJ replay: {report_path}")
+            return 0 if report["status"] == "PASS" else 1
+
+        if args.command == "vj-project-replay":
+            report = replay_project_manifest_path(args.manifest)
+            print(json.dumps(report, ensure_ascii=False, indent=2))
+            if args.report:
+                report_path = Path(args.report).expanduser().resolve()
+                report_path.parent.mkdir(parents=True, exist_ok=True)
+                report_path.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+                print(f"\nReporte VJ project replay: {report_path}")
             return 0 if report["status"] == "PASS" else 1
 
         if args.command == "vj-project":
