@@ -81,6 +81,18 @@ python .\tools\mosaik_cli.py nayade-session next `
   "Z:\MOSAIK\runs\plox-nayade-soundcheck.json"
 ```
 
+Para revisar si la sesión está lista antes de abandonar el venue:
+
+```powershell
+python .\tools\mosaik_cli.py nayade-session report `
+  "Z:\MOSAIK\runs\plox-nayade-soundcheck.json" `
+  --report "Z:\MOSAIK\runs\plox-nayade-soundcheck-status.json"
+```
+
+El reporte clasifica la sesión como `READY`, `INCOMPLETE`, `REVIEW` o
+`BLOCKED`, indica el siguiente paso y resume sólo riesgos derivados del estado
+registrado. No copia notas del operador ni rutas privadas.
+
 La sesión todavía registra decisiones, pero no envía órdenes a Resolume. Esto
 deja abierta una integración posterior con OSC, MIDI o Chataigne sin mezclar
 la capa de control con la evidencia del soundcheck.

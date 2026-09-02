@@ -221,3 +221,40 @@ def test_nayade_session_cli_attaches_protocol_before_visual_matrix(tmp_path, cap
     assert session["planned_steps"][0]["operation"] == "processor_check"
     assert any(step["operation"] == "baseline" for step in session["planned_steps"])
     assert "Pasos planificados" in capsys.readouterr().out
+
+
+def test_nayade_session_report_cli_writes_bounded_status(tmp_path, capsys):
+    session_path = tmp_path / "session.json"
+    report_path = tmp_path / "status.json"
+    session_path.write_text(
+        json.dumps(
+            {
+                "session_type": "NayadeSoundcheckSession",
+                "session_id": "session-cli-001",
+                "name": "CLI soundcheck",
+                "updated_at": "2026-09-02T20:00:00Z",
+                "planned_steps": [
+                    {
+                        "step_id": "processor-check-001",
+                        "operation": "processor_check",
+                        "scope": "chain",
+                        "targets": ["group-a"],
+                        "parameters": {"priority": "required", "pattern": "pluge_near_black"},
+                        "expected_checks": ["near_black_bars"],
+                        "result": "review",
+                    }
+                ],
+                "events": [{"result": "review", "notes": "C:\\private\\note.txt"}],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    exit_code = main(["nayade-session", "report", str(session_path), "--report", str(report_path)])
+
+    assert exit_code == 0
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+    assert report["status"] == "REVIEW"
+    assert report["next_step"]["pattern"] == "pluge_near_black"
+    assert "private" not in report_path.read_text(encoding="utf-8")
+    assert "riesgos: 1" in capsys.readouterr().out

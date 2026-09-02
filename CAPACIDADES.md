@@ -239,6 +239,11 @@ Ese protocolo puede adjuntarse a `nayade-session init` mediante `--protocol`.
 NAYADE valida el contrato y registra los checks de cadena antes de su matriz de
 experimentos visuales, sin fusionar sus responsabilidades ni ejecutar acciones.
 
+`nayade-session report` entrega un estado acotado de cierre (`READY`,
+`INCOMPLETE`, `REVIEW` o `BLOCKED`), el próximo paso pendiente y los riesgos
+derivados de resultados `review`, `running` o `rejected`. No expone notas ni
+rutas privadas y no ejecuta acciones.
+
 El diagnóstico separa hechos, hipótesis y acciones de verificación. No declara
 que gamma sea la causa de un negro levantado sin medir la cadena completa.
 
@@ -306,6 +311,7 @@ python tools/mosaik_cli.py nayade-processor diagnose-case data\cases\soundcheck-
 python tools/mosaik_cli.py nayade-processor reconcile --processor-observation artifacts\processor-observation.json --mapping artifacts\mapping-plan.json --report artifacts\reconciliation.json
 python tools/mosaik_cli.py nayade-processor protocol --reconciliation artifacts\reconciliation.json --mapping artifacts\mapping-plan.json --report artifacts\soundcheck-protocol.json
 python tools/mosaik_cli.py nayade-processor probe-output --report artifacts\output-probe.json
+python tools/mosaik_cli.py nayade-session report artifacts\soundcheck.json --report artifacts\soundcheck-status.json
 python tools/mosaik_cli.py vj-project instar artifacts\instar.json --event-id instar-001 --sequence 1 --mode projection
 python tools/mosaik_cli.py vj-project-replay artifacts\vj-project-manifest.json --report artifacts\vj-project-replay.json
 ```

@@ -388,6 +388,122 @@ def write_session(session: dict[str, Any], path: str | Path) -> Path:
     return output
 
 
+def build_session_report(session_path: str | Path) -> dict[str, Any]:
+    """Create a bounded readiness summary from a NAYADE session."""
+
+    _, session = _load_json(session_path)
+    if session.get("session_type") != SESSION_TYPE:
+        raise MosaikError("El archivo no es una sesión NAYADE válida.")
+    steps = [item for item in session.get("planned_steps") or [] if isinstance(item, dict)]
+    events = [item for item in session.get("events") or [] if isinstance(item, dict)]
+    valid_results = VALID_RESULTS | {"unknown"}
+    counts = {result: 0 for result in sorted(valid_results)}
+    for step in steps:
+        result = step.get("result", "unknown")
+        if result not in counts:
+            result = "unknown"
+        counts[result] += 1
+    pending = [step for step in steps if step.get("result") == "planned"]
+    pending_required = [
+        step for step in pending
+        if (step.get("parameters") or {}).get("priority") == "required"
+    ]
+    risks: list[dict[str, Any]] = []
+    for step in steps:
+        result = step.get("result")
+        if result not in {"rejected", "review", "running"}:
+            continue
+        risks.append({
+            "risk_id": f"{step.get('step_id', 'unknown')}-{result}",
+            "severity": "high" if result == "rejected" else "review",
+            "step_id": step.get("step_id"),
+            "operation": step.get("operation"),
+            "status": result,
+            "detail": (
+                "El operador rechazó este paso; no se debe tratar la cadena como estable."
+                if result == "rejected"
+                else "Este paso necesita confirmación explícita antes de cerrar el soundcheck."
+            ),
+        })
+
+    if any(item.get("result") == "rejected" for item in steps):
+        status = "BLOCKED"
+    elif risks or pending_required:
+        status = "REVIEW"
+    elif pending:
+        status = "INCOMPLETE"
+    else:
+        status = "READY"
+
+    next_step = None
+    actionable = [
+        step for step in steps
+        if step.get("result") in {"planned", "running", "review", "rejected"}
+    ]
+    if actionable:
+        candidate = actionable[0]
+        parameters = candidate.get("parameters") or {}
+        next_step = {
+            "step_id": candidate.get("step_id"),
+            "operation": candidate.get("operation"),
+            "scope": candidate.get("scope"),
+            "targets": list(candidate.get("targets") or []),
+            "pattern": parameters.get("pattern"),
+            "title": parameters.get("title"),
+            "priority": parameters.get("priority", "unclassified"),
+            "expected_checks": list(candidate.get("expected_checks") or []),
+        }
+    return {
+        "schema_version": "0.1",
+        "report_type": "NayadeSoundcheckSessionReport",
+        "status": status,
+        "session_id": session.get("session_id"),
+        "session_name": session.get("name"),
+        "updated_at": session.get("updated_at"),
+        "summary": {
+            "step_count": len(steps),
+            "event_count": len(events),
+            "step_results": {key: value for key, value in counts.items() if value},
+            "pending_count": len(pending),
+            "pending_required_count": len(pending_required),
+            "risk_count": len(risks),
+        },
+        "next_step": next_step,
+        "risks": risks,
+        "safety": {
+            "read_only": True,
+            "commands_sent": False,
+            "writes_attempted": False,
+            "external_side_effects": False,
+            "source_paths_exposed": False,
+        },
+    }
+
+
+def session_report_text(report: dict[str, Any]) -> str:
+    """Render the bounded session report for an operator."""
+
+    summary = report.get("summary") or {}
+    lines = [
+        "MOSAIK NAYADE - ESTADO DE SOUNDCHECK",
+        "====================================",
+        f"Sesión: {report.get('session_id')}",
+        f"Estado: {report.get('status')}",
+        f"Pasos: {summary.get('step_count', 0)} | pendientes: {summary.get('pending_count', 0)} | riesgos: {summary.get('risk_count', 0)}",
+    ]
+    next_step = report.get("next_step")
+    if next_step:
+        lines.extend([
+            "PRÓXIMO PASO",
+            f"- {next_step.get('step_id')}: {next_step.get('operation')} ({next_step.get('priority')})",
+            f"- Comprobar: {', '.join(next_step.get('expected_checks') or []) or 'registrar observación'}",
+        ])
+    for risk in report.get("risks") or []:
+        lines.append(f"- {str(risk.get('severity')).upper()} {risk.get('step_id')}: {risk.get('detail')}")
+    lines.append("Modo: SOLO LECTURA; el reporte no ejecuta acciones.")
+    return "\n".join(lines)
+
+
 def text_report(session: dict[str, Any], *, event: dict[str, Any] | None = None) -> str:
     targets = session.get("targets") or {}
     lines = [

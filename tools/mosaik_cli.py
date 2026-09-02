@@ -29,7 +29,14 @@ from mosaik.html_report import write_html_report
 from mosaik.instar import run_instar, text_report as instar_text_report, write_report
 from mosaik.manifest import write_manifest
 from mosaik.media import MosaikError
-from mosaik.nayade import create_session, get_next_step, record_event, text_report as nayade_text_report
+from mosaik.nayade import (
+    build_session_report,
+    create_session,
+    get_next_step,
+    record_event,
+    session_report_text,
+    text_report as nayade_text_report,
+)
 from mosaik.output_probe import output_probe_text_report, probe_windows_output
 from mosaik.processors import (
     case_text_report,
@@ -264,6 +271,9 @@ def build_parser() -> argparse.ArgumentParser:
     session_record.add_argument("--step-id", help="Paso planificado exacto que se está registrando.")
     session_next = session_commands.add_parser("next", help="Muestra la próxima prueba pendiente de la sesión.")
     session_next.add_argument("session", help="Archivo JSON de sesión NAYADE.")
+    session_report = session_commands.add_parser("report", help="Resume el estado de una sesión sin exponer notas privadas.")
+    session_report.add_argument("session", help="Archivo JSON de sesión NAYADE.")
+    session_report.add_argument("--report", help="Ruta opcional para guardar el resumen JSON.")
 
     processor = commands.add_parser(
         "nayade-processor",
@@ -635,6 +645,13 @@ def main(argv: list[str] | None = None) -> int:
                     print(f"Objetivos: {', '.join(step.get('targets') or [])}")
                     print(f"Parámetros: {json.dumps(step.get('parameters') or {}, ensure_ascii=False)}")
                     print(f"Comprobar: {', '.join(step.get('expected_checks') or [])}")
+                return 0
+            if args.session_command == "report":
+                report = build_session_report(args.session)
+                print(session_report_text(report))
+                if args.report:
+                    report_path = write_processor_json(report, args.report)
+                    print(f"\nReporte JSON: {report_path}")
                 return 0
         if args.command in {"nayade-processor", "processor"}:
             if args.processor_command == "catalog":
