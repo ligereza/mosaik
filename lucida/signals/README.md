@@ -104,6 +104,11 @@ argumentos de señal, metadata y provenance antes de compartir la sesión; los
 campos técnicos adicionales que aparecen en los reportes internos de XIO no se
 propagan al contrato público.
 
+Por diseño, `HostResult.to_dict()` y `XioConsumeResult.to_dict()` son contratos
+de integración internos: conservan provenance o payload para correlación y
+diagnóstico. No deben usarse como exportación pública; para eso se debe llamar
+`public_report()` en el boundary o consumer correspondiente.
+
 ## Errores de frontera
 
 - `EnvelopeValidationError`: envelope o argumento inválido.
