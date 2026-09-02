@@ -4,7 +4,11 @@ from pathlib import Path
 import pytest
 
 from adapters.vj.contracts import VJEvent
-from lucida.replay import public_replay_fixture
+from lucida.replay import (
+    PublicReplayReportError,
+    public_replay_fixture,
+    validate_public_report,
+)
 from lucida.replay.session import (
     DuplicateReplayIdError,
     OutOfOrderReplayError,
@@ -132,6 +136,56 @@ def test_public_fixture_wrapper_uses_the_same_replay_engine():
     assert public["result_count"] == internal["result_count"]
     assert public["safety"]["raw_payloads_included"] is False
     assert public_replay_fixture(fixture) == public
+
+
+def test_public_report_validator_rejects_unsafe_tampering_and_detaches_input():
+    fixture = json.loads(FIXTURE.read_text(encoding="utf-8"))
+    public = public_replay_fixture(fixture)
+
+    validated = validate_public_report(public)
+    assert validated == public
+    assert validated is not public
+
+    unsafe_payload = json.loads(json.dumps(public))
+    unsafe_payload["records"][0]["event"]["payload"] = {"secret": "must-reject"}
+    with pytest.raises(PublicReplayReportError):
+        validate_public_report(unsafe_payload)
+
+    unsafe_safety = json.loads(json.dumps(public))
+    unsafe_safety["safety"]["proposal_only"] = False
+    with pytest.raises(PublicReplayReportError):
+        validate_public_report(unsafe_safety)
+
+    unsafe_link = json.loads(json.dumps(public))
+    unsafe_link["records"][0]["state_after"]["session_id"] = "other-session"
+    with pytest.raises(PublicReplayReportError):
+        validate_public_report(unsafe_link)
+
+
+def test_public_report_accepts_a_delayed_result_for_an_earlier_proposal():
+    replay = SessionReplay("session-delayed-result")
+    first = replay.append(
+        _event("evt-delayed-1", "2026-01-10T20:00:00Z", 1),
+        _signal("evt-delayed-1", "sig-delayed-1", "2026-01-10T20:00:00Z", 1),
+    )
+    proposal_id = first.proposals[0].proposal_id
+    replay.append(
+        _event("evt-delayed-2", "2026-01-10T20:00:01Z", 2),
+        _signal("evt-delayed-2", "sig-delayed-2", "2026-01-10T20:00:01Z", 2),
+        results=[
+            {
+                "result_id": "res-delayed",
+                "proposal_id": proposal_id,
+                "recorded_at": "2026-01-10T20:00:01Z",
+                "status": "observed",
+            }
+        ],
+    )
+
+    public = replay.public_report()
+
+    assert public["result_count"] == 1
+    assert public["records"][1]["results"][0]["proposal_id"] == proposal_id
 
 
 def test_sequence_gap_is_rejected_without_mutating_replay():

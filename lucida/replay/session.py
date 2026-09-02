@@ -4,18 +4,23 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field, replace
 from datetime import datetime, timezone
+import json
 from typing import Any, Mapping
 
 from adapters.vj.contracts import VJEvent, VJProposal, VJResult
 
 from ..contracts import LUCIDA_SCHEMA_VERSION, LucidaState
 from ..orchestrator import LucidaOrchestrator
-from ..overlay import build_overlay_view
+from ..overlay import build_overlay_view, diff_overlay_view
 from ..signals.boundary import OscEnvelope
 
 
 class SessionReplayError(ValueError):
     """Base error for session replay contract violations."""
+
+
+class PublicReplayReportError(SessionReplayError):
+    """Raised when a public replay report is malformed or unsafe."""
 
 
 class SequenceGapError(SessionReplayError):
@@ -237,6 +242,199 @@ def _public_audit(entry: Mapping[str, Any]) -> dict[str, Any]:
     return result
 
 
+def _public_text(value: Any, field_name: str) -> str:
+    if not isinstance(value, str) or not value.strip():
+        raise PublicReplayReportError(f"{field_name} must be non-empty text.")
+    return value
+
+
+def _public_timestamp(value: Any, field_name: str) -> None:
+    text = _public_text(value, field_name)
+    try:
+        _time_value(text)
+    except (TypeError, ValueError) as exc:
+        raise PublicReplayReportError(f"{field_name} must be ISO-8601.") from exc
+
+
+def _public_non_negative_int(value: Any, field_name: str) -> int:
+    if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+        raise PublicReplayReportError(f"{field_name} must be a non-negative integer.")
+    return value
+
+
+def _validate_public_event(value: Any, field_name: str) -> None:
+    if not isinstance(value, Mapping) or set(value) != set(_PUBLIC_EVENT_FIELDS):
+        raise PublicReplayReportError(f"{field_name} contains unsupported or missing fields.")
+    _public_text(value["event_id"], f"{field_name}.event_id")
+    _public_timestamp(value["timestamp"], f"{field_name}.timestamp")
+    if value["phase"] not in {"preflight", "preparation", "show", "incident", "recovery", "closure"}:
+        raise PublicReplayReportError(f"{field_name}.phase is invalid.")
+    _public_text(value["event_type"], f"{field_name}.event_type")
+    _public_text(value["source"], f"{field_name}.source")
+
+
+def _validate_public_signal(value: Any, field_name: str) -> None:
+    if not isinstance(value, Mapping) or set(value) != set(_PUBLIC_SIGNAL_FIELDS):
+        raise PublicReplayReportError(f"{field_name} contains unsupported or missing fields.")
+    for key in ("envelope_id", "event_id", "source", "address"):
+        _public_text(value[key], f"{field_name}.{key}")
+    _public_timestamp(value["timestamp"], f"{field_name}.timestamp")
+    _public_non_negative_int(value["sequence"], f"{field_name}.sequence")
+    if value["transport"] not in {"osc", "xio"}:
+        raise PublicReplayReportError(f"{field_name}.transport is invalid.")
+
+
+def _validate_public_proposal(value: Any, field_name: str) -> None:
+    if not isinstance(value, Mapping) or set(value) != set(_PUBLIC_PROPOSAL_FIELDS):
+        raise PublicReplayReportError(f"{field_name} contains unsupported or missing fields.")
+    for key in ("proposal_id", "event_id", "phase", "operation", "risk"):
+        _public_text(value[key], f"{field_name}.{key}")
+    if value["requires_explicit_approval"] is not True:
+        raise PublicReplayReportError(f"{field_name} must require explicit approval.")
+    if value["reversible"] is not True:
+        raise PublicReplayReportError(f"{field_name} must be reversible.")
+    if value["execution_mode"] != "proposal_only":
+        raise PublicReplayReportError(f"{field_name}.execution_mode is invalid.")
+
+
+def _validate_public_result(value: Any, field_name: str) -> None:
+    required = {"result_id", "proposal_id", "recorded_at", "status"}
+    if not isinstance(value, Mapping) or set(value) != required:
+        raise PublicReplayReportError(f"{field_name} contains unsupported or missing fields.")
+    _public_text(value["result_id"], f"{field_name}.result_id")
+    _public_text(value["proposal_id"], f"{field_name}.proposal_id")
+    _public_timestamp(value["recorded_at"], f"{field_name}.recorded_at")
+    _public_text(value["status"], f"{field_name}.status")
+
+
+def _validate_public_audit(value: Any, field_name: str) -> None:
+    if not isinstance(value, Mapping) or not set(value).issubset(set(_PUBLIC_AUDIT_FIELDS)):
+        raise PublicReplayReportError(f"{field_name} contains unsupported fields.")
+    for key in ("audit_id", "event_id", "envelope_id", "source", "event_source"):
+        if key in value:
+            _public_text(value[key], f"{field_name}.{key}")
+    if "timestamp" in value:
+        _public_timestamp(value["timestamp"], f"{field_name}.timestamp")
+    if "sequence" in value:
+        _public_non_negative_int(value["sequence"], f"{field_name}.sequence")
+    for key in ("proposal_ids", "result_ids"):
+        if key in value and (
+            not isinstance(value[key], list) or not all(isinstance(item, str) for item in value[key])
+        ):
+            raise PublicReplayReportError(f"{field_name}.{key} must be a list of strings.")
+    if "mode" in value and value["mode"] != "proposal_only":
+        raise PublicReplayReportError(f"{field_name}.mode is invalid.")
+    if "external_side_effects" in value and value["external_side_effects"] is not False:
+        raise PublicReplayReportError(f"{field_name}.external_side_effects must be false.")
+
+
+def validate_public_report(value: Mapping[str, Any]) -> dict[str, Any]:
+    """Validate and detach a public replay report without filesystem access."""
+
+    required = {
+        "contract_type",
+        "schema_version",
+        "session_id",
+        "status",
+        "event_count",
+        "signal_count",
+        "proposal_count",
+        "result_count",
+        "phase_order",
+        "records",
+        "audit_log",
+        "safety",
+    }
+    if not isinstance(value, Mapping) or set(value) != required:
+        raise PublicReplayReportError("public replay report contains unsupported or missing fields.")
+    if value["contract_type"] != "LucidaPublicSessionReplayReport" or value["schema_version"] != LUCIDA_SCHEMA_VERSION:
+        raise PublicReplayReportError("public replay report identity is invalid.")
+    _public_text(value["session_id"], "session_id")
+    if value["status"] not in {"PASS", "REVIEW"}:
+        raise PublicReplayReportError("status is invalid.")
+    event_count = _public_non_negative_int(value["event_count"], "event_count")
+    signal_count = _public_non_negative_int(value["signal_count"], "signal_count")
+    proposal_count = _public_non_negative_int(value["proposal_count"], "proposal_count")
+    result_count = _public_non_negative_int(value["result_count"], "result_count")
+    if not isinstance(value["phase_order"], list):
+        raise PublicReplayReportError("phase_order must be a list.")
+    if not isinstance(value["records"], list):
+        raise PublicReplayReportError("records must be a list.")
+    if event_count != len(value["records"]) or signal_count != len(value["records"]):
+        raise PublicReplayReportError("event and signal counts must match records.")
+    phase_order: list[str] = []
+    counted_proposals = 0
+    counted_results = 0
+    known_proposal_ids: set[str] = set()
+    previous_timestamp: str | None = None
+    previous_sequence: int | None = None
+    for index, record in enumerate(value["records"]):
+        if not isinstance(record, Mapping) or set(record) != {
+            "event", "signal", "proposals", "results", "state_after", "audit"
+        }:
+            raise PublicReplayReportError(f"records[{index}] contains unsupported or missing fields.")
+        _validate_public_event(record["event"], f"records[{index}].event")
+        _validate_public_signal(record["signal"], f"records[{index}].signal")
+        if record["event"]["event_id"] != record["signal"]["event_id"]:
+            raise PublicReplayReportError(f"records[{index}] event and signal ids differ.")
+        if record["event"]["timestamp"] != record["signal"]["timestamp"]:
+            raise PublicReplayReportError(f"records[{index}] event and signal timestamps differ.")
+        if previous_timestamp is not None and _time_value(record["event"]["timestamp"]) < _time_value(previous_timestamp):
+            raise PublicReplayReportError("public replay timestamps must be ordered.")
+        if previous_sequence is not None and record["signal"]["sequence"] <= previous_sequence:
+            raise PublicReplayReportError("public replay sequences must be strictly increasing.")
+        if not isinstance(record["proposals"], list):
+            raise PublicReplayReportError(f"records[{index}].proposals must be a list.")
+        for proposal_index, proposal in enumerate(record["proposals"]):
+            _validate_public_proposal(proposal, f"records[{index}].proposals[{proposal_index}]")
+            if proposal["event_id"] != record["event"]["event_id"]:
+                raise PublicReplayReportError(f"records[{index}] proposal event id differs.")
+            known_proposal_ids.add(proposal["proposal_id"])
+        if not isinstance(record["results"], list):
+            raise PublicReplayReportError(f"records[{index}].results must be a list.")
+        for result_index, result in enumerate(record["results"]):
+            _validate_public_result(result, f"records[{index}].results[{result_index}]")
+            if result["proposal_id"] not in known_proposal_ids:
+                raise PublicReplayReportError(f"records[{index}] result references an unknown proposal.")
+        try:
+            diff_overlay_view(record["state_after"], record["state_after"])
+        except ValueError as exc:
+            raise PublicReplayReportError(f"records[{index}].state_after is invalid.") from exc
+        if record["state_after"]["session_id"] != value["session_id"]:
+            raise PublicReplayReportError(f"records[{index}] state session differs.")
+        if record["state_after"]["phase"] != record["event"]["phase"]:
+            raise PublicReplayReportError(f"records[{index}] state phase differs.")
+        _validate_public_audit(record["audit"], f"records[{index}].audit")
+        phase_order.append(record["event"]["phase"])
+        counted_proposals += len(record["proposals"])
+        counted_results += len(record["results"])
+        previous_timestamp = record["event"]["timestamp"]
+        previous_sequence = record["signal"]["sequence"]
+    if value["phase_order"] != phase_order:
+        raise PublicReplayReportError("phase_order does not match records.")
+    if proposal_count != counted_proposals or result_count != counted_results:
+        raise PublicReplayReportError("proposal and result counts do not match records.")
+    if not isinstance(value["audit_log"], list):
+        raise PublicReplayReportError("audit_log must be a list.")
+    for index, audit in enumerate(value["audit_log"]):
+        _validate_public_audit(audit, f"audit_log[{index}]")
+    safety = value["safety"]
+    expected_safety = {
+        "replay_only": True,
+        "proposal_only": True,
+        "external_side_effects": False,
+        "raw_payloads_included": False,
+        "signal_arguments_included": False,
+        "metadata_included": False,
+    }
+    if safety != expected_safety:
+        raise PublicReplayReportError("public replay safety contract is invalid.")
+    try:
+        return json.loads(json.dumps(value, sort_keys=True, ensure_ascii=True, allow_nan=False))
+    except (TypeError, ValueError) as exc:
+        raise PublicReplayReportError("public replay report must be JSON-safe.") from exc
+
+
 class SessionReplay:
     """Append-only replay that never opens a transport or executes actions."""
 
@@ -387,27 +585,29 @@ class SessionReplay:
             }
             for record in self._state.records
         ]
-        return {
-            "contract_type": "LucidaPublicSessionReplayReport",
-            "schema_version": LUCIDA_SCHEMA_VERSION,
-            "session_id": self._state.session_id,
-            "status": internal["status"],
-            "event_count": len(records),
-            "signal_count": len(records),
-            "proposal_count": sum(len(record.proposals) for record in self._state.records),
-            "result_count": sum(len(record.results) for record in self._state.records),
-            "phase_order": [record.event.phase for record in self._state.records],
-            "records": records,
-            "audit_log": [_public_audit(entry) for entry in self._state.audit_log],
-            "safety": {
-                "replay_only": True,
-                "proposal_only": True,
-                "external_side_effects": False,
-                "raw_payloads_included": False,
-                "signal_arguments_included": False,
-                "metadata_included": False,
-            },
-        }
+        return validate_public_report(
+            {
+                "contract_type": "LucidaPublicSessionReplayReport",
+                "schema_version": LUCIDA_SCHEMA_VERSION,
+                "session_id": self._state.session_id,
+                "status": internal["status"],
+                "event_count": len(records),
+                "signal_count": len(records),
+                "proposal_count": sum(len(record.proposals) for record in self._state.records),
+                "result_count": sum(len(record.results) for record in self._state.records),
+                "phase_order": [record.event.phase for record in self._state.records],
+                "records": records,
+                "audit_log": [_public_audit(entry) for entry in self._state.audit_log],
+                "safety": {
+                    "replay_only": True,
+                    "proposal_only": True,
+                    "external_side_effects": False,
+                    "raw_payloads_included": False,
+                    "signal_arguments_included": False,
+                    "metadata_included": False,
+                },
+            }
+        )
 
     def record_audit(self, entry: Mapping[str, Any]) -> None:
         """Append an external receipt without changing replay proposals or state."""

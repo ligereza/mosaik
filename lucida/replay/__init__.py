@@ -5,17 +5,20 @@ from .session import (
     DuplicateReplayIdError,
     EventSignalMismatchError,
     OutOfOrderReplayError,
+    PublicReplayReportError,
     SequenceGapError,
     SessionReplay,
     SessionReplayError,
     SignalEnvelope,
     public_replay_fixture,
+    validate_public_report,
 )
 
 __all__ = [
     "DuplicateReplayIdError",
     "EventSignalMismatchError",
     "OutOfOrderReplayError",
+    "PublicReplayReportError",
     "ReplayError",
     "SequenceGapError",
     "SessionReplay",
@@ -25,4 +28,5 @@ __all__ = [
     "public_replay_fixture",
     "replay_fixture",
     "replay_path",
+    "validate_public_report",
 ]

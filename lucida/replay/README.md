@@ -51,6 +51,9 @@ textos de host se descartan.
 Para el flujo basado en fixtures también se puede usar
 `lucida.replay.public_replay_fixture(...)`; reutiliza exactamente el mismo
 motor y sólo cambia la proyección de salida.
+Los consumidores pueden pasar la vista recibida por
+`validate_public_report(...)` antes de procesarla; rechaza campos no
+allowlisted, payloads, timestamps o garantías de seguridad alteradas.
 
 ## Limites
 
