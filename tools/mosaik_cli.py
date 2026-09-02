@@ -269,6 +269,7 @@ def build_parser() -> argparse.ArgumentParser:
     session_record.add_argument("--parameters", help="Objeto JSON con parámetros de la variación.")
     session_record.add_argument("--notes", default="", help="Observación del VJ o del operador.")
     session_record.add_argument("--step-id", help="Paso planificado exacto que se está registrando.")
+    session_record.add_argument("--output", help="Archivo nuevo para registrar sin modificar la sesión de origen.")
     session_next = session_commands.add_parser("next", help="Muestra la próxima prueba pendiente de la sesión.")
     session_next.add_argument("session", help="Archivo JSON de sesión NAYADE.")
     session_report = session_commands.add_parser("report", help="Resume el estado de una sesión sin exponer notas privadas.")
@@ -625,6 +626,7 @@ def main(argv: list[str] | None = None) -> int:
                     parameters=parameters,
                     notes=args.notes,
                     step_id=args.step_id,
+                    output_path=args.output,
                 )
                 session_path = Path(args.session).expanduser().resolve()
                 session_document = json.loads(session_path.read_text(encoding="utf-8"))

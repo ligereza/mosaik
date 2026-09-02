@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
+import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -330,6 +332,7 @@ def record_event(
     parameters: dict[str, Any] | None = None,
     notes: str = "",
     step_id: str | None = None,
+    output_path: str | Path | None = None,
 ) -> dict[str, Any]:
     """Agrega una observación al archivo de sesión elegido por el VJ."""
 
@@ -377,7 +380,23 @@ def record_event(
         event["planned_step_id"] = chosen_step.get("step_id")
     session.setdefault("events", []).append(event)
     session["updated_at"] = _now()
-    path.write_text(json.dumps(session, ensure_ascii=False, indent=2), encoding="utf-8")
+    target = path if output_path is None else Path(output_path).expanduser().resolve()
+    if target == path and output_path is not None:
+        raise MosaikError("--output debe ser distinto al archivo de sesión de origen.")
+    if output_path is not None and target.exists():
+        raise MosaikError(f"El archivo de salida ya existe; no se sobrescribirá: {target}")
+    target.parent.mkdir(parents=True, exist_ok=True)
+    temporary_path: Path | None = None
+    try:
+        descriptor, temporary_name = tempfile.mkstemp(prefix=f".{target.name}.", suffix=".tmp", dir=target.parent)
+        os.close(descriptor)
+        temporary_path = Path(temporary_name)
+        temporary_path.write_text(json.dumps(session, ensure_ascii=False, indent=2), encoding="utf-8")
+        os.replace(temporary_path, target)
+        temporary_path = None
+    finally:
+        if temporary_path is not None and temporary_path.exists():
+            temporary_path.unlink()
     return event
 
 

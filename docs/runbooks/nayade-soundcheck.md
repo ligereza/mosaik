@@ -74,6 +74,23 @@ python .\tools\mosaik_cli.py nayade-session record `
   --notes "El marquee se lee sin costura."
 ```
 
+Para conservar la sesión anterior y crear una nueva versión del registro:
+
+```powershell
+python .\tools\mosaik_cli.py nayade-session record `
+  "Z:\MOSAIK\runs\plox-nayade-soundcheck.json" `
+  --step-id processor-check-002 `
+  --operation processor_check `
+  --scope signal_and_processor `
+  --result approved `
+  --notes "PLUGE correcto; near-black visible sin gris levantado." `
+  --output "Z:\MOSAIK\runs\plox-nayade-soundcheck-after-pluge.json"
+```
+
+`--output` exige que el destino no exista y deja intacto el origen. Sin esa
+opción, el registro conserva el comportamiento habitual pero escribe de forma
+atómica para no dejar un JSON parcial si la operación se interrumpe.
+
 Para continuar sin buscar manualmente en el JSON:
 
 ```powershell

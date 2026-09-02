@@ -244,6 +244,10 @@ experimentos visuales, sin fusionar sus responsabilidades ni ejecutar acciones.
 derivados de resultados `review`, `running` o `rejected`. No expone notas ni
 rutas privadas y no ejecuta acciones.
 
+`nayade-session record --output` permite crear una nueva versión de la sesión
+sin modificar el JSON de origen. El destino no se sobrescribe y el registro
+normal escribe de forma atómica para evitar sesiones truncadas.
+
 El diagnóstico separa hechos, hipótesis y acciones de verificación. No declara
 que gamma sea la causa de un negro levantado sin medir la cadena completa.
 
