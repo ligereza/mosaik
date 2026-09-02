@@ -7,4 +7,6 @@
 - Milestone: `XioConsumeResult.overlay_update` includes view, digest, changes, cursor, and proposal-only safety.
 - Evidence: focused XIO suite `11 passed`.
 - Evidence: focused XIO suite `11 passed`; complete suite `109 passed`; `git diff --check` clean; new code and ledger content pass ASCII; no LUCIDA test process active.
-- Next: commit and push to `origin/LUCIDA`, then verify the remote tip.
+- Evidence: focused XIO suite `11 passed`; complete suite `109 passed`; `git diff --check` clean; new code and ledger content pass ASCII; no LUCIDA test process active.
+- Published: commit `06250b6` pushed to `origin/LUCIDA`; working tree clean.
+- Closure: each accepted XIO event now carries its safe atomic LUCIDA transition. Further progress needs a concrete host or transport contract.
