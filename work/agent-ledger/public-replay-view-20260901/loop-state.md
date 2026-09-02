@@ -4,6 +4,7 @@
 - Branch: `LUCIDA`
 - Starting commit: `4835090`
 - Scope: `SessionReplay.public_report()`, allowlisted record fields, public replay schema, tests, and documentation; internal replay semantics remain unchanged.
-- Done: pending.
-- Evidence pending: focused tests, full suite, schema validation, commit, push, and process check.
-- Next action: run focused and full verification, then publish if the public report contains no raw fields.
+- Done: `SessionReplay.public_report()` now exposes an allowlisted shareable view while preserving the complete internal replay.
+- Evidence: replay/privacy suite `55 passed`; full suite `136 passed`; public fixture validation `valid` with 6 records; schema graph `21` schemas, `21` registered ids, `19` references; `git diff --check` passed; no active repository test processes.
+- Published implementation commit: `07757f6` (`feat: add redacted public replay report`).
+- Next action: publish the ledger closure and perform a final clean-tree and remote check.
