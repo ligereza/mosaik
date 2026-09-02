@@ -6,9 +6,12 @@ from .orchestrator import LucidaOrchestrator
 from .overlay import (
     OverlayCursorError,
     OverlayDiffError,
+    OverlayUpdateError,
     build_overlay_cursor,
+    build_overlay_update,
     build_overlay_view,
     diff_overlay_view,
+    validate_overlay_update,
 )
 from .overlay_consumer import (
     OverlayConsumer,
@@ -35,9 +38,12 @@ __all__ = [
     "NayadeCapability",
     "OverlayCursorError",
     "OverlayDiffError",
+    "OverlayUpdateError",
     "build_overlay_cursor",
+    "build_overlay_update",
     "build_overlay_view",
     "diff_overlay_view",
+    "validate_overlay_update",
     "OverlayConsumer",
     "OverlayConsumerConflictError",
     "OverlayConsumerError",

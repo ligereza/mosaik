@@ -14,6 +14,7 @@ from .overlay import (
     MAX_DIFF_CHANGES,
     build_overlay_view,
     build_overlay_cursor,
+    build_overlay_update as build_projected_overlay_update,
     diff_overlay_view as diff_projected_overlay_view,
 )
 
@@ -145,6 +146,21 @@ class LucidaOrchestrator:
         return diff_projected_overlay_view(
             self.read_overlay_view(previous_state),
             self.read_overlay_view(current_state),
+            max_changes=max_changes,
+        )
+
+    def build_overlay_update(
+        self,
+        previous_state: LucidaState | Mapping[str, Any],
+        current_state: LucidaState | Mapping[str, Any],
+        *,
+        max_changes: int = MAX_DIFF_CHANGES,
+    ) -> dict[str, Any]:
+        """Build one atomic, read-only update for an incremental host."""
+
+        return build_projected_overlay_update(
+            previous_state,
+            current_state,
             max_changes=max_changes,
         )
 

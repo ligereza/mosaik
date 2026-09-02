@@ -96,6 +96,14 @@ requires `recovery=True` for a replacement snapshot. `checkpoint()` and
 actions. Its checkpoint contract is
 [`overlay-consumer-checkpoint.schema.json`](overlay/contracts/overlay-consumer-checkpoint.schema.json).
 
+`build_overlay_update(previous_state, current_state)` packages the complete
+projected view, its bounded changes, and the matching revision cursor in one
+atomic `LucidaOverlayUpdate` envelope. The builder rejects truncated diffs.
+`OverlayConsumer.apply_update(update)` reconstructs the candidate view before
+mutating local state, so a mismatched view, diff, cursor, or safety envelope
+fails without a partial update. Its contract is
+[`overlay-update.schema.json`](overlay/contracts/overlay-update.schema.json).
+
 `replay_overlay_json(source)` and `replay_overlay_path(path)` consume the
 strict `LucidaOverlayReplay` envelope, apply snapshots and deltas through
 `OverlayConsumer`, and return a deterministic `LucidaOverlayReplayReport`.

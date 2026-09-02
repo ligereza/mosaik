@@ -12,7 +12,9 @@ from lucida import (
     OverlayConsumerGapError,
     OverlayConsumerNotInitializedError,
     OverlayConsumerStaleError,
+    OverlayUpdateError,
     build_overlay_cursor,
+    build_overlay_update,
     replay_overlay_json,
     replay_overlay_path,
 )
@@ -480,3 +482,77 @@ def test_overlay_replay_report_schema_matches_the_deterministic_output():
     assert schema["properties"]["final_cursor"]["$ref"] == "overlay-cursor.schema.json"
     assert schema["properties"]["checkpoint"]["$ref"] == "overlay-consumer-checkpoint.schema.json"
     assert report["safety"]["replay_only"] is True
+
+
+def test_atomic_overlay_update_binds_view_changes_and_cursor_for_consumers():
+    orchestrator, state = _state()
+    current = replace(state, overlay_status="result_recorded")
+    update = orchestrator.build_overlay_update(state, current)
+
+    assert update == build_overlay_update(state.to_dict(), current.to_dict())
+    assert update["contract_type"] == "LucidaOverlayUpdate"
+    assert update["changes"][0]["field"] == "overlay_status"
+    assert update["view"] == orchestrator.read_overlay_view(current)
+    assert update["cursor"] == orchestrator.read_overlay_cursor(current)
+    assert update["safety"] == {
+        "proposal_only": True,
+        "automatic_actions": False,
+        "external_side_effects": False,
+    }
+
+    consumer = OverlayConsumer()
+    consumer.accept_snapshot(
+        orchestrator.read_overlay_view(state),
+        orchestrator.read_overlay_cursor(state),
+    )
+    consumer.apply_update(update)
+
+    assert consumer.view == update["view"]
+    assert consumer.cursor == update["cursor"]
+    assert consumer.state.applied_delta_count == 1
+
+
+def test_atomic_overlay_update_failure_does_not_mutate_consumer_state():
+    orchestrator, state = _state()
+    current = replace(state, overlay_status="result_recorded")
+    update = orchestrator.build_overlay_update(state, current)
+    consumer = OverlayConsumer()
+    consumer.accept_snapshot(
+        orchestrator.read_overlay_view(state),
+        orchestrator.read_overlay_cursor(state),
+    )
+    before = consumer.state
+    tampered = json.loads(json.dumps(update, sort_keys=True))
+    tampered["view"]["overlay_status"] = "tampered"
+
+    with pytest.raises(OverlayConsumerConflictError, match="does not match"):
+        consumer.apply_update(tampered)
+
+    assert consumer.state == before
+
+
+def test_atomic_overlay_update_rejects_truncated_diffs_and_has_a_schema():
+    orchestrator, state = _state()
+    current = replace(state, overlay_status="observing", proposals=())
+
+    with pytest.raises(OverlayUpdateError, match="truncate"):
+        orchestrator.build_overlay_update(state, current, max_changes=1)
+
+    contracts_dir = Path(__file__).parents[2] / "lucida" / "overlay" / "contracts"
+    schema = json.loads(
+        (contracts_dir / "overlay-update.schema.json").read_text(encoding="utf-8")
+    )
+    assert schema["additionalProperties"] is False
+    assert set(schema["required"]) == {
+        "contract_type",
+        "schema_version",
+        "surface",
+        "mode",
+        "view",
+        "changes",
+        "cursor",
+        "safety",
+    }
+    assert schema["properties"]["view"]["$ref"] == "overlay-view.schema.json"
+    assert schema["properties"]["cursor"]["$ref"] == "overlay-cursor.schema.json"
+    assert schema["properties"]["safety"]["properties"]["automatic_actions"]["const"] is False

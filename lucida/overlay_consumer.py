@@ -13,6 +13,7 @@ from .overlay import (
     OVERLAY_VIEW_SCHEMA_VERSION,
     diff_overlay_view,
     validate_overlay_cursor,
+    validate_overlay_update,
 )
 
 
@@ -149,6 +150,32 @@ class OverlayConsumer:
             last_operation="delta",
         )
         return self._state
+
+    def apply_update(self, update: Mapping[str, Any]) -> OverlayConsumerState:
+        """Apply one atomic view, diff, and cursor envelope.
+
+        The candidate view is verified against the envelope before delegating
+        to the existing delta state machine, so a failed update is atomic.
+        """
+
+        if not self._state.initialized:
+            raise OverlayConsumerNotInitializedError(
+                "An initial overlay snapshot is required before applying an update."
+            )
+        try:
+            validated = validate_overlay_update(update)
+        except ValueError as exc:
+            raise OverlayConsumerConflictError(str(exc)) from exc
+        current_view = _validated_view(self._state.view)
+        try:
+            candidate_view = _apply_changes(current_view, validated["changes"])
+        except ValueError as exc:
+            raise OverlayConsumerConflictError(str(exc)) from exc
+        if candidate_view != validated["view"]:
+            raise OverlayConsumerConflictError(
+                "overlay update view does not match its changes."
+            )
+        return self.apply_delta(validated["changes"], validated["cursor"])
 
     def checkpoint(self) -> dict[str, Any]:
         """Return a safe checkpoint that can be stored and restored explicitly."""

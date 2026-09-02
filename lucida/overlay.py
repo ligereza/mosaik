@@ -69,6 +69,16 @@ _CURSOR_FIELDS = {
     "checkpoint_id",
     "safety",
 }
+_UPDATE_FIELDS = {
+    "contract_type",
+    "schema_version",
+    "surface",
+    "mode",
+    "view",
+    "changes",
+    "cursor",
+    "safety",
+}
 _DEFAULT_CAPABILITY_LIMIT = 3
 _DEFAULT_PROPOSAL_LIMIT = 8
 _DEFAULT_UNKNOWNS_LIMIT = 8
@@ -88,6 +98,10 @@ class OverlayDiffError(ValueError):
 
 class OverlayCursorError(ValueError):
     """Raised when an overlay cursor cannot describe a safe state revision."""
+
+
+class OverlayUpdateError(ValueError):
+    """Raised when an atomic overlay update is incomplete or unsafe."""
 
 
 def diff_overlay_view(
@@ -358,6 +372,116 @@ def validate_overlay_cursor(value: Mapping[str, Any]) -> dict[str, Any]:
     return _json_copy(dict(value))
 
 
+def build_overlay_update(
+    previous_state: LucidaState | Mapping[str, Any],
+    current_state: LucidaState | Mapping[str, Any],
+    *,
+    max_changes: int = MAX_DIFF_CHANGES,
+) -> dict[str, Any]:
+    """Build one self-contained view, diff, and cursor envelope.
+
+    Atomic updates reject a truncated diff. The complete projected view is
+    included so a host can verify the result before accepting the delta.
+    """
+
+    if (
+        isinstance(max_changes, bool)
+        or not isinstance(max_changes, int)
+        or max_changes < 0
+        or max_changes > MAX_DIFF_CHANGES
+    ):
+        raise OverlayUpdateError("max_changes must be between 0 and the safe field bound.")
+    previous_view = build_overlay_view(previous_state)
+    current_view = build_overlay_view(current_state)
+    complete_changes = diff_overlay_view(
+        previous_view,
+        current_view,
+        max_changes=MAX_DIFF_CHANGES,
+    )
+    changes = diff_overlay_view(
+        previous_view,
+        current_view,
+        max_changes=max_changes,
+    )
+    if changes != complete_changes:
+        raise OverlayUpdateError("max_changes would truncate an atomic overlay update.")
+    return validate_overlay_update(
+        {
+            "contract_type": "LucidaOverlayUpdate",
+            "schema_version": OVERLAY_VIEW_SCHEMA_VERSION,
+            "surface": "LUCIDA",
+            "mode": "read_only",
+            "view": current_view,
+            "changes": changes,
+            "cursor": build_overlay_cursor(current_state),
+            "safety": {
+                "proposal_only": True,
+                "automatic_actions": False,
+                "external_side_effects": False,
+            },
+        }
+    )
+
+
+def validate_overlay_update(value: Mapping[str, Any]) -> dict[str, Any]:
+    """Validate an atomic update envelope without applying it."""
+
+    if not isinstance(value, Mapping):
+        raise OverlayUpdateError("overlay update must be a mapping.")
+    if set(value) != _UPDATE_FIELDS:
+        raise OverlayUpdateError("overlay update contains unsupported or missing fields.")
+    if value.get("contract_type") != "LucidaOverlayUpdate":
+        raise OverlayUpdateError("overlay update contract_type is invalid.")
+    if value.get("schema_version") != OVERLAY_VIEW_SCHEMA_VERSION:
+        raise OverlayUpdateError("overlay update schema_version is invalid.")
+    if value.get("surface") != "LUCIDA" or value.get("mode") != "read_only":
+        raise OverlayUpdateError("overlay update surface or mode is invalid.")
+    try:
+        view = _validated_projected_view(value["view"], "overlay update view")
+    except OverlayDiffError as exc:
+        raise OverlayUpdateError(str(exc)) from exc
+    try:
+        cursor = validate_overlay_cursor(value["cursor"])
+    except OverlayCursorError as exc:
+        raise OverlayUpdateError(str(exc)) from exc
+    if view["session_id"] != cursor["session_id"]:
+        raise OverlayUpdateError("overlay update view and cursor sessions differ.")
+    changes = value["changes"]
+    if not isinstance(changes, list):
+        raise OverlayUpdateError("overlay update changes must be a list.")
+    if len(changes) > MAX_DIFF_CHANGES:
+        raise OverlayUpdateError("overlay update changes exceed the safe field bound.")
+    copied_changes: list[dict[str, Any]] = []
+    for change in changes:
+        if not isinstance(change, Mapping) or set(change) != {"field", "before", "after"}:
+            raise OverlayUpdateError("each overlay update change must have field, before, and after.")
+        if change["field"] not in OVERLAY_DIFF_FIELDS:
+            raise OverlayUpdateError("overlay update change field is not safe.")
+        try:
+            copied_changes.append(_json_copy(dict(change)))
+        except OverlayDiffError as exc:
+            raise OverlayUpdateError(str(exc)) from exc
+    safety = value["safety"]
+    if not isinstance(safety, Mapping) or set(safety) != _SAFETY_FIELDS:
+        raise OverlayUpdateError("overlay update safety is invalid.")
+    if (
+        safety.get("proposal_only") is not True
+        or safety.get("automatic_actions") is not False
+        or safety.get("external_side_effects") is not False
+    ):
+        raise OverlayUpdateError("overlay update safety must remain read_only.")
+    return {
+        "contract_type": "LucidaOverlayUpdate",
+        "schema_version": OVERLAY_VIEW_SCHEMA_VERSION,
+        "surface": "LUCIDA",
+        "mode": "read_only",
+        "view": view,
+        "changes": copied_changes,
+        "cursor": cursor,
+        "safety": _json_copy(dict(safety)),
+    }
+
+
 def _safe_state(value: Mapping[str, Any]) -> dict[str, Any]:
     if not isinstance(value, Mapping):
         return {}
@@ -406,8 +530,11 @@ __all__ = [
     "OVERLAY_VIEW_SCHEMA_VERSION",
     "OverlayCursorError",
     "OverlayDiffError",
+    "OverlayUpdateError",
     "build_overlay_cursor",
+    "build_overlay_update",
     "build_overlay_view",
     "diff_overlay_view",
     "validate_overlay_cursor",
+    "validate_overlay_update",
 ]
