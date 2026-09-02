@@ -74,6 +74,48 @@ def test_replay_preserves_provenance_and_normalizes_three_capabilities():
     assert first["audit"]["mode"] == "proposal_only"
 
 
+def test_public_report_omits_payload_arguments_metadata_and_free_form_notes():
+    replay = SessionReplay("session-public", metadata={"private_path": "C:\\private"})
+    event = _event("evt-public", "2026-01-10T20:00:00Z", 1)
+    event["payload"]["secret_profile_value"] = "do-not-share"
+    signal = _signal("evt-public", "sig-public", "2026-01-10T20:00:00Z", 1)
+    signal["arguments"] = ["secret-argument"]
+    replay.append(event, signal, results=[])
+    replay.record_audit(
+        {
+            "audit_id": "audit-public",
+            "event_id": "evt-public",
+            "metadata": {"private": "do-not-share"},
+            "notes": "do-not-share",
+            "mode": "proposal_only",
+            "external_side_effects": False,
+        }
+    )
+
+    public = replay.public_report()
+    record = public["records"][0]
+    serialized = json.dumps(public, sort_keys=True)
+
+    assert public["contract_type"] == "LucidaPublicSessionReplayReport"
+    assert "payload" not in record["event"]
+    assert "arguments" not in record["signal"]
+    assert "metadata" not in record["event"]
+    assert "metadata" not in record["audit"]
+    assert "secret_profile_value" not in serialized
+    assert "secret-argument" not in serialized
+    assert "do-not-share" not in serialized
+    assert public["safety"] == {
+        "replay_only": True,
+        "proposal_only": True,
+        "external_side_effects": False,
+        "raw_payloads_included": False,
+        "signal_arguments_included": False,
+        "metadata_included": False,
+    }
+    assert record["state_after"]["mode"] == "read_only"
+    assert all("reason" not in proposal for proposal in record["proposals"])
+
+
 def test_sequence_gap_is_rejected_without_mutating_replay():
     replay = SessionReplay("session-001")
     replay.append(_event("evt-001", "2026-01-10T20:00:00Z", 1), _signal("evt-001", "sig-001", "2026-01-10T20:00:00Z", 1))

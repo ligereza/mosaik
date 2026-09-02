@@ -10,6 +10,7 @@ from adapters.vj.contracts import VJEvent, VJProposal, VJResult
 
 from ..contracts import LUCIDA_SCHEMA_VERSION, LucidaState
 from ..orchestrator import LucidaOrchestrator
+from ..overlay import build_overlay_view
 from ..signals.boundary import OscEnvelope
 
 
@@ -164,6 +165,75 @@ class SessionReplayState:
         }
 
 
+_PUBLIC_EVENT_FIELDS = ("event_id", "timestamp", "phase", "event_type", "source")
+_PUBLIC_SIGNAL_FIELDS = ("envelope_id", "event_id", "timestamp", "sequence", "source", "address", "transport")
+_PUBLIC_PROPOSAL_FIELDS = (
+    "proposal_id",
+    "event_id",
+    "phase",
+    "operation",
+    "risk",
+    "requires_explicit_approval",
+    "reversible",
+    "execution_mode",
+)
+_PUBLIC_AUDIT_FIELDS = (
+    "audit_id",
+    "event_id",
+    "envelope_id",
+    "timestamp",
+    "sequence",
+    "source",
+    "event_source",
+    "proposal_ids",
+    "result_ids",
+    "mode",
+    "external_side_effects",
+)
+
+
+def _public_event(event: VJEvent) -> dict[str, Any]:
+    raw = event.to_dict()
+    return {field: raw[field] for field in _PUBLIC_EVENT_FIELDS}
+
+
+def _public_signal(signal: SignalEnvelope) -> dict[str, Any]:
+    raw = signal.to_dict()
+    return {field: raw[field] for field in _PUBLIC_SIGNAL_FIELDS}
+
+
+def _public_proposal(proposal: VJProposal) -> dict[str, Any]:
+    raw = proposal.to_dict()
+    return {field: raw[field] for field in _PUBLIC_PROPOSAL_FIELDS}
+
+
+def _public_result(result: VJResult) -> dict[str, Any]:
+    return {
+        "result_id": result.result_id,
+        "proposal_id": result.proposal_id,
+        "recorded_at": result.recorded_at,
+        "status": result.status,
+    }
+
+
+def _public_audit(entry: Mapping[str, Any]) -> dict[str, Any]:
+    result: dict[str, Any] = {}
+    for field in _PUBLIC_AUDIT_FIELDS:
+        value = entry.get(field)
+        if field in {"proposal_ids", "result_ids"}:
+            if isinstance(value, (list, tuple)) and all(isinstance(item, str) for item in value):
+                result[field] = list(value)
+        elif field == "sequence":
+            if isinstance(value, int) and not isinstance(value, bool):
+                result[field] = value
+        elif field == "external_side_effects":
+            if isinstance(value, bool):
+                result[field] = value
+        elif isinstance(value, str):
+            result[field] = value
+    return result
+
+
 class SessionReplay:
     """Append-only replay that never opens a transport or executes actions."""
 
@@ -296,6 +366,43 @@ class SessionReplay:
                 "sockets_opened": False,
                 "resolume_opened": False,
                 "external_side_effects": False,
+            },
+        }
+
+    def public_report(self) -> dict[str, Any]:
+        """Return a shareable replay view without raw event or signal payloads."""
+
+        internal = self.report()
+        records = [
+            {
+                "event": _public_event(record.event),
+                "signal": _public_signal(record.signal),
+                "proposals": [_public_proposal(item) for item in record.proposals],
+                "results": [_public_result(item) for item in record.results],
+                "state_after": build_overlay_view(record.state_after),
+                "audit": _public_audit(record.audit),
+            }
+            for record in self._state.records
+        ]
+        return {
+            "contract_type": "LucidaPublicSessionReplayReport",
+            "schema_version": LUCIDA_SCHEMA_VERSION,
+            "session_id": self._state.session_id,
+            "status": internal["status"],
+            "event_count": len(records),
+            "signal_count": len(records),
+            "proposal_count": sum(len(record.proposals) for record in self._state.records),
+            "result_count": sum(len(record.results) for record in self._state.records),
+            "phase_order": [record.event.phase for record in self._state.records],
+            "records": records,
+            "audit_log": [_public_audit(entry) for entry in self._state.audit_log],
+            "safety": {
+                "replay_only": True,
+                "proposal_only": True,
+                "external_side_effects": False,
+                "raw_payloads_included": False,
+                "signal_arguments_included": False,
+                "metadata_included": False,
             },
         }
 

@@ -41,6 +41,12 @@ El reporte contiene registros, propuestas, resultados, estado final y un audit
 log determinista. Un resultado ausente deja la propuesta pendiente; el replay
 no inventa una ejecución.
 
+`SessionReplay.public_report()` genera una vista para compartir: conserva
+fases, timestamps, conteos, estados redacted, propuestas resumidas y estados
+de resultados, pero omite payloads, argumentos de señal, metadata, notas y
+evidencia libre. `report()` sigue siendo la representación interna completa
+necesaria para reproducir la sesión.
+
 ## Limites
 
 - `SignalEnvelope` es un contrato de entrada, no un receptor de red.
