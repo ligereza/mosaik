@@ -343,6 +343,7 @@ def test_overlay_consumer_applies_deterministic_delta_and_restores_checkpoint():
     assert restored.view == next_view
     assert restored.cursor == cursor
     assert restored.state.applied_delta_count == 1
+    assert checkpoint["view_digest"] == overlay_view_digest(next_view)
     restored.state.view["status"] = "local mutation"
     assert restored.view["status"] == view["status"]
     assert restored.view["overlay_status"] == "result_recorded"
@@ -418,6 +419,23 @@ def test_overlay_consumer_rejects_mismatched_snapshot_and_checkpoint_contracts()
     checkpoint["cursor"] = cursor
     with pytest.raises(ValueError, match="non-empty last_operation"):
         consumer.restore_checkpoint(checkpoint)
+
+
+def test_overlay_consumer_rejects_altered_checkpoint_view_before_mutation():
+    orchestrator, state = _state()
+    consumer = OverlayConsumer()
+    consumer.accept_snapshot(
+        orchestrator.read_overlay_view(state),
+        orchestrator.read_overlay_cursor(state),
+    )
+    checkpoint = consumer.checkpoint()
+    before = consumer.state
+    checkpoint["view"]["status"] = "tampered"
+
+    with pytest.raises(ValueError, match="view_digest"):
+        consumer.restore_checkpoint(checkpoint)
+
+    assert consumer.state == before
 
 
 def test_overlay_json_replay_is_deterministic_and_recoverable():

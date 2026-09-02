@@ -11,6 +11,7 @@
     "applied_delta_count",
     "last_operation",
     "view",
+    "view_digest",
     "cursor",
     "safety"
   ],
@@ -25,6 +26,12 @@
     "view": {
       "anyOf": [
         { "$ref": "overlay-view.schema.json" },
+        { "type": "null" }
+      ]
+    },
+    "view_digest": {
+      "anyOf": [
+        { "type": "string", "pattern": "^[0-9a-f]{64}$" },
         { "type": "null" }
       ]
     },

@@ -95,6 +95,8 @@ requires `recovery=True` for a replacement snapshot. `checkpoint()` and
 `restore_checkpoint()` provide explicit recoverability without executing
 actions. Its checkpoint contract is
 [`overlay-consumer-checkpoint.schema.json`](overlay/contracts/overlay-consumer-checkpoint.schema.json).
+Ready checkpoints include a SHA-256 digest of the projected view and reject
+altered or mixed view data before restoration.
 
 `build_overlay_update(previous_state, current_state)` packages the complete
 projected view, its SHA-256 view digest, bounded changes, and the matching

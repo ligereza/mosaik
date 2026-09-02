@@ -12,6 +12,7 @@ from .overlay import (
     OVERLAY_DIFF_FIELDS,
     OVERLAY_VIEW_SCHEMA_VERSION,
     diff_overlay_view,
+    overlay_view_digest,
     validate_overlay_cursor,
     validate_overlay_update,
 )
@@ -188,6 +189,7 @@ class OverlayConsumer:
                 "applied_delta_count": 0,
                 "last_operation": "empty",
                 "view": None,
+                "view_digest": None,
                 "cursor": None,
                 "safety": _safety(),
             }
@@ -198,6 +200,7 @@ class OverlayConsumer:
             "applied_delta_count": self._state.applied_delta_count,
             "last_operation": self._state.last_operation,
             "view": _copy_value(self._state.view),
+            "view_digest": overlay_view_digest(self._state.view),
             "cursor": _copy_value(self._state.cursor),
             "safety": _safety(),
         }
@@ -214,6 +217,7 @@ class OverlayConsumer:
             "applied_delta_count",
             "last_operation",
             "view",
+            "view_digest",
             "cursor",
             "safety",
         }
@@ -238,10 +242,12 @@ class OverlayConsumer:
         if checkpoint.get("safety") != _safety():
             raise OverlayConsumerError("consumer checkpoint safety is invalid.")
         view = checkpoint.get("view")
+        view_digest = checkpoint.get("view_digest")
         cursor = checkpoint.get("cursor")
         if checkpoint["status"] == "empty":
             if (
                 view is not None
+                or view_digest is not None
                 or cursor is not None
                 or count != 0
                 or checkpoint["last_operation"] != "empty"
@@ -254,6 +260,8 @@ class OverlayConsumer:
         if checkpoint["last_operation"] == "empty":
             raise OverlayConsumerError("ready checkpoint needs a non-empty last_operation.")
         validated_view = _validated_view(view)
+        if view_digest != overlay_view_digest(validated_view):
+            raise OverlayConsumerError("checkpoint view_digest does not match the view.")
         validated_cursor = validate_overlay_cursor(cursor)
         if validated_view["session_id"] != validated_cursor["session_id"]:
             raise OverlayConsumerError("checkpoint view and cursor sessions differ.")
