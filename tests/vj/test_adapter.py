@@ -114,6 +114,15 @@ def test_state_restore_keeps_valid_sequence_without_coercion():
     assert state.sequence == 3
 
 
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [("last_event_id", 7), ("last_timestamp", "not-a-timestamp"), ("checkpoint_id", False)],
+)
+def test_state_restore_rejects_invalid_optional_identity_fields(field, value):
+    with pytest.raises(ContractError, match=field):
+        VJState.from_dict({"session_id": "session-001", field: value})
+
+
 def test_incident_proposal_only_captures_evidence():
     adapter = VJAdapter()
     state = adapter.initial_state("session-001")

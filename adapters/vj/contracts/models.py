@@ -21,13 +21,25 @@ def _required_text(value: Any, field_name: str) -> str:
     return value.strip()
 
 
-def _timestamp(value: Any) -> str:
-    text = _required_text(value, "timestamp")
+def _timestamp(value: Any, field_name: str = "timestamp") -> str:
+    text = _required_text(value, field_name)
     try:
         datetime.fromisoformat(text.replace("Z", "+00:00"))
     except ValueError as exc:
-        raise ContractError(f"timestamp is not valid ISO-8601: {text}") from exc
+        raise ContractError(f"{field_name} is not valid ISO-8601: {text}") from exc
     return text
+
+
+def _optional_text(value: Any, field_name: str) -> str | None:
+    if value is None:
+        return None
+    return _required_text(value, field_name)
+
+
+def _optional_timestamp(value: Any, field_name: str) -> str | None:
+    if value is None:
+        return None
+    return _timestamp(value, field_name)
 
 
 def _mapping(value: Any, field_name: str) -> dict[str, Any]:
@@ -195,14 +207,17 @@ class VJState:
         sequence = value.get("sequence", 0)
         if isinstance(sequence, bool) or not isinstance(sequence, int) or sequence < 0:
             raise ContractError("sequence debe ser un entero no negativo.")
+        last_event_id = _optional_text(value.get("last_event_id"), "last_event_id")
+        last_timestamp = _optional_timestamp(value.get("last_timestamp"), "last_timestamp")
+        checkpoint_id = _optional_text(value.get("checkpoint_id"), "checkpoint_id")
         return cls(
             session_id=_required_text(value.get("session_id"), "session_id"),
             phase=phase,
             status=_required_text(value.get("status", "created"), "status"),
             sequence=sequence,
-            last_event_id=value.get("last_event_id"),
-            last_timestamp=value.get("last_timestamp"),
-            checkpoint_id=value.get("checkpoint_id"),
+            last_event_id=last_event_id,
+            last_timestamp=last_timestamp,
+            checkpoint_id=checkpoint_id,
             completed_phases=_tuple_text(value.get("completed_phases"), "completed_phases"),
             open_incidents=_tuple_text(value.get("open_incidents"), "open_incidents"),
             pending_proposal_ids=_tuple_text(value.get("pending_proposal_ids"), "pending_proposal_ids"),
