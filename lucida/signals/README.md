@@ -41,6 +41,9 @@ El consumidor sólo acepta un dict o un objeto ya validado. No abre sockets, no
 necesita Resolume y no ejecuta acciones. `XioEventConsumer.read_overlay()` y
 `read_overlay_cursor()` exponen la misma vista acotada y cursor de revisión de
 LUCIDA sin copiar payload ni provenance de XIO al overlay.
+El resultado serializable está descrito por
+[`xio-consume-result.schema.json`](contracts/xio-consume-result.schema.json),
+que referencia el contrato común de `overlay_update`.
 
 ## Host result receipt
 

@@ -129,6 +129,19 @@ def test_xio_consume_update_is_deterministic_and_redacted():
     assert "provenance" not in serialized
 
 
+def test_xio_consume_result_schema_references_the_atomic_overlay_contract():
+    contracts_dir = Path(__file__).parents[2] / "lucida" / "signals" / "contracts"
+    schema = json.loads(
+        (contracts_dir / "xio-consume-result.schema.json").read_text(encoding="utf-8")
+    )
+    result = XioEventConsumer("session-001").consume(_application_event()).to_dict()
+
+    assert schema["additionalProperties"] is False
+    assert set(schema["required"]) == set(result)
+    assert schema["properties"]["application_event"]["$ref"] == "application-event.schema.json"
+    assert schema["properties"]["overlay_update"]["$ref"] == "../../overlay/contracts/overlay-update.schema.json"
+
+
 def test_incomplete_application_event_is_rejected():
     raw = _application_event()
     del raw["provenance"]
