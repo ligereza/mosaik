@@ -12,12 +12,18 @@ Desde `C:\IA\VJ`:
 python tools/mosaik_cli.py nayade-processor catalog
 python tools/mosaik_cli.py nayade-processor discover --report Z:\MOSAIK\runs\nayade\processor-discovery.json
 python tools/mosaik_cli.py nayade-processor snapshot --device COM3 -o Z:\MOSAIK\runs\nayade\processor-snapshot.json
+python tools/mosaik_cli.py nayade-processor validate-case data\cases\soundcheck-2026-08-29-vc2.json
 python tools/mosaik_cli.py nayade-processor diagnose-case data\cases\soundcheck-2026-08-29-vc2.json
 ```
 
 `discover` consulta el inventario USB/COM del sistema, pero no abre los puertos. Si no aparece nada, todavía puede existir un procesador controlable por Ethernet o por el software del fabricante.
 
 `snapshot` puede usar `--model` cuando el técnico o una etiqueta confirma el modelo. Si no se entrega, el resultado conserva una coincidencia tentativa o `unknown-led-processor`. Siempre deja pendiente el `ModuleProfile`.
+
+`validate-case` comprueba que el registro conserva observaciones, hipótesis y
+secuencia temporal con el contrato `NayadeProcessorCase`. `diagnose-case` hace
+esta validación automáticamente antes de aplicar reglas de rango, gamma y
+negros.
 
 ## Flujo de llegada al venue
 

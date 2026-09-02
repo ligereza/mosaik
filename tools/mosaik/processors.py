@@ -19,11 +19,14 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from jsonschema import Draft202012Validator
+
 from .media import MosaikError
 
 
 CATALOG_PATH = Path(__file__).resolve().parents[2] / "data" / "processors" / "catalog.json"
 UNKNOWN_PROFILE_ID = "unknown-led-processor"
+CASE_SCHEMA_PATH = Path(__file__).resolve().parents[2] / "schemas" / "nayade-processor-case.schema.json"
 
 
 def _now() -> str:
@@ -53,6 +56,42 @@ def load_processor_catalog(path: str | Path | None = None) -> dict[str, Any]:
     if not isinstance(processors, list) or not processors:
         raise MosaikError("El catálogo de procesadores no contiene perfiles.")
     return catalog
+
+
+def validate_processor_case_document(case: dict[str, Any]) -> dict[str, Any]:
+    """Validate one public NAYADE case before applying diagnosis rules."""
+
+    if not isinstance(case, dict):
+        raise MosaikError("El caso NAYADE debe ser un objeto JSON.")
+    try:
+        schema = json.loads(CASE_SCHEMA_PATH.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise MosaikError(f"No se pudo leer el schema de casos NAYADE: {CASE_SCHEMA_PATH}") from exc
+    errors = sorted(Draft202012Validator(schema).iter_errors(case), key=lambda error: list(error.path))
+    if errors:
+        location = ".".join(str(item) for item in errors[0].path) or "root"
+        raise MosaikError(f"Caso NAYADE inválido en {location}: {errors[0].message}")
+    return dict(case)
+
+
+def validate_processor_case(path: str | Path) -> dict[str, Any]:
+    """Return a shareable validation summary without exposing the source path."""
+
+    case = validate_processor_case_document(_load_json(path))
+    return {
+        "schema_version": "0.1",
+        "report_type": "NayadeProcessorCaseValidation",
+        "case_id": case["case_id"],
+        "valid": True,
+        "observation_count": len(case["observations"]),
+        "hypothesis_count": len(case["diagnostic_hypotheses"]),
+        "event_count": len(case["event_sequence"]),
+        "safety": {
+            "commands_sent": False,
+            "writes_attempted": False,
+            "source_path_exposed": False,
+        },
+    }
 
 
 def _text(value: Any) -> str:
@@ -313,7 +352,7 @@ def diagnose_signal_observations(observations: dict[str, Any]) -> list[dict[str,
 
 
 def diagnose_case(path: str | Path) -> dict[str, Any]:
-    case = _load_json(path)
+    case = validate_processor_case_document(_load_json(path))
     observations: dict[str, Any] = {}
     before_observations: dict[str, Any] = {}
     after_observations: dict[str, Any] = {}
@@ -357,8 +396,12 @@ def diagnose_case(path: str | Path) -> dict[str, Any]:
         "captured_at": _now(),
         "read_only": True,
         "findings": unique_findings,
-        "source_case": str(Path(path).expanduser().resolve()),
-        "safety": {"commands_sent": False, "writes_attempted": False},
+        "source_case": case["case_id"],
+        "safety": {
+            "commands_sent": False,
+            "writes_attempted": False,
+            "source_path_exposed": False,
+        },
     }
 
 

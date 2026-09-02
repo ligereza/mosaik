@@ -60,3 +60,18 @@ def test_schema_graph_cli_validates_generated_xio_result(tmp_path):
             str(instance_path),
         ]
     ) == 0
+
+
+def test_schema_graph_cli_validates_the_nayade_case_fixture():
+    module = _load_module()
+
+    assert module.main(
+        [
+            "--root",
+            str(ROOT),
+            "--schema",
+            "schemas/nayade-processor-case.schema.json",
+            "--instance",
+            "data/cases/soundcheck-2026-08-29-vc2.json",
+        ]
+    ) == 0

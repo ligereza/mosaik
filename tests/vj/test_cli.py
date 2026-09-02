@@ -105,3 +105,14 @@ def test_vj_project_replay_cli_replays_a_manifest(tmp_path, capsys):
     assert exit_code == 0
     assert json.loads(report_path.read_text(encoding="utf-8"))["status"] == "PASS"
     assert '"source_paths_exposed": false' in capsys.readouterr().out
+
+
+def test_nayade_validate_case_cli_returns_a_safe_summary(capsys):
+    case = Path(__file__).resolve().parents[2] / "data" / "cases" / "soundcheck-2026-08-29-vc2.json"
+
+    exit_code = main(["nayade-processor", "validate-case", str(case)])
+
+    assert exit_code == 0
+    output = json.loads(capsys.readouterr().out)
+    assert output["valid"] is True
+    assert output["safety"]["source_path_exposed"] is False

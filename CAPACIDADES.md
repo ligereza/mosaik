@@ -282,6 +282,7 @@ python tools/mosaik_cli.py instar-testcard "D:\VJ\Shows\advanced-output.xml" --o
 python tools/mosaik_cli.py nayade-session init artifacts\testcard.json --output artifacts\soundcheck.json
 python tools/mosaik_cli.py nayade-processor catalog
 python tools/mosaik_cli.py nayade-processor discover --report artifacts\processor-discovery.json
+python tools/mosaik_cli.py nayade-processor validate-case data\cases\soundcheck-2026-08-29-vc2.json
 python tools/mosaik_cli.py nayade-processor diagnose-case data\cases\soundcheck-2026-08-29-vc2.json
 python tools/mosaik_cli.py vj-project instar artifacts\instar.json --event-id instar-001 --sequence 1 --mode projection
 python tools/mosaik_cli.py vj-project-replay artifacts\vj-project-manifest.json --report artifacts\vj-project-replay.json

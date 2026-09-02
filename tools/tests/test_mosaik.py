@@ -6,13 +6,15 @@ from unittest.mock import patch
 
 from tools.mosaik.adapt import build_adaptation_plan, build_filter_graph, render_task
 from tools.mosaik.instar import discover_media_files, run_instar
-from tools.mosaik.media import format_fps, has_alpha, parse_fraction
+from tools.mosaik.media import MosaikError, format_fps, has_alpha, parse_fraction
 from tools.mosaik.nayade import build_experiment_matrix, create_session, get_next_step, record_event
 from tools.mosaik.processors import (
     build_processor_snapshot,
     diagnose_case,
     discover_serial_devices,
     match_processor_profiles,
+    validate_processor_case,
+    validate_processor_case_document,
 )
 from tools.mosaik.preflight import preflight_file, sidecar_from_report
 from tools.mosaik.contracts import build_clip_profile, derive_behavior_profile, suggest_semantic_cues
@@ -902,6 +904,28 @@ class ProcessorTests(unittest.TestCase):
         self.assertIn("multi_stage_level_compensation", finding_ids)
         self.assertNotIn("possible_double_range_conversion", finding_ids)
         self.assertIn("processor_range_state_not_recorded", finding_ids)
+
+    def test_case_validation_returns_a_shareable_summary_without_source_path(self):
+        path = Path("data/cases/soundcheck-2026-08-29-vc2.json")
+
+        report = validate_processor_case(path)
+
+        self.assertTrue(report["valid"])
+        self.assertEqual(report["report_type"], "NayadeProcessorCaseValidation")
+        self.assertFalse(report["safety"]["source_path_exposed"])
+        self.assertNotIn(str(path.resolve()), json.dumps(report))
+
+        diagnosis = diagnose_case(path)
+        self.assertEqual(diagnosis["source_case"], "soundcheck-2026-08-29-vc2")
+        self.assertFalse(diagnosis["safety"]["source_path_exposed"])
+        self.assertNotIn(str(path.resolve()), json.dumps(diagnosis))
+
+    def test_case_validation_rejects_incomplete_records_before_diagnosis(self):
+        case = json.loads(Path("data/cases/soundcheck-2026-08-29-vc2.json").read_text(encoding="utf-8"))
+        case.pop("event_sequence")
+
+        with self.assertRaises(MosaikError):
+            validate_processor_case_document(case)
 
 
 if __name__ == "__main__":

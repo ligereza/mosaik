@@ -39,6 +39,7 @@ from mosaik.processors import (
     load_processor_catalog,
     snapshot_from_serial_device,
     snapshot_text_report,
+    validate_processor_case,
     write_json as write_processor_json,
 )
 from mosaik.resolume import (
@@ -272,6 +273,9 @@ def build_parser() -> argparse.ArgumentParser:
     processor_case = processor_commands.add_parser("diagnose-case", help="Diagnostica un caso de soundcheck ya registrado.")
     processor_case.add_argument("case", help="Caso JSON de NAYADE.")
     processor_case.add_argument("--report", help="Ruta opcional para guardar el diagnóstico JSON.")
+    processor_validate_case = processor_commands.add_parser("validate-case", help="Valida el contrato de un caso NAYADE.")
+    processor_validate_case.add_argument("case", help="Caso JSON de NAYADE.")
+    processor_validate_case.add_argument("--report", help="Ruta opcional para guardar la validación JSON.")
     return parser
 
 
@@ -632,6 +636,13 @@ def main(argv: list[str] | None = None) -> int:
                 if args.report:
                     report_path = write_processor_json(report, args.report)
                     print(f"\nDiagnóstico JSON: {report_path}")
+                return 0
+            if args.processor_command == "validate-case":
+                report = validate_processor_case(args.case)
+                print(json.dumps(report, ensure_ascii=False, indent=2))
+                if args.report:
+                    report_path = write_processor_json(report, args.report)
+                    print(f"\nValidación JSON: {report_path}")
                 return 0
     except (MosaikError, ReplayError, VJProjectError) as exc:
         print(f"MOSAIK ERROR: {exc}", file=sys.stderr)
