@@ -305,7 +305,7 @@ class OscResolumeBoundary:
 
     def read_overlay(self, state: OscBridgeState | Mapping[str, Any]) -> dict[str, Any]:
         current = state if isinstance(state, OscBridgeState) else OscBridgeState.from_dict(state)
-        overlay = dict(self._orchestrator.read_overlay(current.lucida_state))
+        overlay = dict(self._orchestrator.read_overlay_view(current.lucida_state))
         overlay["signal_boundary"] = {
             "contract_type": "OscBridgeState",
             "schema_version": OSC_SCHEMA_VERSION,
@@ -313,6 +313,11 @@ class OscResolumeBoundary:
             "received_count": current.received_count,
         }
         return overlay
+
+    def read_overlay_view(self, state: LucidaState | Mapping[str, Any]) -> dict[str, Any]:
+        """Return only the bounded LUCIDA view for another boundary."""
+
+        return self._orchestrator.read_overlay_view(state)
 
     @staticmethod
     def _validate_sequence(envelope: OscEnvelope, state: OscBridgeState) -> None:

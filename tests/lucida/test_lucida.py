@@ -53,11 +53,27 @@ def test_single_surface_reports_observed_state_proposals_expected_results_and_un
         "IMAGO",
     }
     instar = next(item for item in overlay["capabilities"] if item["capability"] == "INSTAR")
-    assert instar["observed"]
     assert instar["state"]["media_status"] == "ready"
-    assert instar["proposals"]
-    assert instar["expected_results"]
+    assert instar["observed_count"] > 0
+    assert instar["expected_result_count"] > 0
     assert instar["unknowns"]
+
+
+def test_public_overlay_uses_bounded_view_without_private_state_or_metadata():
+    orchestrator = LucidaOrchestrator()
+    state = orchestrator.initial_state(
+        "session-private",
+        metadata={"credential": "must-not-leak", "private_path": "C:\\secret"},
+    )
+
+    overlay = orchestrator.read_overlay(state)
+    serialized = json.dumps(overlay, sort_keys=True)
+
+    assert overlay["contract_type"] == "LucidaOverlayView"
+    assert "state" not in overlay
+    assert "metadata" not in serialized
+    assert "must-not-leak" not in serialized
+    assert "C:\\secret" not in serialized
 
 
 def test_replay_is_deterministic():

@@ -136,6 +136,6 @@ def test_host_boundary_rejects_non_vj_xio_without_phase_or_replay_mutation():
     assert boundary.report() == initial_report
     assert boundary.state.records == ()
     assert boundary.state.next_sequence == 1
-    assert first.overlay["state"]["vj_state"]["sequence"] == 0
+    assert first.overlay["session_id"] == "fictional-xio-session-001"
     assert first.overlay["safety"]["external_side_effects"] is False
     assert not hasattr(boundary, "execute")

@@ -104,25 +104,9 @@ class LucidaOrchestrator:
         return replace(current, vj_state=vj_state, overlay_status="result_recorded")
 
     def read_overlay(self, state: LucidaState | Mapping[str, Any]) -> dict[str, Any]:
-        """Return one read-only structured surface for a future host overlay."""
+        """Return the bounded redacted overlay surface."""
 
-        current = state if isinstance(state, LucidaState) else LucidaState.from_dict(state)
-        return {
-            "surface": "LUCIDA",
-            "mode": "read_only",
-            "state": current.to_dict(),
-            "capabilities": [capability.to_dict() for capability in current.capabilities],
-            "pending_proposals": [
-                proposal.to_dict()
-                for proposal in current.proposals
-                if proposal.proposal_id in current.vj_state.pending_proposal_ids
-            ],
-            "safety": {
-                "external_side_effects": False,
-                "automatic_actions": False,
-                "resolume_opened": False,
-            },
-        }
+        return self.read_overlay_view(state)
 
     def read_overlay_view(self, state: LucidaState | Mapping[str, Any]) -> dict[str, Any]:
         """Return a bounded projection suitable for a future invisible overlay."""

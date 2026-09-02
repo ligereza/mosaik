@@ -305,24 +305,7 @@ class HostSignalBoundary:
 
     def read_overlay(self) -> dict[str, Any]:
         current = self._replay.state
-        pending = [
-            proposal.to_dict()
-            for record in current.records
-            for proposal in record.proposals
-            if proposal.proposal_id in current.lucida_state.vj_state.pending_proposal_ids
-        ]
-        return {
-            "surface": "LUCIDA",
-            "mode": "read_only",
-            "state": current.lucida_state.to_dict(),
-            "pending_proposals": pending,
-            "safety": {
-                "sockets_opened": False,
-                "resolume_opened": False,
-                "automatic_actions": False,
-                "external_side_effects": False,
-            },
-        }
+        return self._osc_normalizer.read_overlay_view(current.lucida_state)
 
     def report(self) -> dict[str, Any]:
         return self._replay.report()

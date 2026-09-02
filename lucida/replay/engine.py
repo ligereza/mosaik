@@ -60,6 +60,7 @@ def replay_fixture(fixture: Mapping[str, Any]) -> dict[str, Any]:
     proposal_count = 0
     result_count = 0
     seen_event_ids: set[str] = set()
+    active_capabilities: set[str] = set()
 
     try:
         for raw_event in events:
@@ -81,6 +82,9 @@ def replay_fixture(fixture: Mapping[str, Any]) -> dict[str, Any]:
                 state = orchestrator.register_result(state, result_data)
                 registered_result_ids.append(result_data["result_id"])
                 result_count += 1
+            active_capabilities.update(
+                report.capability for report in state.capabilities if report.proposals
+            )
             transitions.append(
                 {
                     "event": event.to_dict(),
@@ -98,12 +102,6 @@ def replay_fixture(fixture: Mapping[str, Any]) -> dict[str, Any]:
         )
 
     final_state = state.to_dict()
-    active_capabilities = {
-        report["capability"]
-        for transition in transitions
-        for report in transition["overlay"]["capabilities"]
-        if report["proposals"]
-    }
     complete = (
         final_state["vj_state"]["phase"] == "closure"
         and final_state["vj_state"]["status"] == "closed"

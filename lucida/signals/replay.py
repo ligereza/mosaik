@@ -58,6 +58,7 @@ def replay_fixture(fixture: Mapping[str, Any]) -> dict[str, Any]:
     proposal_count = 0
     result_count = 0
     seen_sequences: set[int] = set()
+    active_capabilities: set[str] = set()
 
     try:
         for raw_envelope in envelopes:
@@ -75,6 +76,11 @@ def replay_fixture(fixture: Mapping[str, Any]) -> dict[str, Any]:
                 state = boundary.register_result(state, result_data)
                 registered_result_ids.append(result_data["result_id"])
                 result_count += 1
+            active_capabilities.update(
+                report.capability
+                for report in state.lucida_state.capabilities
+                if report.proposals
+            )
             transitions.append(
                 {
                     "envelope": envelope.to_dict(),
@@ -95,12 +101,6 @@ def replay_fixture(fixture: Mapping[str, Any]) -> dict[str, Any]:
         )
 
     final_state = state.to_dict()
-    active_capabilities = {
-        report["capability"]
-        for transition in transitions
-        for report in transition["overlay"]["capabilities"]
-        if report["proposals"]
-    }
     complete = (
         final_state["lucida_state"]["vj_state"]["phase"] == "closure"
         and final_state["lucida_state"]["vj_state"]["status"] == "closed"
