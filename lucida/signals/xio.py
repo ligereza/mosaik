@@ -11,6 +11,8 @@ import json
 
 from adapters.vj.contracts import VJEvent, VJResult
 
+from ..overlay import build_overlay_cursor, build_overlay_view
+
 if TYPE_CHECKING:
     from ..replay.session import SessionReplay, SessionReplayRecord, SignalEnvelope
 
@@ -231,6 +233,16 @@ class XioEventConsumer:
     @property
     def state(self):
         return self._replay.state
+
+    def read_overlay(self) -> dict[str, Any]:
+        """Return the bounded LUCIDA view for the current XIO replay state."""
+
+        return build_overlay_view(self._replay.state.lucida_state)
+
+    def read_overlay_cursor(self) -> dict[str, Any]:
+        """Return the safe LUCIDA revision cursor for the current XIO state."""
+
+        return build_overlay_cursor(self._replay.state.lucida_state)
 
     def consume(
         self,

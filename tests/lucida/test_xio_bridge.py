@@ -92,6 +92,29 @@ def test_consumer_delivers_event_and_results_to_session_replay():
     assert received.record.state_after.vj_state.pending_proposal_ids == ()
 
 
+def test_xio_consumer_exposes_bounded_overlay_and_revision_cursor():
+    consumer = XioEventConsumer("session-001")
+    raw = _application_event()
+    raw["payload"]["secret_payload"] = "must-not-leak"
+    raw["provenance"]["private_token"] = "must-not-leak"
+    consumer.consume(raw)
+
+    overlay = consumer.read_overlay()
+    cursor = consumer.read_overlay_cursor()
+    serialized = json.dumps({"overlay": overlay, "cursor": cursor}, sort_keys=True)
+
+    assert overlay["contract_type"] == "LucidaOverlayView"
+    assert overlay["session_id"] == "session-001"
+    assert "state" not in overlay
+    assert "secret_payload" not in serialized
+    assert "private_token" not in serialized
+    assert cursor["contract_type"] == "LucidaOverlayCursor"
+    assert cursor["sequence"] == 1
+    assert cursor["last_event_id"] == "evt-001"
+    assert consumer.read_overlay() == overlay
+    assert consumer.read_overlay_cursor() == cursor
+
+
 def test_incomplete_application_event_is_rejected():
     raw = _application_event()
     del raw["provenance"]

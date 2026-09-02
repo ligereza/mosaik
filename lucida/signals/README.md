@@ -38,7 +38,9 @@ con timezone y convierte el evento a `VJEvent` + `SignalEnvelope` para
 audit metadata.
 
 El consumidor sólo acepta un dict o un objeto ya validado. No abre sockets, no
-necesita Resolume y no ejecuta acciones.
+necesita Resolume y no ejecuta acciones. `XioEventConsumer.read_overlay()` y
+`read_overlay_cursor()` exponen la misma vista acotada y cursor de revisión de
+LUCIDA sin copiar payload ni provenance de XIO al overlay.
 
 ## Host result receipt
 
