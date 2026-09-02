@@ -112,6 +112,8 @@ fails without a partial update. Its contract is
 strict `LucidaOverlayReplay` envelope, apply snapshots, deltas, and atomic
 updates through
 `OverlayConsumer`, and return a deterministic `LucidaOverlayReplayReport`.
+`validate_overlay_replay(envelope)` performs the same structural and contract
+checks without applying records, so a host can preflight an envelope first.
 The replay is local and read-only; malformed records, unsafe deltas, stale
 cursors, and sequence gaps fail explicitly. The fictional fixture is
 [`overlay-session-fictional.json`](overlay/fixtures/overlay-session-fictional.json)

@@ -12,6 +12,8 @@ from .overlay import (
     build_overlay_cursor,
     build_overlay_update,
     build_overlay_view,
+    diff_overlay_view,
+    validate_overlay_cursor,
     validate_overlay_update,
 )
 from .overlay_consumer import OverlayConsumer, OverlayConsumerError
@@ -131,6 +133,22 @@ def replay_overlay_json(source: str | bytes | bytearray | Mapping[str, Any]) -> 
     else:
         raise OverlayReplayError("overlay replay input must be JSON text or a mapping.")
     return replay_overlay_records(envelope)
+
+
+def validate_overlay_replay(envelope: Mapping[str, Any]) -> dict[str, Any]:
+    """Validate a replay envelope without applying any record."""
+
+    records = _validated_envelope(envelope)
+    if not isinstance(records[0], Mapping) or records[0].get("kind") != "snapshot":
+        raise OverlayReplayError("the first replay record must be a snapshot.")
+    for index, record in enumerate(records):
+        if record.get("kind") == "snapshot" and index != 0 and record["recovery"] is not True:
+            raise OverlayReplayError("non-initial snapshots require recovery=true.")
+    return {
+        "contract_type": "LucidaOverlayReplay",
+        "schema_version": OVERLAY_VIEW_SCHEMA_VERSION,
+        "records": _copy_json(records),
+    }
 
 
 def replay_overlay_path(path: str | Path) -> dict[str, Any]:
@@ -266,6 +284,8 @@ def _validated_envelope(envelope: Mapping[str, Any]) -> list[Mapping[str, Any]]:
     records = envelope.get("records")
     if not isinstance(records, list) or not records:
         raise OverlayReplayError("overlay replay needs a non-empty records list.")
+    if records[0].get("kind") != "snapshot":
+        raise OverlayReplayError("the first replay record must be a snapshot.")
     for index, record in enumerate(records):
         if not isinstance(record, Mapping):
             raise OverlayReplayError(f"record {index} must be an object.")
@@ -275,6 +295,13 @@ def _validated_envelope(envelope: Mapping[str, Any]) -> list[Mapping[str, Any]]:
                 raise OverlayReplayError(f"snapshot record {index} has unsupported fields.")
             if not isinstance(record.get("recovery"), bool):
                 raise OverlayReplayError(f"snapshot record {index} recovery must be boolean.")
+            try:
+                diff_overlay_view(record["view"], record["view"])
+                cursor = validate_overlay_cursor(record["cursor"])
+            except ValueError as exc:
+                raise OverlayReplayError(f"snapshot record {index} is invalid: {exc}") from exc
+            if record["view"]["session_id"] != cursor["session_id"]:
+                raise OverlayReplayError(f"snapshot record {index} view and cursor sessions differ.")
         elif kind == "delta":
             if set(record) != {"kind", "changes", "cursor"}:
                 raise OverlayReplayError(f"delta record {index} has unsupported fields.")
@@ -298,4 +325,5 @@ __all__ = [
     "replay_overlay_json",
     "replay_overlay_path",
     "replay_overlay_records",
+    "validate_overlay_replay",
 ]

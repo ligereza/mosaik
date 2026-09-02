@@ -29,6 +29,7 @@ from .overlay_replay import (
     replay_overlay_json,
     replay_overlay_path,
     replay_overlay_records,
+    validate_overlay_replay,
 )
 
 __all__ = [
@@ -59,4 +60,5 @@ __all__ = [
     "replay_overlay_json",
     "replay_overlay_path",
     "replay_overlay_records",
+    "validate_overlay_replay",
 ]

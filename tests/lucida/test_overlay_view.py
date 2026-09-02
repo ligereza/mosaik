@@ -20,6 +20,7 @@ from lucida import (
     replay_overlay_json,
     replay_overlay_path,
     overlay_view_digest,
+    validate_overlay_replay,
 )
 from lucida.contracts import LucidaContractError, LucidaState
 from lucida.overlay import (
@@ -453,6 +454,35 @@ def test_overlay_json_replay_is_deterministic_and_recoverable():
     assert first["final_cursor"]["sequence"] == 2
     assert first["checkpoint"]["safety"]["proposal_only"] is True
     assert "metadata" not in json.dumps(first, sort_keys=True)
+
+
+def test_overlay_replay_validation_preflights_without_applying_records():
+    fixture_path = (
+        Path(__file__).parents[2]
+        / "lucida"
+        / "overlay"
+        / "fixtures"
+        / "overlay-atomic-update-fictional.json"
+    )
+    envelope = json.loads(fixture_path.read_text(encoding="utf-8"))
+
+    validated = validate_overlay_replay(envelope)
+
+    assert validated == envelope
+    assert validated is not envelope
+    assert validated["records"] is not envelope["records"]
+
+    invalid_recovery = json.loads(json.dumps(envelope, sort_keys=True))
+    invalid_recovery["records"].append(
+        json.loads(json.dumps(invalid_recovery["records"][0], sort_keys=True))
+    )
+    with pytest.raises(OverlayReplayError, match="recovery=true"):
+        validate_overlay_replay(invalid_recovery)
+
+    invalid_view = json.loads(json.dumps(envelope, sort_keys=True))
+    invalid_view["records"][0]["view"]["payload"] = {"execute": "must-not-run"}
+    with pytest.raises(OverlayReplayError, match="unsupported fields"):
+        validate_overlay_replay(invalid_view)
 
 
 def test_overlay_json_replay_rejects_malformed_or_unsafe_streams():
