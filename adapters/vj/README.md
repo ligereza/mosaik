@@ -68,6 +68,10 @@ The projector rejects stale sequence or timestamp input and never mutates a
 uses the existing fixture loader and remains deterministic and side-effect free.
 The machine-readable contract is
 [`show-input.schema.json`](contracts/show-input.schema.json).
+`validate_show_input()` provides the matching public validator for a future
+reducer or replay consumer.
+The kill test patches socket and subprocess entry points and confirms that
+projection does not open transport or spawn a process.
 
 ## Extensión
 

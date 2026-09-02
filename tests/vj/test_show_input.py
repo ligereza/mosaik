@@ -9,6 +9,7 @@ from adapters.vj import (
     ShowInputError,
     ShowInputProjector,
     StaleShowInputError,
+    validate_show_input,
 )
 from adapters.vj.replay import replay_show_input_path
 from lucida.signals import OscResolumeBoundary
@@ -71,6 +72,14 @@ def test_synthetic_replay_is_deterministic_and_preserves_phase_and_order():
         "closure",
     ]
     assert first["sequence_order"] == [1, 2, 3, 4, 5, 6]
+    assert [item["provenance"]["transport"] for item in first["projections"]] == [
+        "osc",
+        "artnet",
+        "timecode",
+        "osc",
+        "sacn",
+        "osc",
+    ]
     assert first["safety"] == {
         "external_side_effects": False,
         "network_opened": False,
@@ -149,3 +158,36 @@ def test_projection_matches_schema():
     projection = replay_show_input_path(FIXTURE)["projections"][2]
 
     assert list(Draft202012Validator(schema).iter_errors(projection)) == []
+
+
+def test_projection_kill_test_never_opens_transport_or_spawns_process(monkeypatch):
+    import socket
+    import subprocess
+
+    def fail(*args, **kwargs):
+        raise AssertionError("show input projection attempted an external action")
+
+    monkeypatch.setattr(socket, "socket", fail)
+    monkeypatch.setattr(subprocess, "Popen", fail)
+    monkeypatch.setattr(subprocess, "run", fail)
+    monkeypatch.setattr(subprocess, "check_output", fail)
+
+    projection = ShowInputProjector().project(_event())
+
+    assert projection.sequence == 1
+
+
+@pytest.mark.parametrize("field", ["contract_type", "show_phase", "provenance"])
+def test_public_projection_validator_rejects_tampered_snapshots(field):
+    projection = replay_show_input_path(FIXTURE)["projections"][2]
+    assert validate_show_input(projection) == projection
+    tampered = copy.deepcopy(projection)
+    if field == "contract_type":
+        tampered[field] = "Other"
+    elif field == "show_phase":
+        tampered[field] = "not-a-phase"
+    else:
+        tampered[field]["unexpected"] = "value"
+
+    with pytest.raises(ShowInputError):
+        validate_show_input(tampered)

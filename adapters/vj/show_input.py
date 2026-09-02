@@ -128,6 +128,12 @@ class ShowInputProjection:
     sequence: int
     provenance: dict[str, str]
 
+    @classmethod
+    def from_dict(cls, value: Mapping[str, Any]) -> "ShowInputProjection":
+        """Validate a projection received by a reducer or replay consumer."""
+
+        return ShowInputProjector._from_projection_dict(value)
+
     def to_dict(self) -> dict[str, Any]:
         return {
             "contract_type": "MosaikShowInput",
@@ -169,7 +175,7 @@ class ShowInputProjector:
             previous_projection = (
                 previous
                 if isinstance(previous, ShowInputProjection)
-                else self._from_projection_dict(previous)
+                else ShowInputProjection.from_dict(previous)
             )
             _, previous_timestamp = _timestamp(previous_projection.source_timestamp)
             if sequence <= previous_projection.sequence or parsed_timestamp < previous_timestamp:
@@ -247,3 +253,9 @@ def project_show_input(
     """Return one safe show input projection for a reducer or replay."""
 
     return ShowInputProjector().project(event, previous).to_dict()
+
+
+def validate_show_input(value: Mapping[str, Any]) -> dict[str, Any]:
+    """Return a detached canonical dictionary for a validated projection."""
+
+    return ShowInputProjection.from_dict(value).to_dict()

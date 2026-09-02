@@ -23,7 +23,8 @@ The projector rejects non-monotonic sequence or source timestamp input,
 canonicalizes provenance, and performs no state mutation, network I/O, host
 action, proposal execution, overlay rendering, or generic reducer work.
 `adapters.vj.replay.show_input` reuses the existing fixture loader for a
-deterministic synthetic replay.
+deterministic synthetic replay. `validate_show_input()` validates a received
+projection without constructing or running the generic reducer.
 
 ## Options considered
 
@@ -53,5 +54,6 @@ transport adapters replaceable. It is the selected option.
 
 `tests/vj/test_show_input.py` covers OSC normalization, phase/order replay,
 stale sequence and timestamp input, provenance conflicts, invalid input, and
-schema validation. The fixture is
+schema validation. Its kill test patches socket and subprocess entry points to
+guard the no-side-effect boundary. The fixture is
 `adapters/vj/replay/fixtures/show-input-fictional.json`.

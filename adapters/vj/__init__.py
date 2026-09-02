@@ -13,6 +13,7 @@ from .show_input import (
     ShowInputProjector,
     StaleShowInputError,
     project_show_input,
+    validate_show_input,
 )
 
 __all__ = [
@@ -27,4 +28,5 @@ __all__ = [
     "ShowInputProjector",
     "StaleShowInputError",
     "project_show_input",
+    "validate_show_input",
 ]
