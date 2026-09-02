@@ -1,0 +1,129 @@
+# VJ Adapter
+
+Adaptador de dominio para conectar una sesión VJ con el núcleo reusable de
+VJ. En esta primera extracción el adaptador es una máquina de estados pura:
+recibe eventos y estado, genera propuestas auditables y registra resultados.
+
+No ejecuta comandos, no abre puertos, no llama a Resolume, no controla
+procesadores LED y no modifica un show.
+
+## Uso mínimo
+
+```python
+from adapters.vj import VJAdapter
+
+adapter = VJAdapter()
+state = adapter.initial_state("session-001")
+state, proposals = adapter.process(
+    {
+        "event_id": "evt-001",
+        "timestamp": "2026-01-10T20:00:00Z",
+        "phase": "preflight",
+        "event_type": "phase.completed",
+        "payload": {"status": "pass"},
+    },
+    state,
+)
+state = adapter.register_result(
+    state,
+    {
+        "result_id": "res-001",
+        "proposal_id": proposals[0].proposal_id,
+        "recorded_at": "2026-01-10T20:01:00Z",
+        "status": "observed",
+        "notes": "Checkpoint revisado por el operador.",
+    },
+)
+```
+
+## Replay
+
+```python
+from adapters.vj.replay import replay_path
+
+report = replay_path("adapters/vj/replay/fixtures/session-fictional.json")
+assert report["status"] == "PASS"
+```
+
+El replay no usa la hora actual ni dependencias externas: con el mismo fixture
+produce el mismo resultado. Las propuestas siempre contienen
+`requires_explicit_approval=true`, `reversible=true` y
+`execution_mode=proposal_only`.
+
+La restauración de propuestas también respeta el schema publicado: exige los
+campos obligatorios y rechaza propiedades extra antes de registrar una
+propuesta.
+
+## Show input projection
+
+`ShowInputProjector` consumes a canonical `VJEvent` and returns only the
+metadata a future LUCIDA reducer needs: `show_state`, `show_phase`, an optional
+`preview_candidate`, source timestamp, sequence, and bounded provenance.
+Existing `OscResolumeBoundary.normalize()` can provide the event; `artnet`,
+`sacn`, and `timecode` are accepted as transport labels without opening a
+socket or implementing a protocol parser here.
+`project_osc_show_input()` is the convenience path that calls the existing OSC
+normalizer and then applies the same bounded projection.
+
+The projector rejects stale sequence or timestamp input and never mutates a
+`VJState`, creates a host action, or executes a `VJProposal`. Its replay helper
+uses the existing fixture loader and remains deterministic and side-effect free.
+The machine-readable contract is
+[`show-input.schema.json`](contracts/show-input.schema.json).
+`validate_show_input()` provides the matching public validator for a future
+reducer or replay consumer.
+The kill test patches socket and subprocess entry points and confirms that
+projection does not open transport or spawn a process.
+
+## INSTAR report bridge
+
+`build_instar_event()` converts one INSTAR report into a canonical preflight
+event that can be consumed by `VJAdapter`. It keeps only bounded technical
+summaries: asset identifiers, status, codec, dimensions, FPS, alpha, loop
+status, and cue count. Local roots, filenames, error text, and arbitrary report
+fields are not copied into the event.
+`project_instar_show_input()` sends the same event through the existing bounded
+show-input projection. The caller supplies the event sequence; a report cannot
+silently invent ordering. This bridge is read-only and does not invoke INSTAR,
+FFmpeg, Resolume, or any transport.
+
+## NAYADE soundcheck bridge
+
+`build_nayade_event()` converts a NAYADE session into a `preparation` event.
+It keeps counts and bounded summaries for slices, input groups, planned steps,
+operator results, signal facts, and the passive processor observation. A
+processor observation must explicitly declare `read_only=true` and
+`commands_sent=false`; USB, serial, Ethernet, HDMI, and manual are recorded as
+facts only. Private source fields, notes, evidence text, and arbitrary payloads
+are not copied.
+`project_nayade_show_input()` reuses the same projection and requires the
+caller-provided sequence. It never opens a port or changes a soundcheck,
+processor, mapping, or show.
+
+## IMAGO show bridge
+
+`build_imago_event()` converts an IMAGO session snapshot into an event whose
+phase follows the observed session status: preparation, show, incident,
+recovery, or closure. It preserves only bounded counts and summaries for
+checkpoints, incidents, proposals, results, profile identifiers, and event
+types. Event payloads, notes, reasons, and unknown text are intentionally not
+copied.
+Every proposal must still declare explicit approval, reversibility, and
+`proposal_only`; otherwise the bridge rejects the snapshot. The bridge records
+state for replay and downstream review, but never executes a cue, Resolume
+operation, recovery action, DMX message, or processor command.
+
+## Plugin bridge replay
+
+`replay_plugin_bridge_path()` replays a fictional cross-plugin sequence through
+the shared state machine: INSTAR preflight, NAYADE soundcheck, and IMAGO show,
+incident, recovery, and closure. It requires strictly increasing producer
+sequences, rejects duplicate event identifiers, and reports no external side
+effects. The fixture is synthetic and contains no media or machine paths.
+
+## Extensión
+
+Los adaptadores concretos de medios, cues, DXV, Art-Net/DMX/sACN, LED
+processors y mapping deben traducir sus observaciones a `VJEvent` y sus
+resultados a `VJResult`. No deben saltarse la máquina de estados ni ejecutar
+acciones dentro de `VJAdapter`.

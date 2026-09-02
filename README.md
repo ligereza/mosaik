@@ -19,12 +19,14 @@ python .\tools\mosaik_cli.py instar "D:\VJ\Media" --target-fps 60 --report ".\ar
 python .\tools\mosaik_cli.py instar "D:\VJ\Media" --deep --report ".\artifacts\instar-deep.json"
 python .\tools\mosaik_cli.py diagnose "D:\VJ\Media\clip.mp4" --report ".\artifacts\clip-report.json"
 python .\tools\mosaik_cli.py dxv "D:\VJ\Media\clip.mp4" --fps 60
+<<<<<<< HEAD
 python .\tools\mosaik_cli.py instar-map "D:\VJ\Shows\venue-advanced-output.xml" --catalog ".\artifacts\instar-manifest.json" --report ".\artifacts\mapping-plan.json"
 python .\tools\mosaik_cli.py instar-testcard "D:\VJ\Shows\venue-advanced-output.xml" --output ".\artifacts\venue-geometry-testcard.mp4" --report ".\artifacts\venue-geometry-testcard.json"
 python .\tools\mosaik_cli.py nayade-session init ".\artifacts\venue-geometry-testcard.json" --output ".\artifacts\venue-soundcheck.json" --seed 4821
 python .\tools\mosaik_cli.py resolume-cues "D:\VJ\Shows\show.avc" --report ".\artifacts\cues.json"
 python .\tools\mosaik_cli.py nayade-processor catalog
 python .\tools\mosaik_cli.py nayade-processor discover --report ".\artifacts\processor-discovery.json"
+python .\tools\validate_schema_graph.py
 ```
 
 ## Dependencias
@@ -55,6 +57,9 @@ en `requirements.txt`; el backend NVIDIA sigue separado en `requirements-gpu.txt
 
 Los scripts solo leen el estado del equipo y muestran advertencias; no cambian el plan de
 energía, BIOS, controladores, archivos ni configuraciones de Resolume.
+
+`validate_schema_graph.py` comprueba el registry local de contratos y sus referencias sin
+red. Para validar una instancia JSON concreta, agrega `--schema` y `--instance`.
 
 ## Estructura
 

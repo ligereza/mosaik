@@ -1,0 +1,10 @@
+# Public replay view loop
+
+- Objective: provide a shareable replay projection without exposing event payloads, signal arguments, metadata, notes, or raw profile values.
+- Branch: `LUCIDA`
+- Starting commit: `4835090`
+- Scope: `SessionReplay.public_report()`, allowlisted record fields, public replay schema, tests, and documentation; internal replay semantics remain unchanged.
+- Done: `SessionReplay.public_report()` now exposes an allowlisted shareable view while preserving the complete internal replay.
+- Evidence: replay/privacy suite `55 passed`; wrapper-focused suite `31 passed`; full suite `137 passed`; public fixture validation `valid` with 6 records; schema graph `21` schemas, `21` registered ids, `19` references; `git diff --check` passed; no active repository test processes.
+- Published implementation commits: `07757f6` (`feat: add redacted public replay report`) and `ede956a` (`feat: expose public replay fixture helper`).
+- Next action: publish the ledger closure and perform a final clean-tree and remote check.

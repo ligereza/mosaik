@@ -72,7 +72,23 @@
           "type": "string",
           "minLength": 1
         }
-      }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "origin": { "const": "unknown" }
+            },
+            "required": ["origin"]
+          },
+          "then": {
+            "properties": {
+              "value": { "const": "unknown" },
+              "confidence": { "const": 0 }
+            }
+          }
+        }
+      ]
     },
     "source": {
       "type": "object",
