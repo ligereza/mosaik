@@ -136,6 +136,19 @@ class LucidaState:
         proposal_ids = tuple(proposal.proposal_id for proposal in proposals)
         if len(set(proposal_ids)) != len(proposal_ids):
             raise LucidaContractError("proposals no puede contener proposal_id duplicados.")
+        capability_proposal_ids = tuple(
+            proposal.proposal_id
+            for report in capabilities
+            for proposal in report.proposals
+        )
+        if len(set(capability_proposal_ids)) != len(capability_proposal_ids):
+            raise LucidaContractError(
+                "las propuestas de capacidades no pueden repetir proposal_id."
+            )
+        if any(item not in proposal_ids for item in capability_proposal_ids):
+            raise LucidaContractError(
+                "cada propuesta de capacidad debe existir en proposals."
+            )
         if any(item not in proposal_ids for item in vj_state.pending_proposal_ids):
             raise LucidaContractError(
                 "cada propuesta pendiente debe existir en proposals."

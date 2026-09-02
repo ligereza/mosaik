@@ -145,6 +145,8 @@ def test_lucida_state_restore_rejects_pending_proposal_without_global_record():
     )
     raw = state.to_dict()
     raw["proposals"] = []
+    for capability in raw["capabilities"]:
+        capability["proposals"] = []
 
     with pytest.raises(LucidaContractError, match="propuesta pendiente"):
         LucidaState.from_dict(raw)
@@ -160,6 +162,37 @@ def test_lucida_state_restore_requires_all_capabilities_once(mutation):
         raw["capabilities"] = raw["capabilities"][:2]
 
     with pytest.raises(LucidaContractError, match="capabilities"):
+        LucidaState.from_dict(raw)
+
+
+@pytest.mark.parametrize("mutation", ["missing_global", "duplicate_capability"])
+def test_lucida_state_restore_binds_capability_proposals_to_global_list(mutation):
+    orchestrator = LucidaOrchestrator()
+    state = orchestrator.propose(
+        {
+            "event_id": "evt-preflight",
+            "timestamp": "2026-01-10T20:00:00Z",
+            "phase": "preflight",
+            "event_type": "phase.completed",
+            "payload": {},
+        },
+        orchestrator.initial_state("session-001"),
+    )
+    raw = state.to_dict()
+    if mutation == "missing_global":
+        raw["proposals"] = []
+        raw["pending_proposal_ids"] = []
+        raw["vj_state"]["pending_proposal_ids"] = []
+    else:
+        proposal = raw["capabilities"][0]["proposals"][0]
+        raw["capabilities"][0]["proposals"].append(proposal)
+
+    expected_message = (
+        "propuesta de capacidad"
+        if mutation == "missing_global"
+        else "propuestas de capacidades"
+    )
+    with pytest.raises(LucidaContractError, match=expected_message):
         LucidaState.from_dict(raw)
 
 
