@@ -1,12 +1,15 @@
+import json
+
 import pytest
 
-from adapters.vj.contracts import VJProposal
+from adapters.vj.contracts import VJEvent, VJProposal
 from lucida.host.decision import (
     DecisionContractError,
     ProposalDecision,
     ProposalDecisionRecorder,
 )
-from lucida.replay.session import SessionReplay
+from lucida.replay import validate_public_report
+from lucida.replay.session import SessionReplay, SignalEnvelope
 
 
 def _decision(**overrides):
@@ -108,3 +111,45 @@ def test_recorder_rejects_duplicate_decision_id_without_second_audit_entry():
 
     assert len(recorder.decisions) == 1
     assert len(replay.state.audit_log) == 1
+
+
+def test_public_replay_preserves_only_safe_host_decision_status():
+    replay = SessionReplay("session-001")
+    replay.append(
+        VJEvent(
+            event_id="event-001",
+            timestamp="2026-01-10T20:00:00Z",
+            phase="preflight",
+            event_type="phase.completed",
+            payload={"private": "must-not-share"},
+            source="host-test",
+        ),
+        SignalEnvelope(
+            envelope_id="signal-001",
+            event_id="event-001",
+            timestamp="2026-01-10T20:00:00Z",
+            sequence=1,
+            source="host-test",
+            address="/lucida/instar/preflight",
+            arguments=("private-argument",),
+            transport="osc",
+        ),
+    )
+    recorder = ProposalDecisionRecorder(audit_sink=replay.record_audit)
+    recorder.record(
+        _decision(
+            proposal_id="lucida-instar-event-001-checkpoint-preflight",
+            provenance={"private": "must-not-share"},
+            reason="Private host reason.",
+        )
+    )
+
+    public = replay.public_report()
+    validate_public_report(public)
+    serialized = json.dumps(public, sort_keys=True)
+
+    assert any(item.get("status") == "accepted" for item in public["audit_log"])
+    assert all("decision_id" not in item for item in public["audit_log"])
+    assert all("reason" not in item for item in public["audit_log"])
+    assert "must-not-share" not in serialized
+    assert "private-argument" not in serialized
