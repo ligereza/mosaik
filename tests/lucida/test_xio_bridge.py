@@ -90,6 +90,10 @@ def test_consumer_delivers_event_and_results_to_session_replay():
     assert received.record.audit["metadata"]["session_id"] == "session-001"
     assert received.record.audit["metadata"]["received_timestamp"] == "2026-01-10T20:00:02Z"
     assert received.record.state_after.vj_state.pending_proposal_ids == ()
+    assert received.overlay_update["contract_type"] == "LucidaOverlayUpdate"
+    assert received.overlay_update["cursor"]["sequence"] == 1
+    assert received.overlay_update["view_digest"]
+    assert received.to_dict()["overlay_update"] == received.overlay_update
 
 
 def test_xio_consumer_exposes_bounded_overlay_and_revision_cursor():
@@ -113,6 +117,16 @@ def test_xio_consumer_exposes_bounded_overlay_and_revision_cursor():
     assert cursor["last_event_id"] == "evt-001"
     assert consumer.read_overlay() == overlay
     assert consumer.read_overlay_cursor() == cursor
+
+
+def test_xio_consume_update_is_deterministic_and_redacted():
+    first = XioEventConsumer("session-001").consume(_application_event())
+    second = XioEventConsumer("session-001").consume(_application_event())
+
+    assert first.overlay_update == second.overlay_update
+    serialized = json.dumps(first.overlay_update, sort_keys=True)
+    assert "payload" not in serialized
+    assert "provenance" not in serialized
 
 
 def test_incomplete_application_event_is_rejected():

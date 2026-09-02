@@ -11,7 +11,11 @@ import json
 
 from adapters.vj.contracts import VJEvent, VJResult
 
-from ..overlay import build_overlay_cursor, build_overlay_view
+from ..overlay import (
+    build_overlay_cursor,
+    build_overlay_update,
+    build_overlay_view,
+)
 
 if TYPE_CHECKING:
     from ..replay.session import SessionReplay, SessionReplayRecord, SignalEnvelope
@@ -205,6 +209,7 @@ class XioConsumeResult:
     vj_event: VJEvent
     signal: SignalEnvelope
     record: SessionReplayRecord
+    overlay_update: dict[str, Any]
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -214,6 +219,7 @@ class XioConsumeResult:
             "vj_event": self.vj_event.to_dict(),
             "signal": self.signal.to_dict(),
             "record": self.record.to_dict(),
+            "overlay_update": dict(self.overlay_update),
         }
 
 
@@ -251,6 +257,7 @@ class XioEventConsumer:
     ) -> XioConsumeResult:
         from ..replay.session import SignalEnvelope
 
+        previous_state = self._replay.state.lucida_state
         event = (
             application_event
             if isinstance(application_event, ApplicationEvent)
@@ -268,11 +275,19 @@ class XioEventConsumer:
             results,
             metadata=event.trace_metadata(),
         )
+        try:
+            overlay_update = build_overlay_update(
+                previous_state,
+                self._replay.state.lucida_state,
+            )
+        except (TypeError, ValueError) as exc:
+            raise XioConsumerError(f"XIO overlay update could not be built: {exc}") from exc
         return XioConsumeResult(
             application_event=event,
             vj_event=vj_event,
             signal=signal,
             record=record,
+            overlay_update=overlay_update,
         )
 
     @staticmethod
