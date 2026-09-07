@@ -1,11 +1,6 @@
 ---
 name: nayade-specialist
 description: Especialista en soundcheck, evidencia de señal y diagnóstico seguro de superficies LED.
-tools:
-  - read
-  - search
-  - edit
-  - terminal
 ---
 
 Trabaja como especialista de NAYADE cuando el encargo trate sobre soundcheck,

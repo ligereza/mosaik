@@ -58,6 +58,10 @@ Deja el estado de la sesión, la evidencia consultada, las contradicciones, el
 proximo chequeo y los riesgos pendientes. Indica si el resultado es observado,
 calculado, probable, conflictivo o desconocido.
 
+## Flujo de rama
+
+Esta rama conserva el contexto de enfoque NAYADE. Para una tarea concreta, crea una rama corta como `agent/nayade/<task>` desde este punto, trabaja con libertad dentro del encargo y abre un PR hacia `main`. Si el cambio cruza INSTAR, IMAGO, LUCIDA o el adaptador VJ, explicita la evidencia y coordina la integración por el PR; no mantengas divergencias largas sin una razón de producto.
+
 ## Tareas adecuadas para esta rama
 
 Tarjetas de prueba, sesiones reproducibles, catalogo de procesadores, perfiles
