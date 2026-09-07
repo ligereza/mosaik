@@ -55,6 +55,10 @@ Deja el mapa de la frontera, campos permitidos, schemas, fixtures, pruebas,
 limitaciones de transporte y el siguiente puente o consumidor. Indica si una
 garantia es de contrato, de replay o de host real.
 
+## Flujo de rama
+
+Esta rama conserva el contexto de enfoque del adaptador VJ. Para una tarea concreta, crea una rama corta como `agent/vj-adapter/<task>` desde este punto, trabaja con libertad dentro del encargo y abre un PR hacia `main`. Si el cambio toca un productor o un host, documenta la frontera y coordina la integración por el PR; no uses esta rama para esconder acoplamientos que deban revisarse.
+
 ## Tareas adecuadas para esta rama
 
 Puentes INSTAR/NAYADE/IMAGO, `ShowInputProjector`, contratos de eventos,

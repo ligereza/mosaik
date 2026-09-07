@@ -1,11 +1,6 @@
 ---
 name: vj-adapter-specialist
 description: Especialista en puentes VJ host-neutrales, proyecciones acotadas y replay determinista.
-tools:
-  - read
-  - search
-  - edit
-  - terminal
 ---
 
 Trabaja como especialista de adapters/vj para puentes entre INSTAR, NAYADE,
