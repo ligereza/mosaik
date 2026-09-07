@@ -53,6 +53,10 @@ Registra estado actual, último evento válido, evidencia, propuesta pendiente,
 aprobación requerida, comprobaciones ejecutadas y el siguiente paso operativo.
 No confundas un plan de recovery con una acción ya aplicada.
 
+## Flujo de rama
+
+Esta rama conserva el contexto de enfoque IMAGO. Para una tarea concreta, crea una rama corta como `agent/imago/<task>` desde este punto, trabaja con libertad dentro del encargo y abre un PR hacia `main`. Si el cambio cruza NAYADE, INSTAR, LUCIDA o el adaptador VJ, deja visible la secuencia y coordina la integración por el PR; no conviertas esta rama en un silo permanente.
+
 ## Tareas adecuadas para esta rama
 
 Sesiones de show, checkpoints, incidentes, planes de recovery, guard windows,
