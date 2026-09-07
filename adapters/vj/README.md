@@ -75,6 +75,24 @@ reducer or replay consumer.
 The kill test patches socket and subprocess entry points and confirms that
 projection does not open transport or spawn a process.
 
+## Semantic light field input
+
+`VJAdapter.ingest_semantic_light_field()` is the concrete MOSAIK/VJ boundary
+for an XIO semantic light field. It accepts the existing `VJProposal` contract
+plus a tape resolver keyed by the proposal `tape_sha256` evidence. The proposal
+contains metadata only; the replay tape remains a separate resolved input.
+The bridge validates the tape schema, digest, frame count, calibration status,
+and `proposal_only` markers before returning a reversible
+`MosaikVJSemanticLightFieldPending` state envelope.
+
+The bridge is offline and proposal-only. It does not open a transport, call
+Resolume, access a GPU or camera, or execute hardware actions. The end-to-end
+fixture test reads the existing XIO replay fixture and proves the path
+`replay JSON -> semantic proposal -> VJProposal -> VJAdapter -> pending state`.
+The real VJ application is not wired to this entry point yet; a future
+integration can call it at its proposal intake boundary without changing the
+VJ state machine or copying frames into `VJProposal`.
+
 ## INSTAR report bridge
 
 `build_instar_event()` converts one INSTAR report into a canonical preflight

@@ -93,6 +93,17 @@ class VJAdapter:
             }
         )
 
+    def ingest_semantic_light_field(
+        self,
+        proposal: VJProposal | Mapping[str, Any],
+        state: VJState | Mapping[str, Any],
+        tape_resolver: Any,
+    ) -> tuple[VJState, dict[str, Any]]:
+        """Stage an XIO semantic light-field proposal without executing it."""
+        from .semantic_light_field import adapt_semantic_light_field
+
+        return adapt_semantic_light_field(proposal, state, tape_resolver)
+
     @staticmethod
     def _validate_event_order(event: VJEvent, state: VJState) -> None:
         if state.last_timestamp:

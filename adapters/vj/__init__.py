@@ -7,6 +7,11 @@ itself.
 
 from .adapter import VJAdapter, VJAdapterError
 from .contracts import VJEvent, VJResult, VJState, VJProposal
+from .semantic_light_field import (
+    SemanticLightFieldBridgeError,
+    adapt_semantic_light_field,
+    resolve_semantic_light_field_tape,
+)
 from .instar_input import (
     InstarInputError,
     InstarInputProjector,
@@ -49,6 +54,9 @@ __all__ = [
     "VJResult",
     "VJState",
     "VJProposal",
+    "SemanticLightFieldBridgeError",
+    "adapt_semantic_light_field",
+    "resolve_semantic_light_field_tape",
     "InstarInputError",
     "InstarInputProjector",
     "build_instar_event",
