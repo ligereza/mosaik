@@ -225,6 +225,12 @@ IMAGO`, incluyendo show, incidente, recuperación y cierre. Sólo procesa el
 fixture indicado, no abre transportes y no ejecuta propuestas ni cambios en el
 hardware.
 
+El mismo dispatcher `tools/mosaik_cli.py` acepta el envelope
+`MosaikSemanticLightFieldReplay` y lo entrega a
+`VJAdapter.ingest_semantic_light_field()`. El resultado es un proposal
+pendiente, reversible y `proposal_only`; aprobar, rechazar o deshacer requiere
+una llamada explícita al adaptador y no ejecuta Resolume ni hardware.
+
 `vj-project` convierte un reporte JSON real de `instar`, `nayade` o `imago` en
 un evento canonico o en una proyeccion acotada. La secuencia la entrega el
 operador/orquestador y `--previous` permite rechazar saltos de fase. El modo

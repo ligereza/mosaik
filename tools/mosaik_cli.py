@@ -13,7 +13,13 @@ if str(_REPOSITORY_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPOSITORY_ROOT))
 
 from adapters.vj import VJProjectError, build_stage_event, load_project_document, project_stage_document
-from adapters.vj.replay import ReplayError, replay_plugin_bridge_path, replay_project_manifest_path
+from adapters.vj.replay import (
+    ReplayError,
+    load_fixture,
+    replay_plugin_bridge_path,
+    replay_project_manifest_path,
+    replay_semantic_light_field_path,
+)
 from mosaik.adapt import run_adaptation, text_report as adapt_text_report, write_adaptation_plan
 from mosaik.diagnose import diagnose_file, text_report
 from mosaik.doctor import doctor_text_report, run_doctor, write_doctor_report
@@ -459,7 +465,12 @@ def main(argv: list[str] | None = None) -> int:
             return 0
 
         if args.command == "vj-replay":
-            report = replay_plugin_bridge_path(args.fixture)
+            replay_input = Path(args.fixture).expanduser().resolve()
+            replay_document = load_fixture(replay_input)
+            if isinstance(replay_document, dict) and replay_document.get("replay_type") == "MosaikSemanticLightFieldReplay":
+                report = replay_semantic_light_field_path(replay_input)
+            else:
+                report = replay_plugin_bridge_path(replay_input)
             print(json.dumps(report, ensure_ascii=False, indent=2))
             if args.report:
                 report_path = Path(args.report).expanduser().resolve()

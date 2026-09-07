@@ -96,9 +96,15 @@ The bridge is offline and proposal-only. It does not open a transport, call
 Resolume, access a GPU or camera, or execute hardware actions. The end-to-end
 fixture test reads the existing XIO replay fixture and proves the path
 `replay JSON -> semantic proposal -> VJProposal -> VJAdapter -> pending state`.
-The real VJ application is not wired to this entry point yet; a future
-integration can call it at its proposal intake boundary without changing the
-VJ state machine or copying frames into `VJProposal`.
+The dispatcher does not connect to Resolume or a live VJ surface; it calls the
+adapter at its proposal intake boundary without changing the VJ state machine
+or copying frames into `VJProposal`.
+
+The current application dispatcher is `tools/mosaik_cli.py` and its existing
+`vj-replay` command. It selects this bridge when the replay envelope has
+`replay_type=MosaikSemanticLightFieldReplay`; no second command or application
+entrypoint is introduced. The dispatcher reports the pending state and leaves
+all decisions to the explicit adapter operations above.
 
 ## INSTAR report bridge
 

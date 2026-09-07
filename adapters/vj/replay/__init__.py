@@ -14,6 +14,13 @@ from .project_manifest import (
     replay_project_manifest_path,
 )
 from .show_input import replay_show_input_fixture, replay_show_input_path
+from .semantic_light_field import (
+    SEMANTIC_REPLAY_REPORT_TYPE,
+    SEMANTIC_REPLAY_SCHEMA_VERSION,
+    SEMANTIC_REPLAY_TYPE,
+    replay_semantic_light_field_fixture,
+    replay_semantic_light_field_path,
+)
 
 __all__ = [
     "ReplayError",
@@ -30,4 +37,9 @@ __all__ = [
     "replay_project_manifest_path",
     "replay_show_input_fixture",
     "replay_show_input_path",
+    "SEMANTIC_REPLAY_REPORT_TYPE",
+    "SEMANTIC_REPLAY_SCHEMA_VERSION",
+    "SEMANTIC_REPLAY_TYPE",
+    "replay_semantic_light_field_fixture",
+    "replay_semantic_light_field_path",
 ]
