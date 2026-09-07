@@ -8,6 +8,7 @@ from pathlib import Path
 import pytest
 
 from adapters.vj import VJAdapter
+from adapters.vj.adapter import VJAdapterError
 from adapters.vj.semantic_light_field import SemanticLightFieldBridgeError
 
 
@@ -59,6 +60,7 @@ def test_replay_json_to_vj_pending_proposal_without_execution():
         "tape_sha256": digest,
         "tape_schema": "farmaxia:semantic-light-field-tape:0.1",
         "frame_count": 2,
+        "execution_mode": "proposal_only",
         "status": "pending_approval",
     }
     assert pending["status"] == "pending_approval"
@@ -83,6 +85,60 @@ def test_replay_json_to_vj_pending_proposal_without_execution():
     )
     assert rejected.pending_proposal_ids == ()
     assert rejected.results[0].status == "rejected"
+
+
+@pytest.mark.parametrize(
+    ("operation", "result_status", "metadata_status"),
+    [
+        ("approve_proposal", "accepted", "approved"),
+        ("reject_proposal", "rejected", "rejected"),
+        ("undo_proposal", "skipped", "undone"),
+    ],
+)
+def test_real_adapter_entrypoint_records_explicit_decision(
+    operation, result_status, metadata_status
+):
+    _fixture, tape, proposal, digest = _source_artifacts()
+    adapter = VJAdapter()
+    state = adapter.initial_state("mosaik-semantic-light-field")
+    pending_state, pending = adapter.ingest_semantic_light_field(
+        proposal, state, {digest: tape}
+    )
+
+    decided = getattr(adapter, operation)(
+        pending_state,
+        proposal_id=proposal["proposal_id"],
+        result_id="result-light-field-" + result_status,
+        recorded_at="2026-09-07T20:00:00Z",
+    )
+
+    assert pending["proposal"]["execution_mode"] == "proposal_only"
+    assert decided.pending_proposal_ids == ()
+    assert decided.results[-1].status == result_status
+    assert decided.metadata["semantic_light_field_pending"][0]["status"] == metadata_status
+    assert decided.metadata["semantic_light_field_pending"][0]["execution_mode"] == "proposal_only"
+
+
+def test_semantic_light_field_cannot_be_registered_as_executed():
+    _fixture, tape, proposal, digest = _source_artifacts()
+    adapter = VJAdapter()
+    state = adapter.initial_state("mosaik-semantic-light-field")
+    pending_state, _pending = adapter.ingest_semantic_light_field(
+        proposal, state, {digest: tape}
+    )
+
+    with pytest.raises(VJAdapterError, match="proposal_only"):
+        adapter.register_result(
+            pending_state,
+            {
+                "result_id": "result-light-field-executed",
+                "proposal_id": proposal["proposal_id"],
+                "recorded_at": "2026-09-07T20:00:00Z",
+                "status": "executed",
+            },
+        )
+
+    assert pending_state.pending_proposal_ids == (proposal["proposal_id"],)
 
 
 def test_hash_schema_and_execution_mode_rejections_do_not_mutate_state():

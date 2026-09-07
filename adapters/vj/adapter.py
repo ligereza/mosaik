@@ -84,13 +84,112 @@ class VJAdapter:
             )
         if any(item.result_id == parsed_result.result_id for item in current.results):
             raise VJAdapterError(f"Resultado duplicado: {parsed_result.result_id}")
+        semantic_pending = current.metadata.get("semantic_light_field_pending")
+        matching: list[Mapping[str, Any]] = []
+        if isinstance(semantic_pending, list):
+            matching = [
+                item
+                for item in semantic_pending
+                if isinstance(item, Mapping)
+                and item.get("proposal_id") == parsed_result.proposal_id
+            ]
+            if matching and parsed_result.status == "executed":
+                raise VJAdapterError(
+                    "semantic light-field proposals remain proposal_only and cannot execute."
+                )
         pending = tuple(item for item in current.pending_proposal_ids if item != parsed_result.proposal_id)
+        next_metadata = dict(current.metadata)
+        if matching:
+            status_by_result = {
+                "accepted": "approved",
+                "rejected": "rejected",
+                "skipped": "undone",
+                "observed": "observed",
+                "failed": "failed",
+            }
+            semantic_status = status_by_result.get(parsed_result.status, parsed_result.status)
+            next_metadata["semantic_light_field_pending"] = [
+                {
+                    **item,
+                    "status": semantic_status,
+                    "result_id": parsed_result.result_id,
+                }
+                if isinstance(item, Mapping)
+                and item.get("proposal_id") == parsed_result.proposal_id
+                else item
+                for item in semantic_pending
+            ]
         return VJState(
             **{
                 **current.__dict__,
                 "pending_proposal_ids": pending,
                 "results": (*current.results, parsed_result),
+                "metadata": next_metadata,
             }
+        )
+
+    def approve_proposal(
+        self,
+        state: VJState | Mapping[str, Any],
+        proposal_id: str,
+        result_id: str,
+        recorded_at: str,
+        notes: str = "Explicit approval recorded; no action executed.",
+        evidence: tuple[str, ...] = (),
+    ) -> VJState:
+        """Record explicit approval; proposal_only never executes the operation."""
+        return self._record_decision(
+            state, proposal_id, result_id, recorded_at, "accepted", notes, evidence
+        )
+
+    def reject_proposal(
+        self,
+        state: VJState | Mapping[str, Any],
+        proposal_id: str,
+        result_id: str,
+        recorded_at: str,
+        notes: str = "Explicit rejection recorded; no action executed.",
+        evidence: tuple[str, ...] = (),
+    ) -> VJState:
+        """Record explicit rejection without invoking a host or device action."""
+        return self._record_decision(
+            state, proposal_id, result_id, recorded_at, "rejected", notes, evidence
+        )
+
+    def undo_proposal(
+        self,
+        state: VJState | Mapping[str, Any],
+        proposal_id: str,
+        result_id: str,
+        recorded_at: str,
+        notes: str = "Explicit undo recorded; no action executed.",
+        evidence: tuple[str, ...] = (),
+    ) -> VJState:
+        """Cancel a pending proposal explicitly; no executed action is undone."""
+        return self._record_decision(
+            state, proposal_id, result_id, recorded_at, "skipped", notes, evidence
+        )
+
+    def _record_decision(
+        self,
+        state: VJState | Mapping[str, Any],
+        proposal_id: str,
+        result_id: str,
+        recorded_at: str,
+        status: str,
+        notes: str,
+        evidence: tuple[str, ...],
+    ) -> VJState:
+        return self.register_result(
+            state,
+            {
+                "result_id": result_id,
+                "proposal_id": proposal_id,
+                "recorded_at": recorded_at,
+                "status": status,
+                "notes": notes,
+                "evidence": list(evidence),
+            },
         )
 
     def ingest_semantic_light_field(

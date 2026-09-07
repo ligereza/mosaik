@@ -85,6 +85,13 @@ The bridge validates the tape schema, digest, frame count, calibration status,
 and `proposal_only` markers before returning a reversible
 `MosaikVJSemanticLightFieldPending` state envelope.
 
+The application-facing intake is the existing `VJAdapter` instance. Call
+`ingest_semantic_light_field()` to stage the proposal, then call exactly one
+explicit decision operation: `approve_proposal()`, `reject_proposal()`, or
+`undo_proposal()`. These operations reuse `register_result()` and record
+`accepted`, `rejected`, or `skipped` respectively; they never execute the
+proposal. A semantic light-field result with status `executed` is rejected.
+
 The bridge is offline and proposal-only. It does not open a transport, call
 Resolume, access a GPU or camera, or execute hardware actions. The end-to-end
 fixture test reads the existing XIO replay fixture and proves the path

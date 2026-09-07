@@ -204,6 +204,7 @@ def adapt_semantic_light_field(
         "tape_sha256": digest,
         "tape_schema": TAPE_SCHEMA,
         "frame_count": len(normalized_tape["frames"]),
+        "execution_mode": parsed_proposal.execution_mode,
         "status": "pending_approval",
     }
     next_metadata = {
