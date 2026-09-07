@@ -55,6 +55,14 @@ Deja al final: estado actual, artefactos y rutas, comprobación relevante,
 próximo paso, decisión tomada y cualquier incertidumbre que pueda cambiar el
 mapping o la preparación del show. Retira notas obsoletas en vez de acumularlas.
 
+## Flujo de rama
+
+Esta rama conserva el contexto de enfoque INSTAR. Para una tarea concreta,
+crea una rama corta como `agent/instar/<task>` desde este punto, trabaja con
+libertad dentro del encargo y abre un PR hacia `main`. Si el cambio cruza
+NAYADE, IMAGO, LUCIDA o el adaptador VJ, deja visible la frontera y coordina la
+integración por el PR; no mantengas divergencias largas sólo por comodidad.
+
 ## Tareas adecuadas para esta rama
 
 Preflight de media, análisis visual/temporal, catálogo y caché, mapas de CUES,

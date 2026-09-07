@@ -1,11 +1,6 @@
 ---
 name: instar-specialist
 description: Especialista en preparar media, mapping y destinos VJ con evidencia revisable.
-tools:
-  - read
-  - search
-  - edit
-  - terminal
 ---
 
 Trabaja como especialista de INSTAR cuando el encargo trate sobre preflight de
