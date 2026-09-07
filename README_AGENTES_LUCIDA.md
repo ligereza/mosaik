@@ -57,6 +57,10 @@ Deja la decisión de compatibilidad, schemas afectados, consumidores revisados,
 fixtures, pruebas, riesgos y el siguiente punto de extensión. Enlaza el ADR o
 registro de trabajo cuando exista y retira descripciones obsoletas.
 
+## Flujo de rama
+
+Esta rama conserva el contexto de enfoque LUCIDA. Para una tarea concreta, crea una rama corta como `agent/lucida/<task>` desde este punto, trabaja con libertad dentro del encargo y abre un PR hacia `main`. Si el cambio cruza contratos VJ o una etapa de producto, documenta la compatibilidad y coordina la integración por el PR; no mantengas una divergencia permanente sin una decisión explícita.
+
 ## Tareas adecuadas para esta rama
 
 Contratos de estado y capacidades, signal profiles, OSC/XIO, overlays,
