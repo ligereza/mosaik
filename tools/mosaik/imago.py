@@ -113,6 +113,8 @@ def record_event(
         raise ImagoError(f"transition not allowed: {current_status} -> {event_type}")
     timestamp = recorded_at or _now()
     _timestamp(timestamp, "recorded_at")
+    if session.get("last_timestamp") and _time(timestamp) < _time(session["last_timestamp"]):
+        raise ImagoError("recorded_at cannot precede the last recorded event.")
     safe_payload = _event_payload(payload)
     updated = copy.deepcopy(dict(session))
     event_id = f"event-{updated['sequence'] + 1:03d}"
@@ -173,6 +175,8 @@ def record_result(
         raise ImagoError("notes must be text.")
     timestamp = recorded_at or _now()
     _timestamp(timestamp, "recorded_at")
+    if session.get("last_timestamp") and _time(timestamp) < _time(session["last_timestamp"]):
+        raise ImagoError("recorded_at cannot precede the last recorded event.")
     updated = copy.deepcopy(dict(session))
     updated["pending_proposal_ids"].remove(proposal_id)
     updated["results"].append({
@@ -327,6 +331,10 @@ def _timestamp(value: Any, field_name: str) -> str:
 
 def _now() -> str:
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+
+
+def _time(value: str) -> datetime:
+    return datetime.fromisoformat(value.replace("Z", "+00:00")).astimezone(timezone.utc)
 
 
 __all__ = [
