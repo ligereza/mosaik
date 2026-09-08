@@ -46,6 +46,10 @@ from .show_input import (
     project_osc_show_input,
     validate_show_input,
 )
+from .console_proposals import (
+    ConsoleProposalError,
+    build_console_proposals,
+)
 
 __all__ = [
     "VJAdapter",
@@ -81,4 +85,6 @@ __all__ = [
     "project_show_input",
     "project_osc_show_input",
     "validate_show_input",
+    "ConsoleProposalError",
+    "build_console_proposals",
 ]
