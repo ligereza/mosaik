@@ -40,6 +40,20 @@ def _text(value: Any, field_name: str) -> str:
     return value.strip()
 
 
+def _safe_report_path(value: str, *, root: Path, field_name: str) -> Path:
+    """Resolve a manifest path without allowing reads outside its package."""
+
+    candidate = Path(value)
+    if candidate.is_absolute():
+        raise ReplayError(f"{field_name} debe ser una ruta relativa dentro del manifest.")
+    resolved = (root / candidate).resolve()
+    try:
+        resolved.relative_to(root)
+    except ValueError as exc:
+        raise ReplayError(f"{field_name} no puede salir del directorio del manifest.") from exc
+    return resolved
+
+
 def _records(manifest: Mapping[str, Any]) -> list[Mapping[str, Any]]:
     if manifest.get("replay_type") != PROJECT_REPLAY_TYPE:
         raise ReplayError("La identidad del manifest VJ no es valida.")
@@ -101,7 +115,7 @@ def replay_project_manifest(
         if event_id in seen_ids:
             raise ReplayError(f"event_id duplicado en manifest VJ: {event_id}")
         seen_ids.add(event_id)
-        input_path = (root_path / str(record["input"])).resolve()
+        input_path = _safe_report_path(str(record["input"]), root=root_path, field_name="input")
         try:
             document = json.loads(input_path.read_text(encoding="utf-8"))
         except (OSError, UnicodeError, json.JSONDecodeError) as exc:
@@ -111,7 +125,11 @@ def replay_project_manifest(
 
         observation = None
         if "processor_observation" in record:
-            observation_path = (root_path / str(record["processor_observation"])).resolve()
+            observation_path = _safe_report_path(
+                str(record["processor_observation"]),
+                root=root_path,
+                field_name="processor_observation",
+            )
             try:
                 observation = json.loads(observation_path.read_text(encoding="utf-8"))
             except (OSError, UnicodeError, json.JSONDecodeError) as exc:

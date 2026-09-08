@@ -83,3 +83,42 @@ def test_project_manifest_rejects_non_increasing_sequences(tmp_path):
 
     with pytest.raises(ReplayError, match="aumentar estrictamente"):
         replay_project_manifest_path(path)
+
+
+def test_project_manifest_rejects_input_path_escape(tmp_path):
+    manifest = {
+        "replay_type": "MosaikVJProjectReplay",
+        "schema_version": "0.1",
+        "session_id": "project-session-001",
+        "records": [
+            {"stage": "instar", "event_id": "one", "sequence": 1, "input": "../outside.json"},
+        ],
+    }
+    path = tmp_path / "manifest.json"
+    path.write_text(json.dumps(manifest), encoding="utf-8")
+
+    with pytest.raises(ReplayError, match="salir del directorio"):
+        replay_project_manifest_path(path)
+
+
+def test_project_manifest_rejects_processor_observation_path_escape(tmp_path):
+    (tmp_path / "input.json").write_text("{}", encoding="utf-8")
+    manifest = {
+        "replay_type": "MosaikVJProjectReplay",
+        "schema_version": "0.1",
+        "session_id": "project-session-001",
+        "records": [
+            {
+                "stage": "instar",
+                "event_id": "one",
+                "sequence": 1,
+                "input": "input.json",
+                "processor_observation": "../outside.json",
+            },
+        ],
+    }
+    path = tmp_path / "manifest.json"
+    path.write_text(json.dumps(manifest), encoding="utf-8")
+
+    with pytest.raises(ReplayError, match="salir del directorio"):
+        replay_project_manifest_path(path)
